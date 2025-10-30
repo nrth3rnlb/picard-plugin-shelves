@@ -19,9 +19,8 @@ Think of your music library as a physical library with different shelves — one
 ## Installation
 
 1. Copy the `shelves` folder to your Picard plugins directory:
-   - **Linux:** `~/.config/MusicBrainz/Picard/plugins/`
-   - **Windows:** `%APPDATA%\MusicBrainz\Picard\plugins\`
-   - **macOS:** `~/.config/MusicBrainz/Picard/plugins/`
+   - **System Package**: `~/.config/MusicBrainz/Picard/plugins/`
+   - **Flatpak**: `~/.var/app/org.musicbrainz.Picard/config/MusicBrainz/Picard/plugins`
 
 2. Restart Picard
 
@@ -42,10 +41,13 @@ The plugin expects your music library to be organised like this:
 ├── Incoming/
 ├── Christmas/
 ├── Soundtrack/
+│   ├── Album Name/
+│   │   └── track.mp3
 └── ...
 ```
 
-Each top-level folder under your music directory is considered a "shelf".
+It is important to remember that each top-level folder in your music directory is considered a “shelf”.
+
 
 ### Automatic Detection
 
@@ -56,7 +58,7 @@ When you scan files in Picard, the plugin automatically:
 
 ### Smart Shelf Detection
 
-The plugin includes intelligent detection to prevent confusion:
+The plugin has semi-intelligent recognition to avoid confusion:
 
 - **Default and known shelves** are always recognised correctly
 - **Suspicious folder names** are automatically identified and treated as misplaced files:
@@ -210,8 +212,10 @@ shelves/
 
 ## Requirements
 
--   MusicBrainz Picard 2.0 or higher
--   PyQt5
+- MusicBrainz Picard 2.0 or higher 
+- PyQt5
+- `discid/discid.h` for the installation of the development environment using `pip install -e '.[dev]`
+  - Search for a package with a name like `libdiscid-dev`, `libdiscid-devel` or similar, depending on your Linux distribution.
 
 ## License
 

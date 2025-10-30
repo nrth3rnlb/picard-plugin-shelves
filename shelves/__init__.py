@@ -6,8 +6,13 @@ Shelves Plugin for MusicBrainz Picard.
 This plugin adds virtual shelf management to MusicBrainz Picard,
 allowing music files to be organised by top-level folders.
 """
-
 from __future__ import annotations
+
+from importlib.metadata import version, PackageNotFoundError
+try:
+    __version__ = version("shelves")
+except PackageNotFoundError:
+    __version__ = "unknown"
 
 from typing import Any, Dict
 
@@ -27,12 +32,8 @@ from .processors import (
     set_shelf_in_metadata,
 )
 from .script_functions import func_shelf as _func_shelf_base
-from importlib.metadata import version, PackageNotFoundError
 
-try:
-    from ._version import __version__
-except ImportError:
-    __version__ = "unknown"
+
 
 # Plugin metadata
 PLUGIN_NAME = "Shelves"
