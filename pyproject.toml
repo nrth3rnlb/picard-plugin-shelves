@@ -1,6 +1,6 @@
 [project]
 name = "picard-plugin-shelves"
-version = "1.0.0"
+version = "1.2.0"
 description = "Shelves Plugin for MusicBrainz Picard"
 authors = [
     {name = "nrth3rnlb"}
