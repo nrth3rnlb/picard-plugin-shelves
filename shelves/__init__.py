@@ -8,9 +8,9 @@ allowing music files to be organised by top-level folders.
 """
 from __future__ import annotations
 
-from importlib.metadata import version as get_version
 
-__version__ = get_version("shelves")
+
+__version__ = "1.2.0"
 
 from typing import Any, Dict
 
