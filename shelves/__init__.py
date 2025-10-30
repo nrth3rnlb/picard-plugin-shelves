@@ -8,11 +8,9 @@ allowing music files to be organised by top-level folders.
 """
 from __future__ import annotations
 
-from importlib.metadata import version, PackageNotFoundError
-try:
-    __version__ = version("shelves")
-except PackageNotFoundError:
-    __version__ = "unknown"
+from importlib.metadata import version as get_version
+
+__version__ = get_version("shelves")
 
 from typing import Any, Dict
 
@@ -32,8 +30,6 @@ from .processors import (
     set_shelf_in_metadata,
 )
 from .script_functions import func_shelf as _func_shelf_base
-
-
 
 # Plugin metadata
 PLUGIN_NAME = "Shelves"
@@ -106,10 +102,5 @@ register_track_metadata_processor(_set_shelf_in_metadata_wrapper)
 # Register a script function for use in file naming
 register_script_function(func_shelf, "shelf")
 
-log.info(
-    "%s: Script function $shelf() registered. "
-    "Use in file naming: $shelf()",
-    PLUGIN_NAME,
-)
 log.info("%s v%s loaded successfully", PLUGIN_NAME, __version__)
 
