@@ -33,8 +33,14 @@ jobs:
           GH_TOKEN: ${{ secrets.PICARD_PLUGINS_PAT }}
         run: |
           # Clone the fork if it exists, otherwise clone the upstream repo
-          git clone https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository_owner }}/picard-plugins.git picard-plugins || \
-          git clone https://github.com/musicbrainz/picard-plugins.git picard-plugins
+          if git clone https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository_owner }}/picard-plugins.git picard-plugins; then
+            echo "Cloned fork successfully"
+          elif git clone https://github.com/musicbrainz/picard-plugins.git picard-plugins; then
+            echo "Cloned upstream repository (fork may not exist yet)"
+          else
+            echo "Error: Failed to clone picard-plugins repository"
+            exit 1
+          fi
           
           cd picard-plugins
           
@@ -90,6 +96,7 @@ jobs:
           RELEASE_TAG: ${{ inputs.release_tag }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
           REPO_OWNER: ${{ github.repository_owner }}
+          PLUGIN_REPO: ${{ github.repository }}
         run: |
           cd picard-plugins
           BRANCH_NAME="shelves-plugin-${RELEASE_TAG}"
@@ -103,8 +110,8 @@ jobs:
           ### Plugin Information
           - **Name**: Shelves
           - **Version**: ${RELEASE_TAG}
-          - **Author**: nrth3rnlb
-          - **Repository**: https://github.com/nrth3rnlb/picard-plugin-shelves
+          - **Author**: ${REPO_OWNER}
+          - **Repository**: https://github.com/${PLUGIN_REPO}
           
           ### Release Notes
           ${RELEASE_NOTES}
@@ -116,10 +123,9 @@ jobs:
           *This PR was automatically created by the Shelves plugin GitHub Action workflow.*
           EOF
           
-          # Create pull request using GitHub CLI
+          # Create pull request using GitHub CLI (without labels to avoid errors if label doesn't exist)
           gh pr create \
             --repo musicbrainz/picard-plugins \
             --head "${REPO_OWNER}:${BRANCH_NAME}" \
             --title "Add/Update Shelves plugin ${RELEASE_TAG}" \
-            --body-file pr_body.md \
-            --label "plugin-update"
+            --body-file pr_body.md
