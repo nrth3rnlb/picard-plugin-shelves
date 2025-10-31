@@ -11,6 +11,8 @@ from typing import Dict, Optional
 
 from picard import log
 
+from shelves.constants import DEFAULT_SHELVES, ShelfConstants 
+
 
 PLUGIN_NAME = "Shelves"
 
