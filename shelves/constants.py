@@ -41,8 +41,6 @@ class ShelfConstants:
 
 # Default configuration values
 DEFAULT_SHELVES = {
-    ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY: (
-        ShelfConstants.DEFAULT_INCOMING_SHELF
-    ),
+    ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY: ShelfConstants.DEFAULT_INCOMING_SHELF,
     ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY: ShelfConstants.DEFAULT_SHELF,
 }

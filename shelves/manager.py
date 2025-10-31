@@ -13,6 +13,8 @@ from shelves.constants import DEFAULT_SHELVES, ShelfConstants
 
 from picard import log
 
+from shelves.constants import DEFAULT_SHELVES, ShelfConstants 
+
 
 PLUGIN_NAME = "Shelves"
 
@@ -63,9 +65,11 @@ class ShelfManager:
         Args:
             album_id: MusicBrainz album ID
         Returns:
-            The shelf name or None if not found
+            The shelf name for the album. If the album is not found, returns the default shelf value.
         """
-        return self._shelves_by_album.get(album_id)
+        if self._shelves_by_album.get(album_id) is not None:
+            return self._shelves_by_album.get(album_id)
+        return DEFAULT_SHELVES[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]
 
     def clear_album(self, album_id: str) -> None:
         """
