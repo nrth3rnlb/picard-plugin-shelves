@@ -1,0 +1,125 @@
+name: Submit Plugin to MusicBrainz Picard Plugins Repository
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag (e.g., v1.2.1)'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes/description'
+        required: false
+        type: string
+
+jobs:
+  create-plugin-pr:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+          path: plugin-source
+      
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Clone MusicBrainz Picard Plugins repository (fork)
+        env:
+          GH_TOKEN: ${{ secrets.PICARD_PLUGINS_PAT }}
+        run: |
+          # Clone the fork if it exists, otherwise clone the upstream repo
+          git clone https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository_owner }}/picard-plugins.git picard-plugins || \
+          git clone https://github.com/musicbrainz/picard-plugins.git picard-plugins
+          
+          cd picard-plugins
+          
+          # Add upstream remote if not exists
+          git remote add upstream https://github.com/musicbrainz/picard-plugins.git || true
+          
+          # Fetch latest from upstream
+          git fetch upstream || git fetch origin
+      
+      - name: Create branch for plugin update
+        run: |
+          cd picard-plugins
+          BRANCH_NAME="shelves-plugin-${{ inputs.release_tag }}"
+          
+          # Try to base on upstream main, fall back to origin main
+          git checkout -b "$BRANCH_NAME" upstream/main || \
+          git checkout -b "$BRANCH_NAME" origin/main || \
+          git checkout -b "$BRANCH_NAME"
+      
+      - name: Copy plugin files to target repository
+        run: |
+          # Create or update the shelves plugin directory
+          mkdir -p picard-plugins/plugins/shelves
+          
+          # Copy the plugin files
+          cp -r plugin-source/shelves/* picard-plugins/plugins/shelves/
+          
+          # Copy metadata files if they exist
+          if [ -f plugin-source/README.md ]; then
+            cp plugin-source/README.md picard-plugins/plugins/shelves/
+          fi
+          
+          if [ -f plugin-source/CHANGELOG.md ]; then
+            cp plugin-source/CHANGELOG.md picard-plugins/plugins/shelves/
+          fi
+      
+      - name: Commit and push changes
+        env:
+          GH_TOKEN: ${{ secrets.PICARD_PLUGINS_PAT }}
+        run: |
+          cd picard-plugins
+          BRANCH_NAME="shelves-plugin-${{ inputs.release_tag }}"
+          
+          git add plugins/shelves
+          git commit -m "Add/Update Shelves plugin ${{ inputs.release_tag }}"
+          
+          # Push to fork
+          git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository_owner }}/picard-plugins.git "$BRANCH_NAME"
+      
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.PICARD_PLUGINS_PAT }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          cd picard-plugins
+          BRANCH_NAME="shelves-plugin-${RELEASE_TAG}"
+          
+          # Create PR body
+          cat > pr_body.md << EOF
+          ## Shelves Plugin ${RELEASE_TAG}
+          
+          This PR adds/updates the Shelves plugin to version ${RELEASE_TAG}.
+          
+          ### Plugin Information
+          - **Name**: Shelves
+          - **Version**: ${RELEASE_TAG}
+          - **Author**: nrth3rnlb
+          - **Repository**: https://github.com/nrth3rnlb/picard-plugin-shelves
+          
+          ### Release Notes
+          ${RELEASE_NOTES}
+          
+          ### Description
+          The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing music files to be organized by top-level folders.
+          
+          ---
+          *This PR was automatically created by the Shelves plugin GitHub Action workflow.*
+          EOF
+          
+          # Create pull request using GitHub CLI
+          gh pr create \
+            --repo musicbrainz/picard-plugins \
+            --head "${REPO_OWNER}:${BRANCH_NAME}" \
+            --title "Add/Update Shelves plugin ${RELEASE_TAG}" \
+            --body-file pr_body.md \
+            --label "plugin-update"

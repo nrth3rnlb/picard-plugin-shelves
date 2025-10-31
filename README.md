@@ -210,6 +210,38 @@ shelves/
 └── ui_shelves_config.py  # Generated UI file
 ```
 
+## For Maintainers
+
+### Submitting to MusicBrainz Picard Plugins Repository
+
+The repository includes a GitHub Action workflow to automate submitting the plugin to the [MusicBrainz Picard Plugins repository](https://github.com/musicbrainz/picard-plugins).
+
+#### Prerequisites
+
+1. **Fork the picard-plugins repository**: Create a fork of `musicbrainz/picard-plugins` in your GitHub account
+2. **Create a Personal Access Token (PAT)**:
+   - Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+   - Generate a new token with `repo` and `workflow` scopes
+   - Add the token as a repository secret named `PICARD_PLUGINS_PAT` in this repository's settings
+
+#### How to Use
+
+1. Navigate to **Actions** → **Submit Plugin to MusicBrainz Picard Plugins Repository** in this repository
+2. Click **Run workflow**
+3. Enter the release tag (e.g., `v1.2.1`)
+4. Optionally add release notes
+5. Click **Run workflow**
+
+The workflow will:
+- Checkout the specified release tag from this repository
+- Clone your fork of the picard-plugins repository
+- Copy the plugin files to the appropriate location
+- Create a new branch with your changes
+- Push the branch to your fork
+- Create a pull request to `musicbrainz/picard-plugins`
+
+The pull request will include plugin information and release notes for review by the MusicBrainz Picard maintainers.
+
 ## Requirements
 
 - MusicBrainz Picard 2.0 or higher 
