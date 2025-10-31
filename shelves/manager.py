@@ -67,8 +67,7 @@ class ShelfManager:
         """
         if self._shelves_by_album.get(album_id) is not None:
             return self._shelves_by_album.get(album_id)
-        else:
-            return DEFAULT_SHELVES[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]
+        return DEFAULT_SHELVES[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]
 
     def clear_album(self, album_id: str) -> None:
         """
