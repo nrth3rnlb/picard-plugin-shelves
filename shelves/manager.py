@@ -55,7 +55,7 @@ class ShelfManager:
 
         self._shelves_by_album[album_id] = winner
 
-    def get_album_shelf(self, album_id: str) -> Optional[str]:
+    def get_album_shelf(self, album_id: str) -> str:
         """
         Retrieve the shelf name for an album.
         Args:
