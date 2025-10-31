@@ -2,11 +2,6 @@ name: Create Pull Request to MusicBrainz Picard Plugins
 
 on:
   workflow_dispatch:
-    inputs:
-      plugin_version:
-        description: 'Plugin version for the pull request'
-        required: false
-        default: 'latest'
   push:
     branches:
       - main
@@ -32,12 +27,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PICARD_PLUGINS_PAT }}
         run: |
-          git clone --branch 2.0 --single-branch https://github.com/metabrainz/picard-plugins.git picard-plugins
+          # Clone using authenticated URL
+          git clone --branch 2.0 --single-branch \
+            "https://x-access-token:${GH_TOKEN}@github.com/metabrainz/picard-plugins.git" \
+            picard-plugins
+          
           cd picard-plugins
-          
-          # Configure remote URL to use authentication for pushing
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/metabrainz/picard-plugins.git"
-          
           echo "Cloned picard-plugins repository at commit:"
           git log -1 --oneline
       
@@ -45,7 +40,7 @@ jobs:
         run: |
           cd picard-plugins
           echo "Fetching latest changes from upstream..."
-          git fetch origin 2.0
+          git fetch origin refs/heads/2.0
           
           echo "Current HEAD:"
           git log -1 --oneline
