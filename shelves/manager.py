@@ -65,7 +65,7 @@ class ShelfManager:
         Returns:
             The shelf name for the album. If the album is not found, returns the default shelf value.
         """
-        if self._shelves_by_album.get(album_id):
+        if self._shelves_by_album.get(album_id) is not None:
             return self._shelves_by_album.get(album_id)
         else:
             return DEFAULT_SHELVES[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]
