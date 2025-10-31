@@ -64,15 +64,18 @@ def file_post_load_processor(file: Any, shelf_manager: Any) -> None:
 
 
 def set_shelf_in_metadata(
-        _album: Any, metadata: Dict[str, Any], _track: Any, _release: Any, shelf_manager: Any
+        _album: Any, metadata: Dict[str, Any], track: Any, _release: Any, shelf_manager: Any
 ) -> None:
     """
     Set a shelf in track metadata from album assignment.
+    
+    This function is called after MusicBrainz data has been applied to the track,
+    ensuring that the musicbrainz_albumid is available for shelf assignment.
 
     Args:
         _album: Album object (unused, required by Picard API)
         metadata: Track metadata dictionary
-        _track: Track object (unused, required by Picard API)
+        track: Track object with linked files
         _release: Release object (unused, required by Picard API)
         shelf_manager: ShelfManager instance
     """
@@ -82,6 +85,16 @@ def set_shelf_in_metadata(
 
     log.debug("%s: set_shelf_in_metadata '%s'", PLUGIN_NAME, album_id)
 
+    # Process linked files to detect and vote for shelves
+    if hasattr(track, 'linked_files'):
+        for file in track.linked_files:
+            if hasattr(file, 'filename'):
+                shelf = get_shelf_from_path(file.filename)
+                add_known_shelf(shelf)
+                shelf_manager.vote_for_shelf(album_id, shelf)
+                log.debug("%s: Detected shelf '%s' from file: %s", PLUGIN_NAME, shelf, file.filename)
+
+    # Get the shelf with the most votes and set it in metadata
     shelf_name = shelf_manager.get_album_shelf(album_id)
     if shelf_name:
         metadata[ShelfConstants.TAG_KEY] = shelf_name

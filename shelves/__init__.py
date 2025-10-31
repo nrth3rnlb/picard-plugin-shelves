@@ -89,7 +89,10 @@ def _set_shelf_in_metadata_wrapper(
 log.debug("%s: Registering plugin components", PLUGIN_NAME)
 
 # Register file processors
-register_file_post_load_processor(_file_post_load_processor_wrapper)
+# Note: file_post_load_processor is no longer used as shelf detection now happens
+# in the metadata processor (register_track_metadata_processor) after MusicBrainz
+# data has been applied to ensure musicbrainz_albumid is available.
+# register_file_post_load_processor(_file_post_load_processor_wrapper)
 register_file_post_save_processor(_file_post_save_processor_wrapper)
 
 # Register context menu actions
@@ -98,7 +101,7 @@ register_album_action(SetShelfAction())
 # Register options page
 register_options_page(ShelvesOptionsPage)
 
-# Register metadata processor
+# Register metadata processor (processes files after MusicBrainz data is applied)
 register_track_metadata_processor(_set_shelf_in_metadata_wrapper)
 
 # Register a script function for use in file naming
