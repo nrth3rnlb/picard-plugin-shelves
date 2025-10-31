@@ -23,21 +23,20 @@ jobs:
           ref: ${{ inputs.release_tag }}
           path: plugin-source
       
-      - name: Set up Git
+      - name: Set up Git and GitHub CLI
         env:
           GH_TOKEN: ${{ secrets.PICARD_PLUGINS_PAT }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Set up credential helper to securely use PAT
-          git config --global credential.helper store
-          echo "https://x-access-token:${GH_TOKEN}@github.com" > ~/.git-credentials
+          # Authenticate GitHub CLI (more secure than storing credentials in a file)
+          echo "${GH_TOKEN}" | gh auth login --with-token
       
       - name: Clone MusicBrainz Picard Plugins repository (fork)
         run: |
-          # Try to clone the fork first
-          if git clone https://github.com/${{ github.repository_owner }}/picard-plugins.git picard-plugins 2>/dev/null; then
+          # Clone the fork using gh cli (handles authentication securely)
+          if gh repo clone ${{ github.repository_owner }}/picard-plugins picard-plugins 2>&1; then
             echo "Cloned fork successfully"
           else
             echo "Fork not found. Please fork https://github.com/musicbrainz/picard-plugins first."
@@ -58,10 +57,12 @@ jobs:
           cd picard-plugins
           BRANCH_NAME="shelves-plugin-${{ inputs.release_tag }}"
           
-          # Try to base on upstream main, fall back to origin main
-          git checkout -b "$BRANCH_NAME" upstream/main || \
-          git checkout -b "$BRANCH_NAME" origin/main || \
-          git checkout -b "$BRANCH_NAME"
+          # Base on upstream main (fail if not available)
+          if ! git checkout -b "$BRANCH_NAME" upstream/main; then
+            echo "Error: Failed to create branch from upstream/main"
+            echo "Please ensure your fork is up to date with upstream"
+            exit 1
+          fi
       
       - name: Copy plugin files to target repository
         run: |
