@@ -14,15 +14,13 @@ from picard import log
 from .constants import ShelfConstants
 from .utils import add_known_shelf, get_shelf_from_path
 
-
-
 PLUGIN_NAME = "Shelves"
 
 
 def file_post_save_processor(file: Any, shelf_manager: Any) -> None:
     """
     Process a file after Picard has saved it.
-    
+
     Args:a
         file: Picard file object
         shelf_manager: ShelfManager instance
@@ -68,7 +66,7 @@ def set_shelf_in_metadata(
 ) -> None:
     """
     Set a shelf in track metadata from album assignment.
-    
+
     This function is called after MusicBrainz data has been applied to the track,
     ensuring that the musicbrainz_albumid is available for shelf assignment.
 

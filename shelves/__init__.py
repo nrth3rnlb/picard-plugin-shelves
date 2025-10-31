@@ -8,14 +8,12 @@ allowing music files to be organised by top-level folders.
 """
 from __future__ import annotations
 
-
-
 __version__ = "1.2.1"
 
 from typing import Any, Dict
 
 from picard import log
-from picard.file import register_file_post_load_processor, register_file_post_save_processor
+from picard.file import register_file_post_save_processor
 from picard.metadata import register_track_metadata_processor
 from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
@@ -25,7 +23,6 @@ from .actions import SetShelfAction as _SetShelfActionBase
 from .manager import ShelfManager
 from .options import ShelvesOptionsPage as _ShelvesOptionsPageBase
 from .processors import (
-    file_post_load_processor,
     file_post_save_processor,
     set_shelf_in_metadata,
 )
@@ -68,11 +65,6 @@ def func_shelf(parser: Any) -> str:
 
 
 # Wrapper functions that pass shelf_manager to processors
-def _file_post_load_processor_wrapper(file: Any) -> None:
-    """Wrapper for file_post_load_processor."""
-    file_post_load_processor(file, shelf_manager)
-
-
 def _file_post_save_processor_wrapper(file: Any) -> None:
     """Wrapper for file_post_save_processor."""
     file_post_save_processor(file, shelf_manager)
