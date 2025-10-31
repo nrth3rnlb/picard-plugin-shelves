@@ -88,9 +88,10 @@ def set_shelf_in_metadata(
         for file in track.linked_files:
             if hasattr(file, 'filename'):
                 shelf = get_shelf_from_path(file.filename)
-                add_known_shelf(shelf)
-                shelf_manager.vote_for_shelf(album_id, shelf)
-                log.debug("%s: Detected shelf '%s' from file: %s", PLUGIN_NAME, shelf, file.filename)
+                if shelf and shelf.strip():  # Only process valid shelf names
+                    add_known_shelf(shelf)
+                    shelf_manager.vote_for_shelf(album_id, shelf)
+                    log.debug("%s: Detected shelf '%s' from file: %s", PLUGIN_NAME, shelf, file.filename)
 
     # Get the shelf with the most votes and set it in metadata
     shelf_name = shelf_manager.get_album_shelf(album_id)
