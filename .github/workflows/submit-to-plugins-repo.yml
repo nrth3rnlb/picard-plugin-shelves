@@ -24,31 +24,34 @@ jobs:
           path: plugin-source
       
       - name: Set up Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      
-      - name: Clone MusicBrainz Picard Plugins repository (fork)
         env:
           GH_TOKEN: ${{ secrets.PICARD_PLUGINS_PAT }}
         run: |
-          # Clone the fork if it exists, otherwise clone the upstream repo
-          if git clone https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository_owner }}/picard-plugins.git picard-plugins; then
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Set up credential helper to securely use PAT
+          git config --global credential.helper store
+          echo "https://x-access-token:${GH_TOKEN}@github.com" > ~/.git-credentials
+      
+      - name: Clone MusicBrainz Picard Plugins repository (fork)
+        run: |
+          # Try to clone the fork first
+          if git clone https://github.com/${{ github.repository_owner }}/picard-plugins.git picard-plugins 2>/dev/null; then
             echo "Cloned fork successfully"
-          elif git clone https://github.com/musicbrainz/picard-plugins.git picard-plugins; then
-            echo "Cloned upstream repository (fork may not exist yet)"
           else
-            echo "Error: Failed to clone picard-plugins repository"
+            echo "Fork not found. Please fork https://github.com/musicbrainz/picard-plugins first."
+            echo "You can create a fork at: https://github.com/musicbrainz/picard-plugins/fork"
             exit 1
           fi
           
           cd picard-plugins
           
-          # Add upstream remote if not exists
-          git remote add upstream https://github.com/musicbrainz/picard-plugins.git || true
+          # Add upstream remote
+          git remote add upstream https://github.com/musicbrainz/picard-plugins.git
           
           # Fetch latest from upstream
-          git fetch upstream || git fetch origin
+          git fetch upstream
       
       - name: Create branch for plugin update
         run: |
@@ -78,8 +81,6 @@ jobs:
           fi
       
       - name: Commit and push changes
-        env:
-          GH_TOKEN: ${{ secrets.PICARD_PLUGINS_PAT }}
         run: |
           cd picard-plugins
           BRANCH_NAME="shelves-plugin-${{ inputs.release_tag }}"
@@ -87,8 +88,8 @@ jobs:
           git add plugins/shelves
           git commit -m "Add/Update Shelves plugin ${{ inputs.release_tag }}"
           
-          # Push to fork
-          git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository_owner }}/picard-plugins.git "$BRANCH_NAME"
+          # Push to fork (credentials are stored securely via credential helper)
+          git push origin "$BRANCH_NAME"
       
       - name: Create Pull Request
         env:
