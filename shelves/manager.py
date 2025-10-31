@@ -9,6 +9,8 @@ from __future__ import annotations
 from collections import Counter
 from typing import Dict, Optional
 
+from shelves.constants import DEFAULT_SHELVES, ShelfConstants
+
 from picard import log
 
 
