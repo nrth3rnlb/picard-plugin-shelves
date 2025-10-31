@@ -219,12 +219,4 @@ shelves/
 
 ## License
 
-GPL-2.0
-
-## Author
-
-nrth3rnlb
-
-## Version
-
-1.0.0
+GPL-2.0-or-later

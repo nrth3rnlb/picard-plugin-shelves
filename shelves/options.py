@@ -65,9 +65,9 @@ class ShelvesOptionsPage(OptionsPage):
         self.ui.setupUi(self)
 
         # Connect signals
-        self.ui.add_shelf_button.clicked.connect(self.add_shelf)
-        self.ui.remove_shelf_button.clicked.connect(self.remove_shelf)
-        self.ui.scan_shelves_button.clicked.connect(self.scan_music_directory)
+        self.ui.b_add_shelf.clicked.connect(self.add_shelf)
+        self.ui.b_remove_shelf.clicked.connect(self.remove_shelf)
+        self.ui.b_scan_4_shelves.clicked.connect(self.scan_music_directory)
         self.ui.shelf_list.itemSelectionChanged.connect(
             self.on_shelf_list_selection_changed
         )
@@ -111,7 +111,7 @@ class ShelvesOptionsPage(OptionsPage):
 
         # Update preview with current values
         snippet = self.rebuild_rename_snippet()
-        self.ui.script_preview.setPlainText(snippet)
+        self.ui.naming_script_code.setPlainText(snippet)
 
     def save(self) -> None:
         """Save shelves list to config."""
@@ -255,15 +255,17 @@ class ShelvesOptionsPage(OptionsPage):
             The complete rename snippet
         """
 
+        # noinspection SpellCheckingInspection
         return """$set(_shelffolder,$shelf())
 $set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
 
 %_shelffolder%
 $if2(%albumartist%,%artist%)/%album%/%title%"""
 
+
     def on_shelf_list_selection_changed(self) -> None:
         """ Enable / disable the remove button based on selection. """
-        self.ui.remove_shelf_button.setEnabled(
+        self.ui.b_remove_shelf.setEnabled(
             self.ui.shelf_list.currentItem() is not None
         )
 
@@ -275,7 +277,7 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
 
         # Update preview when workflow is toggled
         snippet = self.rebuild_rename_snippet()
-        self.ui.script_preview.setPlainText(snippet)
+        self.ui.naming_script_code.setPlainText(snippet)
 
     def on_workflow_stage_changed(self) -> None:
         """Handle workflow stage change."""
@@ -286,7 +288,7 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
             self.ui.workflow_stage_2.currentText(),
         )
         snippet = self.rebuild_rename_snippet()
-        self.ui.script_preview.setPlainText(snippet)
+        self.ui.naming_script_code.setPlainText(snippet)
 
     def _get_existing_shelves(self) -> Set[str]:
         """

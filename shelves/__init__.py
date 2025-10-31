@@ -34,14 +34,16 @@ from .script_functions import func_shelf as _func_shelf_base
 # Plugin metadata
 PLUGIN_NAME = "Shelves"
 PLUGIN_AUTHOR = "nrth3rnlb"
-PLUGIN_DESCRIPTION = (
-    "This plugin adds virtual shelf management to MusicBrainz Picard, "
-    "allowing music files to be organized by top-level folders."
-)
+PLUGIN_DESCRIPTION = """
+The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing music files to be organized by top-level folders.
+The plugin will attempt to automatically determine the shelf of an album as soon as Picard retrieves the album information from MusicBrainz.
+You can change the shelf at any time using the context menu for an album.
+"""
 PLUGIN_VERSION = __version__
-PLUGIN_API_VERSIONS = ["2.0", "2.1", "2.2", "2.3"]
-PLUGIN_LICENSE = "GPL-2.0"
+PLUGIN_API_VERSIONS = ["2.7", "2.8"]
+PLUGIN_LICENSE = "GPL-2.0-or-later"
 PLUGIN_LICENSE_URL = "https://www.gnu.org/licenses/gpl-2.0.html"
+PLUGIN_USER_GUIDE_URL = "https://github.com/nrth3rnlb/picard-plugin-shelves"
 
 
 # Global shelf manager instance
