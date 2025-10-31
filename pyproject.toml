@@ -1,7 +1,14 @@
 [project]
 name = "picard-plugin-shelves"
 version = "1.2.1"
-description = "Shelves Plugin for MusicBrainz Picard"
+readme = "README.md"
+readme-content-type = "text/markdown"
+readme-encoding = "utf-8"
+description = "A MusicBrainz Picard plugin to organize your music into shelves."
+keywords = ["musicbrainz", "picard", "plugin", "shelves", "music", "organization"]
+homepage = "https://github.com/nrth3rnlb/picard-plugin-shelves/"
+repository = "https://github.com/nrth3rnlb/picard-plugin-shelves/"
+license = {file = "LICENSE"}
 authors = [
     {name = "nrth3rnlb"}
 ]
@@ -29,13 +36,6 @@ dev = [
 [tool.setuptools.packages.find]
 include = ["shelves*"]
 exclude = ["tests*"]
-
-[tool.pytest.ini_options]
-testpaths = ["shelves/tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-addopts = "-v --tb=short"
 
 [tool.coverage.run]
 source = ["shelves"]

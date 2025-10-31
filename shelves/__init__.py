@@ -35,9 +35,19 @@ from .script_functions import func_shelf as _func_shelf_base
 PLUGIN_NAME = "Shelves"
 PLUGIN_AUTHOR = "nrth3rnlb"
 PLUGIN_DESCRIPTION = """
-The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing music files to be organized by top-level folders.
-The plugin will attempt to automatically determine the shelf of an album as soon as Picard retrieves the album information from MusicBrainz.
-You can change the shelf at any time using the context menu for an album.
+The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing you to organise your music files by top-level folders (shelves) in your music library.
+
+Think of your music library as a physical library with different shelves — one for your standard collection, one for incoming/unprocessed music, one for Christmas music, etc.
+
+## Features
+
+- **Automatic shelf detection** from file paths during scanning
+- **Smart detection** prevents artist/album names from being mistaken as shelves
+- **Manual shelf assignment** via context menu
+- **Shelf management** in plugin settings (add, remove, scan directory)
+- **Workflow automation** automatically moves files between shelves (e.g. "Incoming" > "Standard")
+- **Script function `$shelf()`** for file naming integration
+- **Visual script preview** in settings shows your file naming snippet
 """
 PLUGIN_VERSION = __version__
 PLUGIN_API_VERSIONS = ["2.7", "2.8"]
