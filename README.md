@@ -217,6 +217,35 @@ shelves/
 - `discid/discid.h` for the installation of the development environment using `pip install -e '.[dev]`
   - Search for a package with a name like `libdiscid-dev`, `libdiscid-devel` or similar, depending on your Linux distribution.
 
+## Automated Release to MusicBrainz Picard Plugins
+
+This repository includes a GitHub Actions workflow that automatically creates pull requests to the [MusicBrainz Picard Plugins repository](https://github.com/metabrainz/picard-plugins).
+
+### How It Works
+
+The workflow (`.github/workflows/create-pr-to-picard-plugins.yml`) performs the following steps:
+
+1. **Clones the target repository** — Checks out the `2.0` branch of `metabrainz/picard-plugins`
+2. **Synchronizes with upstream** — Fetches the latest changes and ensures the local clone is up-to-date
+3. **Copies the plugin** — Copies the `shelves` directory to the `plugins/` folder
+4. **Creates a pull request** — Automatically opens a PR with the updated plugin code
+
+### Triggering the Workflow
+
+The workflow can be triggered in two ways:
+
+1. **Manually**: Navigate to Actions → "Create Pull Request to MusicBrainz Picard Plugins" → "Run workflow"
+2. **Automatically**: Any push to the `main` branch that modifies files in the `shelves/` directory
+
+### Prerequisites
+
+To use this workflow, you need to set up a Personal Access Token (PAT) with appropriate permissions:
+
+1. Create a [GitHub Personal Access Token](https://github.com/settings/tokens) with `repo` scope
+2. Add it as a repository secret named `PICARD_PLUGINS_PAT`
+
+The workflow ensures that the target repository is always synchronized with the latest upstream changes before applying updates, preventing conflicts and ensuring a smooth integration process.
+
 ## License
 
 GPL-2.0-or-later
