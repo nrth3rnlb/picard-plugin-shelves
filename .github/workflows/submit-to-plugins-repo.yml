@@ -110,8 +110,8 @@ jobs:
           cd picard-plugins
           BRANCH_NAME="shelves-plugin-${RELEASE_TAG}"
           
-          # Create PR body using a unique delimiter to handle special characters in release notes
-          cat > pr_body.md << 'END_OF_PR_BODY'
+          # Create PR body with proper variable expansion
+          cat > pr_body.md << EOF
           ## Shelves Plugin ${RELEASE_TAG}
           
           This PR adds/updates the Shelves plugin to version ${RELEASE_TAG}.
@@ -123,20 +123,14 @@ jobs:
           - **Repository**: https://github.com/${PLUGIN_REPO}
           
           ### Release Notes
-          ${RELEASE_NOTES}
+          ${RELEASE_NOTES:-No release notes provided.}
           
           ### Description
           The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing music files to be organized by top-level folders.
           
           ---
           *This PR was automatically created by the Shelves plugin GitHub Action workflow.*
-          END_OF_PR_BODY
-          
-          # Replace variables in the PR body
-          sed -i "s/\${RELEASE_TAG}/${RELEASE_TAG}/g" pr_body.md
-          sed -i "s/\${REPO_OWNER}/${REPO_OWNER}/g" pr_body.md
-          sed -i "s|\${PLUGIN_REPO}|${PLUGIN_REPO}|g" pr_body.md
-          sed -i "s/\${RELEASE_NOTES}/${RELEASE_NOTES}/g" pr_body.md
+          EOF
           
           # Create pull request using GitHub CLI (without labels to avoid errors if label doesn't exist)
           gh pr create \
