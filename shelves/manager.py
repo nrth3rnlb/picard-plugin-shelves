@@ -63,7 +63,7 @@ class ShelfManager:
         Args:
             album_id: MusicBrainz album ID
         Returns:
-            The shelf name or None if not found
+            The shelf name for the album. If the album is not found, returns the default shelf value.
         """
         if self._shelves_by_album.get(album_id):
             return self._shelves_by_album.get(album_id)
