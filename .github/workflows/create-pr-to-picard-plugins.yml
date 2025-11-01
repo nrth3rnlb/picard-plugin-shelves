@@ -24,6 +24,13 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Validate PICARD_PLUGINS_PAT
+        run: |
+          if [ -z "${{ secrets.PICARD_PLUGINS_PAT }}" ]; then
+            echo "Error: PICARD_PLUGINS_PAT secret is not set. Please add it in repository settings."
+            exit 1
+          fi
       
       - name: Clone MusicBrainz Picard Plugins repository
         env:
@@ -31,7 +38,7 @@ jobs:
         run: |
           # Clone using authenticated URL
           git clone --branch 2.0 --single-branch \
-            "https://x-access-token:${GH_TOKEN}@github.com/nrth3rnlb/picard-plugins.git" \
+            "https://x-access-token:${GH_TOKEN}@github.com/musicbrainz/picard-plugins.git" \
             picard-plugins
           
           cd picard-plugins
