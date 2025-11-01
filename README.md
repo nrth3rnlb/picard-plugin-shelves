@@ -226,7 +226,7 @@ This repository includes a GitHub Actions workflow that automatically creates pu
 The workflow (`.github/workflows/create-pr-to-picard-plugins.yml`) performs the following steps:
 
 1. **Clones the target repository** — Checks out the `2.0` branch of `metabrainz/picard-plugins`
-2. **Synchronizes with upstream** — Fetches the latest changes and ensures the local clone is up-to-date
+2. **Synchronises with upstream** — Fetches the latest changes and ensures the local clone is up to date
 3. **Copies the plugin** — Copies the `shelves` directory to the `plugins/` folder
 4. **Creates a pull request** — Automatically opens a PR with the updated plugin code
 
@@ -241,10 +241,14 @@ The workflow can be triggered in two ways:
 
 To use this workflow, you need to set up a Personal Access Token (PAT) with appropriate permissions:
 
-1. Create a [GitHub Personal Access Token](https://github.com/settings/tokens) with `repo` scope
+1. Create a [GitHub Personal Access Token](https://github.com/settings/tokens) with the scopes `repo` and `read:org`:
+   - [x] **repo** Full control of private repositories
+   - [ ] **admin.org**
+     - [x] **read:org**
 2. Add it as a repository secret named `PICARD_PLUGINS_PAT`
+   - Repository → Settings → Secrets and variables → Actions → New repository secret
 
-The workflow ensures that the target repository is always synchronized with the latest upstream changes before applying updates, preventing conflicts and ensuring a smooth integration process.
+The workflow ensures that the target repository is always synchronised with the latest upstream changes before applying updates, preventing conflicts and ensuring a smooth integration process.
 
 ## License
 
