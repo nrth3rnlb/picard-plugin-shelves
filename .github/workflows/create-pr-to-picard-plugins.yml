@@ -141,8 +141,6 @@ jobs:
           EOF
           )
           
-          echo "${GH_TOKEN}" | gh auth login --with-token
-          
           # Create PR using GH_TOKEN directly (no gh auth login)
           gh pr create \
             --repo metabrainz/picard-plugins \
