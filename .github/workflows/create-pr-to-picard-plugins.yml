@@ -114,8 +114,11 @@ jobs:
           cd picard-plugins
           
           # Push the branch
-          echo "Pushing branch to origin..."
-          git push origin "$BRANCH_NAME"
+          # replace the log line with something like:
+          echo "Pushing branch to remote repository (nrth3rnlb/picard-plugins)..."
+
+          git push \
+            "https://x-access-token:${GH_TOKEN}@github.com/nrth3rnlb/picard-plugins.git" "$BRANCH_NAME"
           
           # Create pull request using GitHub CLI
           echo "Creating pull request..."
