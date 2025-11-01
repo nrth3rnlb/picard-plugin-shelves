@@ -13,7 +13,7 @@ from picard import log
 from picard.ui.itemviews import BaseAction
 
 from .constants import ShelfConstants
-from .utils import add_known_shelf, get_known_shelves
+from .utils import add_known_shelf, get_known_shelves, get_shelf_from_path
 from .validators import validate_shelf_name
 
 
@@ -119,3 +119,127 @@ class SetShelfAction(BaseAction):
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
                 file.metadata[ShelfConstants.TAG_KEY] = shelf_name
+
+
+class DetermineShelfAction(BaseAction):
+    """
+    Context menu action: Determine shelf from storage location.
+    """
+
+    NAME = "Determine shelf"
+
+    # Type hint for the tagger attribute from BaseAction
+    tagger: Any
+
+    def __init__(self, shelf_manager: Any = None) -> None:
+        """
+        Initialize the action.
+
+        Args:
+            shelf_manager: ShelfManager instance
+        """
+        super().__init__()
+        self.shelf_manager = shelf_manager
+
+    def callback(self, objs: List[Any]) -> None:
+        """
+        Handle the action callback.
+
+        Args:
+            objs: Selected objects in Picard
+        """
+        log.debug(
+            "%s: DetermineShelfAction called with %d objects", PLUGIN_NAME, len(objs)
+        )
+
+        # Track albums that need reinitialization
+        albums_to_reinitialize = set()
+
+        # Process each object
+        for obj in objs:
+            self._determine_shelf_recursive(obj, albums_to_reinitialize)
+
+        # Reinitialize album data in shelf manager
+        if self.shelf_manager:
+            for album_id in albums_to_reinitialize:
+                self.shelf_manager.clear_album(album_id)
+
+        # Re-vote for shelves based on file paths
+        for obj in objs:
+            self._revote_shelf_recursive(obj)
+
+        log.info(
+            "%s: Determined shelf for %d object(s), reinitialized %d album(s)",
+            PLUGIN_NAME,
+            len(objs),
+            len(albums_to_reinitialize),
+        )
+
+    @staticmethod
+    def _determine_shelf_recursive(
+            obj: Any, albums_to_reinitialize: set
+    ) -> None:
+        """
+        Determine the shelf name from file paths recursively.
+
+        Args:
+            obj: Picard object (album, track, etc.)
+            albums_to_reinitialize: Set to track albums that need reinitialization
+        """
+        unique_shelves = set()
+        first_shelf = None
+
+        if hasattr(obj, "iterfiles"):
+            for file in obj.iterfiles():
+                # Determine shelf from file path
+                shelf_name = get_shelf_from_path(file.filename)
+
+                # Update metadata
+                file.metadata[ShelfConstants.TAG_KEY] = shelf_name
+                unique_shelves.add(shelf_name)
+
+                # Store first shelf for object metadata
+                if first_shelf is None:
+                    first_shelf = shelf_name
+
+                # Track album for reinitialization
+                album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+                if album_id:
+                    albums_to_reinitialize.add(album_id)
+
+                log.debug(
+                    "%s: Determined shelf '%s' for file: %s",
+                    PLUGIN_NAME,
+                    shelf_name,
+                    file.filename,
+                )
+
+        # Add all unique shelves to known shelves
+        for shelf_name in unique_shelves:
+            add_known_shelf(shelf_name)
+
+        # Update object metadata if present
+        # Note: Using first file's shelf; ShelfManager voting will resolve conflicts
+        if hasattr(obj, "metadata") and first_shelf:
+            obj.metadata[ShelfConstants.TAG_KEY] = first_shelf
+
+    def _revote_shelf_recursive(self, obj: Any) -> None:
+        """
+        Re-vote for shelf assignments in the shelf manager.
+
+        Args:
+            obj: Picard object (album, track, etc.)
+        """
+        if self.shelf_manager and hasattr(obj, "iterfiles"):
+            for file in obj.iterfiles():
+                shelf_name = file.metadata.get(ShelfConstants.TAG_KEY)
+                album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+
+                if shelf_name and album_id:
+                    self.shelf_manager.vote_for_shelf(album_id, shelf_name)
+                    log.debug(
+                        "%s: Re-voted shelf '%s' for album %s",
+                        PLUGIN_NAME,
+                        shelf_name,
+                        album_id,
+                    )

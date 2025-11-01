@@ -1,20 +1,20 @@
 # Shelves Plugin for MusicBrainz Picard
 
-## Description
-
-The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing you to organise your music files by top-level folders (shelves) in your music library.
+The **Shelves** plugin adds virtual shelf management to [MusicBrainz Picard](https://picard.musicbrainz.org/), allowing you to organise your music files by top-level folders (shelves) in your music library.
 
 Think of your music library as a physical library with different shelves — one for your standard collection, one for incoming/unprocessed music, one for Christmas music, etc.
 
 ## Features
 
-- ✅ **Automatic shelf detection** from file paths during scanning
-- ✅ **Smart detection** prevents artist/album names from being mistaken as shelves
-- ✅ **Manual shelf assignment** via context menu
-- ✅ **Shelf management** in plugin settings (add, remove, scan directory)
-- ✅ **Workflow automation** automatically moves files between shelves (e.g. "Incoming" > "Standard")
-- ✅ **Script function `$shelf()`** for file naming integration
-- ✅ **Visual script preview** in settings shows your file naming snippet
+- **Automatic shelf detection** from file paths during scanning
+- **Smart detection** prevents artist/album names from being mistaken as shelves
+- **Manual shelf assignment** via the context menu
+- **Shelf management** in plugin settings (add, remove, scan directory)
+- **Workflow automation** automatically moves files between shelves (e.g. "Incoming" > "Standard")
+- **Script function `$shelf()`** for file naming integration
+- **Visual script preview** in settings shows your file naming snippet
+
+---
 
 ## Installation
 
@@ -124,7 +124,7 @@ The `$shelf()` function:
 ### Example 1: Incoming → Standard Workflow
 
 Configure in plugin settings:
-- ✅ Enable Workflow
+- Enable Workflow
 - Stage 1: "Incoming"
 - Stage 2: "Standard"
 
@@ -188,9 +188,9 @@ You can also check Picard's log (Help → View Error/Debug Log) for detailed inf
 ### The workflow isn't working
 
 Make sure:
-- ✅ Workflow is **enabled** in plugin settings
-- ✅ Your file naming script uses `$shelf()` (not `%shelf%` directly)
-- ✅ Stage 1 and Stage 2 are set to different shelves
+- Workflow is **enabled** in plugin settings
+- Your file naming script uses `$shelf()` (not `%shelf%` directly)
+- Stage 1 and Stage 2 are set to different shelves
 
 ## Development
 
