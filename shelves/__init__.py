@@ -10,7 +10,7 @@ from __future__ import annotations
 
 
 
-__version__ = "1.2.1"
+__version__ = "1.3.0"
 
 from typing import Any, Dict
 
@@ -21,7 +21,7 @@ from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
-from .actions import SetShelfAction as _SetShelfActionBase
+from .actions import SetShelfAction as _SetShelfActionBase, DetermineShelfAction as _DetermineShelfActionBase
 from .manager import ShelfManager
 from .options import ShelvesOptionsPage as _ShelvesOptionsPageBase
 from .processors import (
@@ -35,9 +35,19 @@ from .script_functions import func_shelf as _func_shelf_base
 PLUGIN_NAME = "Shelves"
 PLUGIN_AUTHOR = "nrth3rnlb"
 PLUGIN_DESCRIPTION = """
-The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing music files to be organized by top-level folders.
-The plugin will attempt to automatically determine the shelf of an album as soon as Picard retrieves the album information from MusicBrainz.
-You can change the shelf at any time using the context menu for an album.
+The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing you to organise your music files by top-level folders (shelves) in your music library.
+
+Think of your music library as a physical library with different shelves — one for your standard collection, one for incoming/unprocessed music, one for Christmas music, etc.
+
+## Features
+
+- **Automatic shelf detection** from file paths during scanning
+- **Smart detection** prevents artist/album names from being mistaken as shelves
+- **Manual shelf assignment** via context menu
+- **Shelf management** in plugin settings (add, remove, scan directory)
+- **Workflow automation** automatically moves files between shelves (e.g. "Incoming" > "Standard")
+- **Script function `$shelf()`** for file naming integration
+- **Visual script preview** in settings shows your file naming snippet
 """
 PLUGIN_VERSION = __version__
 PLUGIN_API_VERSIONS = ["2.7", "2.8"]
@@ -59,6 +69,14 @@ class ShelvesOptionsPage(_ShelvesOptionsPageBase):
 class SetShelfAction(_SetShelfActionBase):
     """Wrapper class for SetShelfAction to ensure proper plugin registration."""
     pass
+
+
+class DetermineShelfAction(_DetermineShelfActionBase):
+    """Wrapper class for DetermineShelfAction to ensure proper plugin registration."""
+
+    def __init__(self) -> None:
+        """Initialize with the global shelf_manager instance."""
+        super().__init__(shelf_manager=shelf_manager)
 
 
 # Wrapper for script function
@@ -94,6 +112,7 @@ register_file_post_save_processor(_file_post_save_processor_wrapper)
 
 # Register context menu actions
 register_album_action(SetShelfAction())
+register_album_action(DetermineShelfAction())
 
 # Register options page
 register_options_page(ShelvesOptionsPage)
