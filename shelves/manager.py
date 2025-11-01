@@ -7,13 +7,11 @@ Shelf manager for tracking album shelf assignments.
 from __future__ import annotations
 
 from collections import Counter
-from typing import Dict, Optional
+from typing import Dict
 
-from shelves.constants import DEFAULT_SHELVES, ShelfConstants
+from .constants import DEFAULT_SHELVES, ShelfConstants
 
 from picard import log
-
-from shelves.constants import DEFAULT_SHELVES, ShelfConstants 
 
 
 PLUGIN_NAME = "Shelves"
@@ -65,7 +63,7 @@ class ShelfManager:
         Args:
             album_id: MusicBrainz album ID
         Returns:
-            The shelf name for the album. If the album is not found, returns the default shelf value.
+            The shelf name for the album. If the album is not found, it returns the default shelf value.
         """
         if self._shelves_by_album.get(album_id) is not None:
             return self._shelves_by_album.get(album_id)
