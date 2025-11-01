@@ -86,7 +86,13 @@ jobs:
       - name: Create feature branch
         run: |
           cd picard-plugins
-          BRANCH_NAME="update-shelves-plugin-$(date +%Y%m%d-%H%M%S)"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG_NAME="${{ github.event.release.tag_name }}"
+            BRANCH_NAME="update-shelves-plugin-${TAG_NAME//[^a-zA-Z0-9._-]/_}"
+          else
+            BRANCH_NAME="update-shelves-plugin-$(date +%Y%m%d-%H%M%S)"
+          fi
+          
           git checkout -b "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
           echo "Created branch: $BRANCH_NAME"
