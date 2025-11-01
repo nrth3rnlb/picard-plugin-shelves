@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.3.0 (2025-11-01)
+
+### Documentation
+
+- Update README to include link to MusicBrainz Picard and improve clarity
+  ([`b0489a7`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/b0489a7561a02f0e129c4ba392621376c3d0d83c))
+
+### Features
+
+- Add DetermineShelfAction to determine shelf from storage location
+  ([`2e14dd5`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/2e14dd56a5a9cc6af42ccc0af6ef136da10b6a9e))
+
+
 ## Unreleased
 
 ### Bug Fixes
