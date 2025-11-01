@@ -1,6 +1,6 @@
 # Shelves Plugin for MusicBrainz Picard
 
-The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing you to organise your music files by top-level folders (shelves) in your music library.
+The **Shelves** plugin adds virtual shelf management to [MusicBrainz Picard](https://picard.musicbrainz.org/), allowing you to organise your music files by top-level folders (shelves) in your music library.
 
 Think of your music library as a physical library with different shelves — one for your standard collection, one for incoming/unprocessed music, one for Christmas music, etc.
 
@@ -8,7 +8,7 @@ Think of your music library as a physical library with different shelves — one
 
 - **Automatic shelf detection** from file paths during scanning
 - **Smart detection** prevents artist/album names from being mistaken as shelves
-- **Manual shelf assignment** via context menu
+- **Manual shelf assignment** via the context menu
 - **Shelf management** in plugin settings (add, remove, scan directory)
 - **Workflow automation** automatically moves files between shelves (e.g. "Incoming" > "Standard")
 - **Script function `$shelf()`** for file naming integration
