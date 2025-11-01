@@ -21,7 +21,7 @@ from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
-from .actions import SetShelfAction as _SetShelfActionBase
+from .actions import SetShelfAction as _SetShelfActionBase, DetermineShelfAction as _DetermineShelfActionBase
 from .manager import ShelfManager
 from .options import ShelvesOptionsPage as _ShelvesOptionsPageBase
 from .processors import (
@@ -71,6 +71,14 @@ class SetShelfAction(_SetShelfActionBase):
     pass
 
 
+class DetermineShelfAction(_DetermineShelfActionBase):
+    """Wrapper class for DetermineShelfAction to ensure proper plugin registration."""
+
+    def __init__(self) -> None:
+        """Initialize with the global shelf_manager instance."""
+        super().__init__(shelf_manager=shelf_manager)
+
+
 # Wrapper for script function
 def func_shelf(parser: Any) -> str:
     """Wrapper for func_shelf to ensure proper plugin registration."""
@@ -104,6 +112,7 @@ register_file_post_save_processor(_file_post_save_processor_wrapper)
 
 # Register context menu actions
 register_album_action(SetShelfAction())
+register_album_action(DetermineShelfAction())
 
 # Register options page
 register_options_page(ShelvesOptionsPage)
