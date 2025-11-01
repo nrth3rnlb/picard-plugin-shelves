@@ -31,7 +31,7 @@ jobs:
         run: |
           # Clone using authenticated URL
           git clone --branch 2.0 --single-branch \
-            "https://x-access-token:${GH_TOKEN}@github.com/metabrainz/picard-plugins.git" \
+            "https://x-access-token:${GH_TOKEN}@github.com/nrth3rnlb/picard-plugins.git" \
             picard-plugins
           
           cd picard-plugins
@@ -134,7 +134,7 @@ jobs:
           EOF
           )
           
-          gh pr create \
+          echo gh pr create \
             --repo metabrainz/picard-plugins \
             --base 2.0 \
             --head "$BRANCH_NAME" \
