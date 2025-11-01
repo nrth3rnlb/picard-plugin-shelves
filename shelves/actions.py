@@ -185,6 +185,9 @@ class DetermineShelfAction(BaseAction):
             obj: Picard object (album, track, etc.)
             albums_to_reinitialize: Set to track albums that need reinitialization
         """
+        unique_shelves = set()
+        first_shelf = None
+
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
                 # Determine shelf from file path
@@ -192,7 +195,11 @@ class DetermineShelfAction(BaseAction):
 
                 # Update metadata
                 file.metadata[ShelfConstants.TAG_KEY] = shelf_name
-                add_known_shelf(shelf_name)
+                unique_shelves.add(shelf_name)
+
+                # Store first shelf for object metadata
+                if first_shelf is None:
+                    first_shelf = shelf_name
 
                 # Track album for reinitialization
                 album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
@@ -206,13 +213,14 @@ class DetermineShelfAction(BaseAction):
                     file.filename,
                 )
 
-        # Also update object metadata if present
-        if hasattr(obj, "metadata") and hasattr(obj, "iterfiles"):
-            # Get the first file to determine shelf (albums should have consistent shelf)
-            for file in obj.iterfiles():
-                shelf_name = get_shelf_from_path(file.filename)
-                obj.metadata[ShelfConstants.TAG_KEY] = shelf_name
-                break
+        # Add all unique shelves to known shelves
+        for shelf_name in unique_shelves:
+            add_known_shelf(shelf_name)
+
+        # Update object metadata if present
+        # Note: Using first file's shelf; ShelfManager voting will resolve conflicts
+        if hasattr(obj, "metadata") and first_shelf:
+            obj.metadata[ShelfConstants.TAG_KEY] = first_shelf
 
     def _revote_shelf_recursive(self, obj: Any) -> None:
         """
