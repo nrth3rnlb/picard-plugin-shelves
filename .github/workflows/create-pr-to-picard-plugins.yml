@@ -2,11 +2,15 @@ name: Create Pull Request to MusicBrainz Picard Plugins
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'shelves/**'
+    inputs:
+      release_tag:
+        description: 'Release tag (e.g., v1.2.1)'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes/description'
+        required: false
+        type: string
 
 jobs:
   create-pr:
