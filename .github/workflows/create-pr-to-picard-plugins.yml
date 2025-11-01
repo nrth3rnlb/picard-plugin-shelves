@@ -12,66 +12,65 @@ jobs:
   create-pr:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-    
+      contents: write
+
     steps:
       - name: Checkout current repository
         uses: actions/checkout@v4
         with:
           path: picard-plugin-shelves
-      
-      - name: Set up Git configuration
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Validate PICARD_PLUGINS_PAT
         run: |
           if [ -z "${{ secrets.PICARD_PLUGINS_PAT }}" ]; then
-            echo "Error: PICARD_PLUGINS_PAT secret is not set. Please add it in repository settings."
+            echo "Error: PICARD_PLUGINS_PAT secret is not set. Add it in repository settings."
             exit 1
           fi
-      
-      - name: Clone MusicBrainz Picard Plugins repository
+
+      - name: Set up Git configuration
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Clone my fork of picard-plugins (authenticated)
         env:
           GH_TOKEN: ${{ secrets.PICARD_PLUGINS_PAT }}
         run: |
-          # Clone using authenticated URL
+          # Clone your fork (nrth3rnlb/picard-plugins) using the PAT
           git clone --branch 2.0 --single-branch \
-            "https://x-access-token:${GH_TOKEN}@github.com/musicbrainz/picard-plugins.git" \
+            "https://x-access-token:${GH_TOKEN}@github.com/nrth3rnlb/picard-plugins.git" \
             picard-plugins
-          
           cd picard-plugins
           echo "Cloned picard-plugins repository at commit:"
           git log -1 --oneline
-      
+
       - name: Fetch and sync with upstream
         run: |
           cd picard-plugins
           echo "Fetching latest changes from upstream..."
-          git fetch origin refs/heads/2.0
-          
+          git remote add upstream https://github.com/metabrainz/picard-plugins.git || true
+          git fetch upstream refs/heads/2.0:refs/remotes/upstream/2.0
+
           echo "Current HEAD:"
           git log -1 --oneline
-          
-          echo "Latest commit on origin/2.0:"
-          git log -1 --oneline origin/2.0
-          
-          # Check if we're behind upstream
-          BEHIND=$(git rev-list --count HEAD..origin/2.0)
+
+          echo "Latest commit on upstream/2.0:"
+          git log -1 --oneline upstream/2.0
+
+          BEHIND=$(git rev-list --count HEAD..upstream/2.0)
           echo "Commits behind upstream: $BEHIND"
-          
+
           if [ "$BEHIND" -gt 0 ]; then
-            echo "Repository is behind upstream. Pulling latest changes..."
-            git pull origin 2.0
+            echo "Repository is behind upstream. Merging upstream/2.0..."
+            git merge --no-edit upstream/2.0 || git rebase upstream/2.0
             echo "Successfully synchronized with upstream"
           else
             echo "Repository is already up-to-date with upstream"
           fi
-          
+
           echo "Current state after sync:"
           git log -1 --oneline
-      
+
       - name: Create feature branch
         run: |
           cd picard-plugins
@@ -79,29 +78,23 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
           echo "Created branch: $BRANCH_NAME"
-      
+
       - name: Copy shelves plugin
         run: |
           cd picard-plugins
-          
-          # Remove existing shelves plugin if it exists
           if [ -d "plugins/shelves" ]; then
             echo "Removing existing shelves plugin..."
             rm -rf plugins/shelves
           fi
-          
-          # Copy the updated plugin
           echo "Copying shelves plugin from source repository..."
           cp -r ../picard-plugin-shelves/shelves plugins/shelves
-          
           echo "Contents of plugins/shelves:"
           ls -la plugins/shelves/
-      
+
       - name: Commit changes
         run: |
           cd picard-plugins
           git add plugins/shelves
-          
           if git diff --staged --quiet; then
             echo "No changes to commit"
             echo "HAS_CHANGES=false" >> $GITHUB_ENV
@@ -112,45 +105,49 @@ jobs:
             echo "HAS_CHANGES=true" >> $GITHUB_ENV
             echo "Changes committed successfully"
           fi
-      
+
       - name: Push changes and create pull request
         if: env.HAS_CHANGES == 'true'
         env:
           GH_TOKEN: ${{ secrets.PICARD_PLUGINS_PAT }}
         run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "Error: GH_TOKEN is empty. Ensure secrets.PICARD_PLUGINS_PAT is set."
+            exit 1
+          fi
+
           cd picard-plugins
-          
-          # Push the branch
-          # replace the log line with something like:
-          echo "Pushing branch to remote repository (nrth3rnlb/picard-plugins)..."
-          
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/nrth3rnlb/picard-plugins.git
-          git push origin "$BRANCH_NAME"
-          
-          # Create pull request using GitHub CLI
-          echo "Creating pull request..."
+
+          echo "Pushing branch to remote repository (nrth3rnlb/picard-plugins) (private token used)..."
+
+          # Configure origin to use token (token not printed)
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/nrth3rnlb/picard-plugins.git"
+
+          # Push the branch to your fork and set upstream
+          git push origin "$BRANCH_NAME" --set-upstream
+
+          # Authenticate gh CLI using the PAT (without exposing it)
+          echo "${GH_TOKEN}" | gh auth login --with-token
+
           PR_BODY=$(cat << 'EOF'
-          This pull request updates the shelves plugin to the latest version.
-          
-          **Changes:**
-          - Updated plugin files from [nrth3rnlb/picard-plugin-shelves](https://github.com/nrth3rnlb/picard-plugin-shelves)
-          - Synchronized with the latest upstream changes before applying updates
-          
-          **Verification:**
-          - The upstream repository was verified to be up-to-date before copying changes
-          - All plugin files have been copied and committed
-          
-          This is an automated pull request generated by GitHub Actions.
-          EOF
-          )
-          
-          echo gh pr create \
+This pull request updates the shelves plugin to the latest version.
+
+**Changes:**
+- Updated plugin files from nrth3rnlb/picard-plugin-shelves
+- Synchronized with the latest upstream changes before applying updates
+
+This is an automated pull request generated by GitHub Actions.
+EOF
+)
+
+          # Create PR against metabrainz/picard-plugins using fork:branch as head
+          gh pr create \
             --repo metabrainz/picard-plugins \
             --base 2.0 \
-            --head "$BRANCH_NAME" \
+            --head "nrth3rnlb:$BRANCH_NAME" \
             --title "Update shelves plugin" \
             --body "$PR_BODY"
-      
+
       - name: Summary
         run: |
           echo "## Workflow Summary" >> $GITHUB_STEP_SUMMARY
