@@ -8,8 +8,6 @@ allowing music files to be organised by top-level folders.
 """
 from __future__ import annotations
 
-
-
 __version__ = "1.3.1"
 
 from typing import Any, Dict
@@ -55,7 +53,6 @@ PLUGIN_LICENSE = "GPL-2.0-or-later"
 PLUGIN_LICENSE_URL = "https://www.gnu.org/licenses/gpl-2.0.html"
 PLUGIN_USER_GUIDE_URL = "https://github.com/nrth3rnlb/picard-plugin-shelves"
 
-
 # Global shelf manager instance
 shelf_manager = ShelfManager()
 
@@ -97,7 +94,7 @@ def _file_post_save_processor_wrapper(file: Any) -> None:
 
 
 def _set_shelf_in_metadata_wrapper(
-    album: Any, metadata: Dict[str, Any], track: Any, release: Any
+        album: Any, metadata: Dict[str, Any], track: Any, release: Any
 ) -> None:
     """Wrapper for set_shelf_in_metadata."""
     set_shelf_in_metadata(album, metadata, track, release, shelf_manager)  # noqa: F841
@@ -124,4 +121,3 @@ register_track_metadata_processor(_set_shelf_in_metadata_wrapper)
 register_script_function(func_shelf, "shelf")
 
 log.info("%s v%s loaded successfully", PLUGIN_NAME, __version__)
-
