@@ -190,7 +190,7 @@ def _get_shelf_from_path_fallback(path: str) -> str:
                     reason,
                 )
 
-    except (IndexError, ValueError):
-        pass
+    except (IndexError, ValueError) as e:
+        log.error("%s: Unexpected %s in fallback shelf detection for path: %s - %s", PLUGIN_NAME, type(e).__name__, path, str(e))
 
     return ShelfConstants.DEFAULT_SHELF
