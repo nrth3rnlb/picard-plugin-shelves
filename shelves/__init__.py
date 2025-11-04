@@ -60,12 +60,10 @@ shelf_manager = ShelfManager()
 # Wrapper classes to ensure proper plugin registration
 class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the ShelvesOptionsPage to ensure proper plugin registration."""
-    pass
 
 
 class SetShelfAction(_SetShelfActionBase):
     """Wrapper class for SetShelfAction to ensure proper plugin registration."""
-    pass
 
 
 class DetermineShelfAction(_DetermineShelfActionBase):
