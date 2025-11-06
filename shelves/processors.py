@@ -23,7 +23,7 @@ def file_post_save_processor(file: Any, shelf_manager: Any) -> None:
     """
     Process a file after Picard has saved it.
     
-    Args:a
+    Args:
         file: Picard file object
         shelf_manager: ShelfManager instance
     """
@@ -91,10 +91,11 @@ def file_post_addition_to_track_processor(track, file, shelf_manager: Any) -> No
 def file_post_removal_from_track_processor(track, file, shelf_manager: Any) -> None:
     """
     Process a file after it has been removed from a track.
-    :param track:
-    :param file:
-    :param shelf_manager:
-    :return:
+
+    Args:
+        track: Track object
+        file: Picard file object
+        shelf_manager: ShelfManager instance
     """
     log.debug("%s: (file_post_removal_from_track_processor) Processing file: %s", PLUGIN_NAME, file.filename)
     album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
