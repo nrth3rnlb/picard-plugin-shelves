@@ -2,6 +2,34 @@
 
 <!-- version list -->
 
+## v1.4.0 (2025-11-06)
+
+### Bug Fixes
+
+- Enhance PR creation workflow to handle release events and improve changelog generation
+  ([`53b4597`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/53b4597080a985f85b52f466af446a0a86877e59))
+
+- Improve changelog formatting and update PR creation logic in workflow
+  ([`5c1211b`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/5c1211bf43c1eb7a06807f3e115c58e4f2b1df74))
+
+- Improve error logging in fallback shelf detection and remove unused class
+  ([`1acc974`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/1acc9744ab5b27fa207f945bcf6626256e05221b))
+
+- Remove issuetracker entry from .gitignore and clean up pyproject.toml
+  ([`0650ad0`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/0650ad020d9783c81f2aa2c3e0913aaef182aa80))
+
+- Remove unnecessary gh auth login step in PR creation workflow
+  ([`6d2e3e2`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/6d2e3e2e617268032c38a87cb7fe24ea2da73ca7))
+
+- Update branch naming logic in PR creation workflow to handle release events
+  ([`b833d6a`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/b833d6a14c7f2e7bf75382abef2581d7fd9a1c29))
+
+### Features
+
+- Add file post addition and removal processors for album shelf management
+  ([`3eef069`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/3eef069c5725c9b06da9c85005b4953e867fa646))
+
+
 ## v1.3.1 (2025-11-01)
 
 ### Bug Fixes
