@@ -8,7 +8,7 @@ allowing music files to be organised by top-level folders.
 """
 from __future__ import annotations
 
-__version__ = "1.4.0"
+__version__ = "1.4.1"
 
 from typing import Any, Dict
 

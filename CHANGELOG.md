@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.4.1 (2025-11-06)
+
+### Bug Fixes
+
+- Bereinigung des Release-Prozesses
+  ([`ffd9369`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/ffd93695a23d95d04622897ea96d54ff913d9d6d))
+
+
 ## v1.4.0 (2025-11-06)
 
 ### Bug Fixes
