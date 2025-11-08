@@ -24,6 +24,15 @@ class ShelfConstants:
     INVALID_PATH_CHARS = r'<>:"|?*'
 
     # Release Types
+
+    PRIMARY_RELEASE_TYPES = {
+        "album": "Album",
+        "single": "Single",
+        "ep": "EP",
+        "broadcast": "Broadcast",
+        "other": "Other",
+    }
+
     SECONDARY_RELEASE_TYPES = {
         "audiobook": "Audiobook",
         "audiodrama": "Audio drama",
