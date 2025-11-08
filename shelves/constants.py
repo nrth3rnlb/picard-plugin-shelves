@@ -23,6 +23,22 @@ class ShelfConstants:
     MAX_WORD_COUNT = 3
     INVALID_PATH_CHARS = r'<>:"|?*'
 
+    # Release Types
+    SECONDARY_RELEASE_TYPES = {
+        "audiobook": "Audiobook",
+        "audiodrama": "Audio drama",
+        "compilation": "Compilation",
+        "demo": "Demo",
+        "djmix": "DJ-mix",
+        "fieldrecording": "Field recording",
+        "interview": "Interview",
+        "live": "Live",
+        "mixtape": "Mixtape/Street",
+        "remix": "Remix",
+        "soundtrack": "Soundtrack",
+        "spokenword": "Spokenword",
+    }
+
     # Workflow placeholders
     WORKFLOW_STAGE_1_PLACEHOLDER = "~~~workflow_stage_1~~~"
     WORKFLOW_STAGE_2_PLACEHOLDER = "~~~workflow_stage_2~~~"
