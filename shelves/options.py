@@ -122,6 +122,62 @@ class OptionsPage(PicardOptions):
         self._workflow_setup_connections()
         self._workflow_customize_buttons()
 
+        releasetype_shelf_mapping_table = getattr(self, "releasetype_shelf_mapping_table", None)
+        if releasetype_shelf_mapping_table is None:
+            log.error("%s: QTableWidget `releasetype_shelf_mapping_table` not found", PLUGIN_NAME)
+        else:
+            shelves = sorted(get_known_shelves())
+            for key, value in (ShelfConstants.SECONDARY_RELEASE_TYPES | ShelfConstants.PRIMARY_RELEASE_TYPES).items():
+                log.debug("%s: Adding release type '%s' with key '%s' to mapping table", PLUGIN_NAME, value, key)
+
+                tag = value
+                row = self.releasetype_shelf_mapping_table.rowCount()
+                self.releasetype_shelf_mapping_table.insertRow(row)
+                self.releasetype_shelf_mapping_table.setRowHeight(row, self.releasetype_shelf_mapping_table.fontMetrics().height() + 10)
+                tag_item = QtWidgets.QTableWidgetItem(tag)
+                tag_item.setData(Qt.UserRole, key)
+                tag_item.setToolTip(key)
+                tag_item.setFlags(tag_item.flags() & ~Qt.ItemIsEditable)
+                self.releasetype_shelf_mapping_table.setItem(row, 0, tag_item)
+
+                # later, when reading:
+                # item = self.releasetype_shelf_mapping_table.item(row, 0)
+                # stored_key = item.data(Qt.UserRole)
+
+                # btn = QtWidgets.QPushButton()
+                # btn.setText("Shelf")
+                # self.releasetype_shelf_mapping_table.setCellWidget(row, 1, btn)
+
+
+                shelf_chk_container = QtWidgets.QWidget()
+                shelf_chk_layout = QtWidgets.QHBoxLayout(shelf_chk_container)
+                shelf_chk_layout.setAlignment(Qt.AlignLeft)
+                shelf_chk_layout.setContentsMargins(0, 0, 0, 0)
+                log.debug("%s:   Creating shelf checkboxes for %d shelves", PLUGIN_NAME, len(shelves))
+                for shelf in shelves:
+                    log.debug("%s:   Adding shelf checkbox for shelf '%s'", PLUGIN_NAME, shelf)
+                    shelf_chk = QtWidgets.QCheckBox(shelf)
+                    shelf_chk.setText(shelf)
+                    shelf_chk_layout.addWidget(shelf_chk)
+
+                self.releasetype_shelf_mapping_table.setCellWidget(row, 1, shelf_chk_container)
+
+
+        # Connect signals
+        self.b_add_shelf.clicked.connect(self.add_shelf)
+        self.b_remove_shelf.clicked.connect(self.remove_shelf)
+        self.b_scan_4_shelves.clicked.connect(self.scan_music_directory)
+        self.shelf_list.itemSelectionChanged.connect(
+            self.on_shelf_list_selection_changed
+        )
+        self.workflow_enabled.stateChanged.connect(self.on_workflow_enabled_changed)
+        self.workflow_stage_1.currentTextChanged.connect(
+            self.on_workflow_stage_changed
+        )
+        self.workflow_stage_2.currentTextChanged.connect(
+            self.on_workflow_stage_changed
+        )
+
     # ============================================================================
     # Load/Save methods
     # ============================================================================
