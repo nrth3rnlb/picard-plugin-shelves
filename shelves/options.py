@@ -220,7 +220,6 @@ class ShelvesOptionsPage(OptionsPage):
                 return
 
             existing_shelves = self._get_existing_shelves()
-            # added = 0
 
             for shelf in shelves_found:
                 if shelf not in existing_shelves:
