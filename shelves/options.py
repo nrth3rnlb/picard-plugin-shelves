@@ -220,7 +220,6 @@ class ShelvesOptionsPage(OptionsPage):
                 return
 
             existing_shelves = self._get_existing_shelves()
-            # added = 0
 
             for shelf in shelves_found:
                 if shelf not in existing_shelves:
@@ -229,7 +228,6 @@ class ShelvesOptionsPage(OptionsPage):
                         self.shelf_list.addItem(shelf)
                         self.workflow_stage_1.addItem(shelf)
                         self.workflow_stage_2.addItem(shelf)
-                        # added += 1
 
             self.shelf_list.sortItems()
 
