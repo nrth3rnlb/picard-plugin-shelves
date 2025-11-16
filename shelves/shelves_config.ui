@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>ShelvesConfigPage</class>
  <widget class="QWidget" name="ShelvesConfigPage">
+     <property name="geometry">
+         <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>563</width>
+             <height>748</height>
+         </rect>
+     </property>
   <property name="windowTitle">
    <string>Shelves Configuration</string>
   </property>
@@ -12,6 +20,14 @@
       <bool>true</bool>
      </property>
      <widget class="QWidget" name="scrollAreaWidgetContents">
+         <property name="geometry">
+             <rect>
+                 <x>0</x>
+                 <y>0</y>
+                 <width>543</width>
+                 <height>728</height>
+             </rect>
+         </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item alignment="Qt::AlignTop">
         <widget class="QGroupBox" name="shelves_group">
@@ -70,6 +86,13 @@
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_6">
                 <item>
+                    <widget class="QPushButton" name="b_add_shelf">
+                        <property name="text">
+                            <string>Add Shelf...</string>
+                        </property>
+                    </widget>
+                </item>
+                   <item>
                  <widget class="QPushButton" name="b_scan_4_shelves">
                   <property name="toolTip">
                    <string>Automatically detect shelves from your music library directory</string>
@@ -90,9 +113,12 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="b_add_shelf">
+                    <widget class="QPushButton" name="b_remove_unknown_shelves">
+                        <property name="toolTip">
+                            <string>Remove virtual shelves that have no equivalent in the music directory.</string>
+                        </property>
                   <property name="text">
-                   <string>Add Shelf...</string>
+                      <string>Remove Unknown</string>
                   </property>
                  </widget>
                 </item>
