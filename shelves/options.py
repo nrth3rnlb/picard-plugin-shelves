@@ -228,7 +228,6 @@ class ShelvesOptionsPage(OptionsPage):
                         self.shelf_list.addItem(shelf)
                         self.workflow_stage_1.addItem(shelf)
                         self.workflow_stage_2.addItem(shelf)
-                        # added += 1
 
             self.shelf_list.sortItems()
 
