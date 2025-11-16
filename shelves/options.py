@@ -275,13 +275,6 @@ class ShelvesOptionsPage(OptionsPage):
 
             self.shelf_list.sortItems()
 
-            # if added > 0:
-            #     QtWidgets.QMessageBox.information(
-            #         self,
-            #         "Scan Complete",
-            #         f"Found {len(shelves_found)} directories.\nAdded {added} new shelf(s).",
-            #     )
-
         except (OSError, PermissionError) as e:
             log.error("%s: Error scanning directory: %s", PLUGIN_NAME, e)
             QtWidgets.QMessageBox.critical(
