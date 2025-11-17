@@ -61,12 +61,12 @@ PLUGIN_USER_GUIDE_URL = "https://github.com/nrth3rnlb/picard-plugin-shelves"
 def _build_shelf_manager(plugin_name: str) -> ShelfManager:
     validators = ShelfValidators()
     utils = ShelfUtils()
-    manager = ShelfManager(plugin_name, utils, validators)
-    utils.set_shelf_manager(manager)
+    manager = ShelfManager(plugin_name=plugin_name, validators=validators, utils=utils)
+    utils.set_shelf_manager(shelf_manager=manager)
     return manager
 
 # Global shelf manager instance
-shelf_manager = _build_shelf_manager(PLUGIN_NAME)
+shelf_manager = _build_shelf_manager(plugin_name=PLUGIN_NAME)
 
 class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the ShelvesOptionsPage to ensure proper plugin registration."""

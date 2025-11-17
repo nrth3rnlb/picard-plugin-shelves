@@ -17,8 +17,9 @@ from .manager import ShelfManager
 class ShelfUtils:
     """Utility functions for shelf management."""
 
+    # ShelfManager will be set by the plugin during initialization
     def set_shelf_manager(self, shelf_manager: ShelfManager) -> None:
-        log.debug("%s: Me in ShelfUtils", shelf_manager.plugin_name)
+        log.debug("%s: Setting ShelfManager in ShelfUtils", shelf_manager.plugin_name)
         self.shelf_manager: ShelfManager = shelf_manager
         self.validators: ShelfValidators = self.shelf_manager.validators
 
