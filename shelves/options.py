@@ -76,6 +76,7 @@ class ShelvesOptionsPage(OptionsPage):
         )
 
     def set_shelf_manager(self, shelf_manager: ShelfManager) -> None:
+        log.debug("%s: Setting ShelfManager in options page", shelf_manager.plugin_name)
         self.shelf_manager = shelf_manager
         self.utils = shelf_manager.utils
         self.validators = shelf_manager.validators
