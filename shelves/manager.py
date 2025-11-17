@@ -8,17 +8,26 @@ from __future__ import annotations
 
 from collections import Counter
 from typing import Dict
+
 from picard import log
-
-
-PLUGIN_NAME = "Shelves"
-
 
 class ShelfManager:
     """Manages shelf assignments and state with conflict detection."""
 
-    def __init__(self) -> None:
-        """Initialise the shelf manager."""
+    def __init__(self, plugin_name: str, validators, utils) -> None:
+        """
+        Initialise the shelf manager.
+
+        Args:
+            plugin_name: Name of the plugin
+            validators: ShelfValidators instance
+            utils: ShelfUtils instance
+        """
+
+        self.validators = validators
+        self.utils = utils
+
+        self.plugin_name = plugin_name
         self._shelves_by_album: Dict[str, str] = {}
         self._shelf_votes: Dict[str, Counter] = {}
 
@@ -46,7 +55,7 @@ class ShelfManager:
             all_votes = self._shelf_votes[album_id].most_common()
             log.warning(
                 "%s: Album %s has files from different shelves. Votes: %s. Using: '%s'",
-                PLUGIN_NAME,
+                self.plugin_name,
                 album_id,
                 dict(all_votes),
                 winner,
@@ -64,7 +73,7 @@ class ShelfManager:
         """
         if self._shelves_by_album.get(album_id) is not None:
             return self._shelves_by_album.get(album_id)
-        log.warning("%s: The shelf of the album %s could not be identified with certainty.", PLUGIN_NAME, album_id)
+        log.warning("%s: The shelf of the album %s could not be identified with certainty.", self.plugin_name, album_id)
 
         return None
 

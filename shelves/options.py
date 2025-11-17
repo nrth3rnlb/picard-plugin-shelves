@@ -7,21 +7,15 @@ Options page for the Shelves plugin.
 from __future__ import annotations
 
 import os
-from pathlib import Path
-from typing import Optional, Set
+from typing import Set, Optional
 
-from PyQt5 import QtWidgets, uic
-from picard import config, log
+from PyQt5 import QtWidgets, uic, QtCore
+from picard import log
 from picard.config import BoolOption, ListOption, TextOption
 from picard.ui.options import OptionsPage
 
+from .manager import ShelfManager
 from .constants import DEFAULT_SHELVES, ShelfConstants
-from .utils import get_known_shelves
-from .validators import validate_shelf_name
-
-
-PLUGIN_NAME = "Shelves"
-
 
 class ShelvesOptionsPage(OptionsPage):
     """
@@ -67,6 +61,8 @@ class ShelvesOptionsPage(OptionsPage):
         # Connect signals
         self.b_add_shelf.clicked.connect(self.add_shelf)
         self.b_remove_shelf.clicked.connect(self.remove_shelf)
+        self.b_remove_unknown_shelves.clicked.connect(self.rebuild_shelf_list)
+
         self.b_scan_4_shelves.clicked.connect(self.scan_music_directory)
         self.shelf_list.itemSelectionChanged.connect(
             self.on_shelf_list_selection_changed
@@ -79,38 +75,23 @@ class ShelvesOptionsPage(OptionsPage):
             self.on_workflow_stage_changed
         )
 
+    def set_shelf_manager(self, shelf_manager: ShelfManager) -> None:
+        self.shelf_manager = shelf_manager
+        self.utils = shelf_manager.utils
+        self.validators = shelf_manager.validators
+
     def load(self) -> None:
         """Load already known shelves from config."""
-        shelves = sorted(get_known_shelves())
+        shelves = sorted(self.utils.get_known_shelves())
         self.shelf_list.clear()
         self.shelf_list.addItems(shelves)
 
         self.workflow_transitions.setEnabled(self.workflow_enabled.isChecked())
-
-        self.workflow_stage_1.clear()
-        self.workflow_stage_1.addItems(shelves)
-        try:
-            self.workflow_stage_1.setCurrentText(
-                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY])  # type: ignore[index]
-        except KeyError:
-            self.workflow_stage_1.setCurrentText(ShelfConstants.DEFAULT_INCOMING_SHELF)
-
-        self.workflow_stage_2.clear()
-        self.workflow_stage_2.addItems(shelves)
-        try:
-            self.workflow_stage_2.setCurrentText(
-                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY])  # type: ignore[index]
-        except KeyError:
-            self.workflow_stage_2.setCurrentText(ShelfConstants.DEFAULT_SHELF)
-
-        try:
-            self.workflow_enabled.setChecked(
-                config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY])  # type: ignore[index]
-        except KeyError:
-            self.workflow_enabled.setChecked(False)
-
+        self._rebuild_workflow_dropdowns()
+        self.workflow_enabled.setChecked(
+                self.config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY])  # type: ignore[index]
         # Update preview with current values
-        snippet = self.rebuild_rename_snippet()
+        snippet = self.get_rename_snippet()
         self.naming_script_code.setPlainText(snippet)
 
     def save(self) -> None:
@@ -120,18 +101,18 @@ class ShelvesOptionsPage(OptionsPage):
             item_text = self.shelf_list.item(i).text()
             shelves.append(item_text)
 
-        config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = shelves  # type: ignore[index]
-        config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY] = (  # type: ignore[index]
+        self.config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = shelves  # type: ignore[index]
+        self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY] = (  # type: ignore[index]
             self.workflow_stage_1.currentText()
         )
-        config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY] = (  # type: ignore[index]
+        self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY] = (  # type: ignore[index]
             self.workflow_stage_2.currentText()
         )
-        config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = (  # type: ignore[index]
+        self.config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = (  # type: ignore[index]
             self.workflow_enabled.isChecked()
         )
 
-        log.debug("%s: Saved %d shelves to config", PLUGIN_NAME, len(shelves))
+        log.debug("%s: Saved %d shelves to config", self.shelf_manager.plugin_name, len(shelves))
 
     def add_shelf(self) -> None:
         """Add a new shelf."""
@@ -143,14 +124,14 @@ class ShelvesOptionsPage(OptionsPage):
             return
 
         shelf_name = shelf_name.strip()
-        is_valid, message = validate_shelf_name(shelf_name)
+        is_valid, message = self.validators.validate_shelf_name(shelf_name)
 
         if not is_valid:
             QtWidgets.QMessageBox.warning(self, "Invalid Name", message)
             return
 
         # Check if already exists
-        existing_shelves = self._get_existing_shelves()
+        existing_shelves = self._get_configured_shelves()
         if shelf_name in existing_shelves:
             QtWidgets.QMessageBox.information(
                 self, "Already Exists", f"Shelf '{shelf_name}' already exists."
@@ -158,9 +139,9 @@ class ShelvesOptionsPage(OptionsPage):
             return
 
         self.shelf_list.addItem(shelf_name)
+        self.shelf_list.sortItems()
         self.workflow_stage_1.addItem(shelf_name)
         self.workflow_stage_2.addItem(shelf_name)
-        self.shelf_list.sortItems()
 
     def remove_shelf(self) -> None:
         """Remove the selected shelf."""
@@ -187,43 +168,62 @@ class ShelvesOptionsPage(OptionsPage):
 
         self.shelf_list.takeItem(self.shelf_list.row(current_item))
 
+    def rebuild_shelf_list(self) -> None:
+        """Remove shelves that no longer exist in the music directory."""
+        existing_shelves = self.utils.get_existing_dirs()
+        items_to_remove = []
+
+        # Identify shelves to remove
+        for i in range(self.shelf_list.count()):
+            item_text = self.shelf_list.item(i).text()
+            log.debug("%s: Checking shelf '%s' for existence", self.shelf_manager.plugin_name, item_text)
+            if item_text not in existing_shelves:
+                items_to_remove.append(item_text)
+
+        # Remove identified shelves
+        for item_text in items_to_remove:
+            # noinspection PyUnresolvedReferences
+            matching_items = self.shelf_list.findItems(item_text, QtCore.Qt.MatchExactly)
+            log.debug("%s: Removing shelf '%s' as it no longer exists", self.shelf_manager.plugin_name, item_text)
+            for item in matching_items:
+                self.shelf_list.takeItem(self.shelf_list.row(item))
+
+        self._rebuild_workflow_dropdowns()
+
+    def _rebuild_workflow_dropdowns(self) -> None:
+        """Rebuild the workflow dropdowns based on current shelf list."""
+        shelves = list(self.shelf_list.item(i).text() for i in range(self.shelf_list.count()))
+        log.debug("%s: Rebuilding workflow dropdowns with shelves: %s", self.shelf_manager.plugin_name, shelves)
+        self.workflow_stage_1.clear()
+        self.workflow_stage_1.addItems(shelves)
+        self.workflow_stage_1.setCurrentText(
+            self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY])  # type: ignore[index]
+
+        self.workflow_stage_2.clear()
+        self.workflow_stage_2.addItems(shelves)
+        self.workflow_stage_2.setCurrentText(
+            self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY])  # type: ignore[index]
+
     def scan_music_directory(self) -> None:
         """Scan Picard's target directory for shelves."""
         try:
-            music_dir_str = config.setting["move_files_to"]  # type: ignore[index]
-        except KeyError:
-            QtWidgets.QMessageBox.warning(
-                self,
-                "No Directory Configured",
-                "Please configure 'Move files to' directory in Picard settings first.",
-            )
-            return
-
-        music_dir = Path(music_dir_str)
-        if not music_dir.exists():
-            QtWidgets.QMessageBox.warning(
-                self,
-                "Directory Not Found",
-                f"The directory '{music_dir}' does not exist.",
-            )
-            return
-
-        try:
-            shelves_found = [entry.name for entry in music_dir.iterdir() if entry.is_dir()]
-
+            # Load existing directories
+            shelves_found = self.utils.get_existing_dirs()
             if not shelves_found:
                 QtWidgets.QMessageBox.information(
                     self,
                     "No Shelves Found",
                     "No subdirectories found in the selected directory.",
                 )
+                log.debug("%s: No shelves found during scan in %s", self.shelf_manager.plugin_name,
+                          self.config.setting["move_files_to"])  # type: ignore[index]
                 return
 
-            existing_shelves = self._get_existing_shelves()
-
+            # Get currently configured shelves to avoid duplicates
+            configured_shelves = self._get_configured_shelves()
             for shelf in shelves_found:
-                if shelf not in existing_shelves:
-                    is_valid, _ = validate_shelf_name(shelf)
+                if shelf not in configured_shelves:
+                    is_valid, _ = self.validators.validate_shelf_name(shelf)
                     if is_valid:
                         self.shelf_list.addItem(shelf)
                         self.workflow_stage_1.addItem(shelf)
@@ -232,20 +232,14 @@ class ShelvesOptionsPage(OptionsPage):
             self.shelf_list.sortItems()
 
         except (OSError, PermissionError) as e:
-            log.error("%s: Error scanning directory: %s", PLUGIN_NAME, e)
+            log.error("%s: Error scanning directory: %s", self.shelf_manager.plugin_name, e)
             QtWidgets.QMessageBox.critical(
                 self, "Scan Error", f"Error scanning directory: {e}"
             )
 
     @staticmethod
-    def rebuild_rename_snippet() -> str:
-        """
-        Build the rename snippet
-
-        Returns:
-            The complete rename snippet
-        """
-
+    def get_rename_snippet() -> str:
+        """ Get the renaming script snippet. """
         # noinspection SpellCheckingInspection
         return """$set(_shelffolder,$shelf())
 $set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
@@ -263,25 +257,25 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
     def on_workflow_enabled_changed(self) -> None:
         """ Handle workflow-enabled state change. """
         is_enabled = self.workflow_enabled.isChecked()
-        log.debug("%s: on_workflow_enabled_changed: %s", PLUGIN_NAME, is_enabled)
+        log.debug("%s: on_workflow_enabled_changed: %s", self.shelf_manager.plugin_name, is_enabled)
         self.workflow_transitions.setEnabled(is_enabled)
 
         # Update preview when workflow is toggled
-        snippet = self.rebuild_rename_snippet()
+        snippet = self.get_rename_snippet()
         self.naming_script_code.setPlainText(snippet)
 
     def on_workflow_stage_changed(self) -> None:
         """Handle workflow stage change."""
         log.debug(
             "%s: on_workflow_stage_changed: stage_1='%s', stage_2='%s'",
-            PLUGIN_NAME,
+            self.shelf_manager.plugin_name,
             self.workflow_stage_1.currentText(),
             self.workflow_stage_2.currentText(),
         )
-        snippet = self.rebuild_rename_snippet()
+        snippet = self.get_rename_snippet()
         self.naming_script_code.setPlainText(snippet)
 
-    def _get_existing_shelves(self) -> Set[str]:
+    def _get_configured_shelves(self) -> Set[str]:
         """
         Get a set of currently listed shelves.
 
