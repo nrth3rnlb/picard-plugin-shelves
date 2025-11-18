@@ -15,13 +15,22 @@ from .constants import DEFAULT_SHELVES, ShelfConstants
 from .manager import ShelfManager
 
 class ShelfUtils:
-    """Utility functions for shelf management."""
+    """
+    Utility functions for shelf management.
+    Call set_shelf_manager() during plugin initialization to set the ShelfManager instance.
+    """
+
+    def __init__(self) -> None:
+        # Initialize ShelfUtils with Optional attributes.
+        # Call set_shelf_manager() to initialize them during plugin initialization.
+        self.shelf_manager: Optional[ShelfManager] = None
+        self.validators: Optional[ShelfValidators] = None
 
     # ShelfManager will be set by the plugin during initialization
-    def set_shelf_manager(self, shelf_manager: ShelfManager) -> None:
-        log.debug("%s: Setting ShelfManager in ShelfUtils", shelf_manager.plugin_name)
-        self.shelf_manager: ShelfManager = shelf_manager
-        self.validators: ShelfValidators = self.shelf_manager.validators
+    def set_shelf_manager(self, manager: ShelfManager) -> None:
+        log.debug("%s: Setting ShelfManager in ShelfUtils", manager.plugin_name)
+        self.shelf_manager = manager
+        self.validators = self.shelf_manager.validators
 
     def get_known_shelves(self) -> List[str]:
         """

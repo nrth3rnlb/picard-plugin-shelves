@@ -8,8 +8,6 @@ allowing music files to be organised by top-level folders.
 """
 from __future__ import annotations
 
-__version__ = "1.4.1"
-
 from typing import Any, Dict
 
 from picard import log
@@ -52,21 +50,21 @@ Think of your music library as a physical library with different shelves — one
 - **Script function `$shelf()`** for file naming integration
 - **Visual script preview** in settings shows your file naming snippet
 """
-PLUGIN_VERSION = __version__
+PLUGIN_VERSION = "1.4.1"
 PLUGIN_API_VERSIONS = ["2.7", "2.8"]
 PLUGIN_LICENSE = "GPL-2.0-or-later"
 PLUGIN_LICENSE_URL = "https://www.gnu.org/licenses/gpl-2.0.html"
 PLUGIN_USER_GUIDE_URL = "https://github.com/nrth3rnlb/picard-plugin-shelves"
 
 def _build_shelf_manager(plugin_name: str) -> ShelfManager:
-    validators = ShelfValidators()
-    utils = ShelfUtils()
-    manager = ShelfManager(plugin_name=plugin_name, validators=validators, utils=utils)
-    utils.set_shelf_manager(shelf_manager=manager)
-    return manager
+    shelf_validators = ShelfValidators()
+    shelf_utils = ShelfUtils()
+    shelf_manager = ShelfManager(plugin_name=plugin_name, validators=shelf_validators, utils=shelf_utils)
+    shelf_utils.set_shelf_manager(manager=shelf_manager)
+    return shelf_manager
 
 # Global shelf manager instance
-shelf_manager = _build_shelf_manager(plugin_name=PLUGIN_NAME)
+shelf_manager_global = _build_shelf_manager(plugin_name=PLUGIN_NAME)
 
 class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the ShelvesOptionsPage to ensure proper plugin registration."""
@@ -74,21 +72,21 @@ class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     def __init__(self, parent=None) -> None:
         """Initialize with the global shelf_manager instance."""
         super().__init__(parent)
-        self.set_shelf_manager(shelf_manager)
+        self.set_shelf_manager(shelf_manager_global)
 
 class SetShelfAction(_SetShelfActionBase):
     """Wrapper class for SetShelfAction to ensure proper plugin registration."""
 
     def __init__(self) -> None:
         """Initialize with the global shelf_manager instance."""
-        super().__init__(shelf_manager=shelf_manager)
+        super().__init__(shelf_manager=shelf_manager_global)
 
 class DetermineShelfAction(_DetermineShelfActionBase):
     """Wrapper class for DetermineShelfAction to ensure proper plugin registration."""
 
     def __init__(self) -> None:
         """Initialize with the global shelf_manager instance."""
-        super().__init__(shelf_manager=shelf_manager)
+        super().__init__(shelf_manager=shelf_manager_global)
 
 # Wrapper for script function
 def func_shelf(parser: Any) -> str:
@@ -99,27 +97,27 @@ def func_shelf(parser: Any) -> str:
 # Wrapper functions that pass shelf_manager to processors
 def _file_post_load_processor_wrapper(file: Any) -> None:
     """Wrapper for file_post_load_processor."""
-    file_post_load_processor(file, shelf_manager)
+    file_post_load_processor(file, shelf_manager_global)
 
 def _file_post_addition_to_track_processor(track, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
-    file_post_addition_to_track_processor(track, file, shelf_manager)
+    file_post_addition_to_track_processor(track, file, shelf_manager_global)
 
 
 def _file_post_save_processor_wrapper(file: Any) -> None:
     """Wrapper for file_post_save_processor."""
-    file_post_save_processor(file, shelf_manager)
+    file_post_save_processor(file, shelf_manager_global)
 
 
 def _set_shelf_in_metadata_wrapper(
         album: Any, metadata: Dict[str, Any], track: Any, release: Any
 ) -> None:
     """Wrapper for set_shelf_in_metadata."""
-    set_shelf_in_metadata(album, metadata, track, release, shelf_manager)
+    set_shelf_in_metadata(album, metadata, track, release, shelf_manager_global)
 
 def _file_post_removal_from_track_processor(track, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
-    file_post_removal_from_track_processor(track, file, shelf_manager)
+    file_post_removal_from_track_processor(track, file, shelf_manager_global)
 
 
 log.debug("%s: Registering plugin components", PLUGIN_NAME)

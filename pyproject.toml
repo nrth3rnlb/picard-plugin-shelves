@@ -78,23 +78,16 @@ ignore = ["E501"]  # Line too long
 [tool.pylint.main]
 ignore-patterns = ["ui_.*\\.py", ".*_ui\\.py"]
 
-[tool.semantic_release]
-tag_format = "v{version}"
-version_toml = ["pyproject.toml:project.version:nf"]
-version_variables = ["shelves/__init__.py:__version__:nf"]
+[tool.pdm.scripts]
+precommit-install = "pre-commit install -t commit-msg"
 
-[tool.semantic_release.changelog.default_templates]
-changelog_file = "CHANGELOG.md"
-output_format = "md"
-
-[tool.semantic_release.changelog]
-# Recommended patterns for conventional commits parser that is scope aware
-exclude_commit_patterns = [
-    '''chore(?:\([^)]*?\))?: .+''',
-    '''ci(?:\([^)]*?\))?: .+''',
-    '''refactor(?:\([^)]*?\))?: .+''',
-    '''style(?:\([^)]*?\))?: .+''',
-    '''test(?:\([^)]*?\))?: .+''',
-    '''build\((?!deps\): .+)''',
-    '''Initial [Cc]ommit.*''',
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "1.4.1"
+tag_format = "v$version"
+update_changelog_on_bump = true
+gpg_sign = true
+version_files = [
+    "pyproject.toml:version",
+    "shelves/__init__.py:PLUGIN_VERSION"
 ]
