@@ -2,6 +2,26 @@
 
 <!-- version list -->
 
+## v1.5.0 (2025-11-18)
+
+### Feat
+
+- **options**: Option to remove shelves that no longer exist from the list
+
+### Fix
+
+- **shelves**: Various import errors fixed.
+- **shelves**: Various import errors fixed.
+- Correct formatting and improve docstring clarity across multiple files
+
+### Refactor
+
+- **shelves**: Improve thread safety in get_album_shelf and maintainability in vote_for_shelf
+- improve ShelfManager initialization and logging
+- **init,utils,options**: improve ShelfManager initialization and logging
+- am I crazy?
+- Simplify UI component references in options.py
+
 ## v1.4.1 (2025-11-06)
 
 ### Bug Fixes
