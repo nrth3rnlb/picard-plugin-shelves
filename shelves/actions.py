@@ -14,7 +14,7 @@ from picard.ui.itemviews import BaseAction
 
 from .constants import ShelfConstants
 from .utils import ShelfManager
-from .utils import ShelfUtils, ShelfValidators
+from .utils import ShelfValidators
 
 class SetShelfAction(BaseAction):
     """

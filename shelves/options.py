@@ -14,6 +14,7 @@ from picard import log
 from picard.config import BoolOption, ListOption, TextOption
 from picard.ui.options import OptionsPage
 
+from .utils import ShelfUtils, ShelfValidators
 from .manager import ShelfManager
 from .constants import DEFAULT_SHELVES, ShelfConstants
 
@@ -54,6 +55,10 @@ class ShelvesOptionsPage(OptionsPage):
             parent: Parent widget
         """
         super().__init__(parent)
+
+        self.shelf_manager: Optional[ShelfManager] = None
+        self.validators: Optional[ShelfValidators] = None
+        self.utils: Optional[ShelfUtils] = None
 
         ui_file = os.path.join(os.path.dirname(__file__), 'shelves_config.ui')
         uic.loadUi(ui_file, self)
