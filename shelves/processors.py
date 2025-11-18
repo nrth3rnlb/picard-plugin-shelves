@@ -19,8 +19,9 @@ from typing import Any, Dict
 
 from picard import log
 
-from . import clear_album, ShelfUtils, PLUGIN_NAME, vote_for_shelf, get_album_shelf
+from . import clear_album, PLUGIN_NAME, vote_for_shelf, get_album_shelf
 from .constants import ShelfConstants
+from .utils import ShelfUtils
 
 def file_post_save_processor(file: Any) -> None:
     """

@@ -14,7 +14,7 @@ from picard import log
 from picard.config import BoolOption, ListOption, TextOption
 from picard.ui.options import OptionsPage
 
-from . import PLUGIN_NAME
+from . import PLUGIN_NAME, ShelfUtils
 from .constants import DEFAULT_SHELVES, ShelfConstants
 
 class ShelvesOptionsPage(OptionsPage):
@@ -78,7 +78,7 @@ class ShelvesOptionsPage(OptionsPage):
 
     def load(self) -> None:
         """Load already known shelves from config."""
-        shelves = sorted(self.utils.get_known_shelves())
+        shelves = sorted(ShelfUtils.get_known_shelves())
         self.shelf_list.clear()
         self.shelf_list.addItems(shelves)
 
@@ -120,7 +120,7 @@ class ShelvesOptionsPage(OptionsPage):
             return
 
         shelf_name = shelf_name.strip()
-        is_valid, message = self.validators.validate_shelf_name(shelf_name)
+        is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
 
         if not is_valid:
             QtWidgets.QMessageBox.warning(self, "Invalid Name", message)
@@ -166,7 +166,7 @@ class ShelvesOptionsPage(OptionsPage):
 
     def rebuild_shelf_list(self) -> None:
         """Remove shelves that no longer exist in the music directory."""
-        existing_shelves = self.utils.get_existing_dirs()
+        existing_shelves = ShelfUtils.get_existing_dirs()
         items_to_remove = []
 
         # Identify shelves to remove
@@ -204,7 +204,7 @@ class ShelvesOptionsPage(OptionsPage):
         """Scan Picard's target directory for shelves."""
         try:
             # Load existing directories
-            shelves_found = self.utils.get_existing_dirs()
+            shelves_found = ShelfUtils.get_existing_dirs()
             if not shelves_found:
                 QtWidgets.QMessageBox.information(
                     self,
@@ -219,7 +219,7 @@ class ShelvesOptionsPage(OptionsPage):
             configured_shelves = self._get_configured_shelves()
             for shelf in shelves_found:
                 if shelf not in configured_shelves:
-                    is_valid, _ = self.validators.validate_shelf_name(shelf)
+                    is_valid, _ = ShelfUtils.validate_shelf_name(shelf)
                     if is_valid:
                         self.shelf_list.addItem(shelf)
                         self.workflow_stage_1.addItem(shelf)
