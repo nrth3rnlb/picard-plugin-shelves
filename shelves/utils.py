@@ -11,142 +11,28 @@ from typing import List, Optional, Tuple
 
 from picard import config, log
 
+from . import PLUGIN_NAME
 from .constants import DEFAULT_SHELVES, ShelfConstants
-from .manager import ShelfManager
 
 class ShelfUtils:
     """
     Utility functions for shelf management.
     Call set_shelf_manager() during plugin initialization to set the ShelfManager instance.
     """
-
-    def __init__(self) -> None:
-        # Initialize ShelfUtils with Optional attributes.
-        # Call set_shelf_manager() to initialize them during plugin initialization.
-        self.shelf_manager: Optional[ShelfManager] = None
-        self.validators: Optional[ShelfValidators] = None
-
-    # ShelfManager will be set by the plugin during initialization
-    def set_shelf_manager(self, manager: ShelfManager) -> None:
-        log.debug("%s: Setting ShelfManager in ShelfUtils", manager.plugin_name)
-        self.shelf_manager = manager
-        self.validators = self.shelf_manager.validators
-
-    def get_known_shelves(self) -> List[str]:
-        """
-        Retrieve the list of known shelves from config with validation.
-        Returns:
-            List of unique, validated shelf names
-        """
-        shelves = config.setting[ShelfConstants.CONFIG_SHELVES_KEY]  # type: ignore[index]
-
-        # Handle string format (legacy)
-        if isinstance(shelves, str):
-            shelves = [s.strip() for s in shelves.split(",") if s.strip()]
-        elif not isinstance(shelves, list):
-            log.error(
-                "%s: Invalid shelf config type (%s), resetting to defaults",
-                self.shelf_manager.plugin_name,
-                type(shelves).__name__,
-            )
-            shelves = list(DEFAULT_SHELVES.values())
-
-        # Validate each shelf name
-        valid_shelves = []
-        for shelf in shelves:
-            if not isinstance(shelf, str):
-                log.warning(
-                    "%s: Ignoring non-string shelf: %s", self.shelf_manager.plugin_name, repr(shelf)
-                )
-                continue
-
-            is_valid, message = self.validators.validate_shelf_name(shelf)
-            if is_valid or not message:  # Allow warnings
-                valid_shelves.append(shelf)
-            else:
-                log.warning(
-                    "%s: Ignoring invalid shelf '%s': %s", self.shelf_manager.plugin_name, shelf, message
-                )
-        log.debug("%s: Known shelves: %s", self.shelf_manager.plugin_name, valid_shelves)
-        return sorted(list(set(valid_shelves)))
-
     @staticmethod
-    def get_existing_dirs() -> list[str]:
+    def _determine_shelf_recursive(path, known_shelves, base_path):
         """
-        Load existing directories from the music directory.
-        Returns: List of directory names
-        """
-        music_dir_str = config.setting["move_files_to"]  # type: ignore[index]
-        music_dir = Path(music_dir_str)
-
-        shelves_found = [entry.name for entry in music_dir.iterdir() if entry.is_dir()]
-        return shelves_found
-
-    def add_known_shelf(self, shelf_name: str) -> None:
-        """
-        Add a shelf name to the list of known shelves.
-        Args:
-            shelf_name: Name of the shelf to add
-        """
-        if not shelf_name or not shelf_name.strip():
-            return
-
-        shelves = self.get_known_shelves()
-        if shelf_name not in shelves:
-            shelves.append(shelf_name)
-            config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = sorted(shelves)  # type: ignore[index]
-            log.debug("%s: Added shelf '%s' to known shelves", self.shelf_manager.plugin_name, shelf_name)
-
-    def remove_known_shelf(self, shelf_name: str) -> None:
-        """
-        Remove a shelf name from the list of known shelves.
+        Recursively determine the shelf from a given path.
 
         Args:
-            shelf_name: Name of the shelf to remove
+            path: The file path to analyze
+            known_shelves: List of known shelf names (passed from caller to avoid redundant calls)
+            base_path: The base path to use for relative calculations
         """
-        shelves = self.get_known_shelves()
-        if shelf_name in shelves:
-            shelves.remove(shelf_name)
-            config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = shelves  # type: ignore[index]
-            log.debug(
-                "%s: Removed shelf '%s' from known shelves", self.shelf_manager.plugin_name, shelf_name
-            )
-
-    def get_shelf_from_path(self, path: str, known_shelves, base_path: Optional[str] = None) -> str:
-        """
-        Extract the shelf name from a file path relative to the configured base path.
-        This uses Picard's configured base directory to determine which top-level folder represents the shelf.
-
-        Args:
-            known_shelves: List of known shelf names
-            path: Full file path
-            base_path: Optional base path override (uses Picard config if not provided)
-
-        Returns:
-            Extracted shelf name or "Standard" as fallback
-        """
-
+        workflow_stage_1 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]  # type: ignore[index]
+        workflow_stage_2 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY]  # type: ignore[index]
         try:
-            workflow_stage_1 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]  # type: ignore[index]
-        except KeyError:
-            workflow_stage_1 = ShelfConstants.DEFAULT_INCOMING_SHELF
-        try:
-            workflow_stage_2 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY]  # type: ignore[index]
-        except KeyError:
-            workflow_stage_2 = ShelfConstants.DEFAULT_SHELF
-
-        if base_path is None:
-            try:
-                base_path = config.setting["move_files_to"]  # type: ignore[index]
-            except KeyError:
-                log.warning(
-                    "%s: No base path configured in Picard settings, set shelf to '%s'",
-                    self.shelf_manager.plugin_name, workflow_stage_1
-                )
-                return workflow_stage_1
-
-        try:
-            log.debug("%s: Extracting shelf from path: %s", self.shelf_manager.plugin_name, path)
+            log.debug("%s: Extracting shelf from path: %s", PLUGIN_NAME, path)
 
             path_obj = Path(path).resolve()
             base_obj = Path(base_path).resolve()
@@ -157,7 +43,7 @@ class ShelfUtils:
             except ValueError:
                 log.debug(
                     "%s: Path '%s' is not under base directory '%s', setting shelf to '%s'",
-                    self.shelf_manager.plugin_name,
+                    PLUGIN_NAME,
                     path,
                     base_path, workflow_stage_1
                 )
@@ -167,39 +53,34 @@ class ShelfUtils:
             parts = relative.parts
             if not parts or parts[0] == path_obj.name:
                 # File is directly in the base directory
-                log.debug("%s: File is in base directory, setting shelf to '%s'", self.shelf_manager.plugin_name,
+                log.debug("%s: File is in base directory, setting shelf to '%s'", PLUGIN_NAME,
                           workflow_stage_2)
                 return workflow_stage_2
 
             shelf_name = parts[0]
-            log.debug("%s: Found potential shelf: %s", self.shelf_manager.plugin_name, shelf_name)
+            log.debug("%s: Found potential shelf: %s", PLUGIN_NAME, shelf_name)
 
-            is_likely, reason = self.validators.is_likely_shelf_name(shelf_name, known_shelves=known_shelves)
+            is_likely, reason = ShelfUtils.is_likely_shelf_name(shelf_name, known_shelves=known_shelves)
             if not is_likely:
                 log.warning(
                     "%s: '%s' doesn't look like a shelf (%s). Using '%s' instead. "
                     "If this is actually a shelf, add it in plugin settings.",
-                    self.shelf_manager.plugin_name,
+                    PLUGIN_NAME,
                     shelf_name,
                     reason,
                     workflow_stage_2,
                 )
                 return workflow_stage_2
 
-            log.debug("%s: Confirmed shelf: %s", self.shelf_manager.plugin_name, shelf_name)
+            log.debug("%s: Confirmed shelf: %s", PLUGIN_NAME, shelf_name)
             return shelf_name
 
         except (OSError, ValueError, AttributeError) as e:
             log.error(
-                "%s: Error extracting shelf from path '%s': %s", self.shelf_manager.plugin_name, path, e
+                "%s: Error extracting shelf from path '%s': %s", PLUGIN_NAME, path, e
             )
             return workflow_stage_2
 
-class ShelfValidators:
-    """Validation functions for shelf names."""
-
-    def __init__(self):
-        super().__init__()
 
     @staticmethod
     def validate_shelf_name(name: str) -> Tuple[bool, Optional[str]]:
@@ -231,7 +112,8 @@ class ShelfValidators:
 
         return True, None
 
-    def is_likely_shelf_name(self, name: str, known_shelves: List[str]) -> Tuple[bool, Optional[str]]:
+    @staticmethod
+    def is_likely_shelf_name(name: str, known_shelves: List[str]) -> Tuple[bool, Optional[str]]:
         """
         Check if a name is likely a shelf name or an artist/album name.
 
@@ -278,3 +160,112 @@ class ShelfValidators:
             return False, "; ".join(suspicious_reasons)
 
         return True, None
+
+    @staticmethod
+    def get_known_shelves() -> List[str]:
+        """
+        Retrieve the list of known shelves from config with validation.
+        Returns:
+            List of unique, validated shelf names
+        """
+        shelves = config.setting[ShelfConstants.CONFIG_SHELVES_KEY]  # type: ignore[index]
+
+        # Handle string format (legacy)
+        if isinstance(shelves, str):
+            shelves = [s.strip() for s in shelves.split(",") if s.strip()]
+        elif not isinstance(shelves, list):
+            log.error(
+                "%s: Invalid shelf config type (%s), resetting to defaults",
+                PLUGIN_NAME,
+                type(shelves).__name__,
+            )
+            shelves = list(DEFAULT_SHELVES.values())
+
+        # Validate each shelf name
+        valid_shelves = []
+        for shelf in shelves:
+            if not isinstance(shelf, str):
+                log.warning(
+                    "%s: Ignoring non-string shelf: %s", PLUGIN_NAME, repr(shelf)
+                )
+                continue
+
+            is_valid, message = ShelfUtils.validate_shelf_name(shelf)
+            if is_valid or not message:  # Allow warnings
+                valid_shelves.append(shelf)
+            else:
+                log.warning(
+                    "%s: Ignoring invalid shelf '%s': %s", PLUGIN_NAME, shelf, message
+                )
+        log.debug("%s: Known shelves: %s", PLUGIN_NAME, valid_shelves)
+        return sorted(list(set(valid_shelves)))
+
+    @staticmethod
+    def get_existing_dirs() -> list[str]:
+        """
+        Load existing directories from the music directory.
+        Returns: List of directory names
+        """
+        music_dir_str = config.setting["move_files_to"]  # type: ignore[index]
+        music_dir = Path(music_dir_str)
+
+        shelves_found = [entry.name for entry in music_dir.iterdir() if entry.is_dir()]
+        return shelves_found
+
+    @staticmethod
+    def add_known_shelf(shelf_name: str) -> None:
+        """
+        Add a shelf name to the list of known shelves.
+        Args:
+            shelf_name: Name of the shelf to add
+        """
+        if not shelf_name or not shelf_name.strip():
+            return
+
+        shelves = ShelfUtils.get_known_shelves()
+        if shelf_name not in shelves:
+            shelves.append(shelf_name)
+            config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = sorted(shelves)  # type: ignore[index]
+            log.debug("%s: Added shelf '%s' to known shelves", PLUGIN_NAME, shelf_name)
+
+    @staticmethod
+    def remove_known_shelf(shelf_name: str) -> None:
+        """
+        Remove a shelf name from the list of known shelves.
+
+        Args:
+            shelf_name: Name of the shelf to remove
+        """
+        shelves = ShelfUtils.get_known_shelves()
+        if shelf_name in shelves:
+            shelves.remove(shelf_name)
+            config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = shelves  # type: ignore[index]
+            log.debug(
+                "%s: Removed shelf '%s' from known shelves", PLUGIN_NAME, shelf_name
+            )
+
+    @staticmethod
+    def get_shelf_from_path(path: str, known_shelves: List[str], base_path: Optional[str] = None) -> str:
+        """
+        Extract the shelf name from a file path relative to the configured base path.
+        This uses Picard's configured base directory to determine which top-level folder represents the shelf.
+
+        Args:
+            known_shelves: List of known shelf names
+            path: Full file path
+            base_path: Optional base path override (uses Picard config if not provided)
+
+        Returns:
+            Extracted shelf name or "Standard" as fallback
+        """
+        if base_path is None:
+            try:
+                base_path = config.setting["move_files_to"]  # type: ignore[index]
+            except KeyError:
+                log.warning(
+                    "%s: No base path configured in Picard settings, set shelf to '%s'",
+                    PLUGIN_NAME, config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]  # type: ignore[index]
+                )
+                return config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]  # type: ignore[index]
+
+        return ShelfUtils._determine_shelf_recursive(path, known_shelves, base_path)

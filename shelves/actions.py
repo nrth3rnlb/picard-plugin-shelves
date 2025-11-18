@@ -12,9 +12,10 @@ from PyQt5 import QtWidgets
 from picard import log
 from picard.ui.itemviews import BaseAction
 
+from . import PLUGIN_NAME
+from . import clear_album, vote_for_shelf
 from .constants import ShelfConstants
-from .utils import ShelfManager
-from .utils import ShelfValidators
+from .utils import ShelfUtils
 
 class SetShelfAction(BaseAction):
     """
@@ -26,15 +27,11 @@ class SetShelfAction(BaseAction):
     # Type hint for the tagger attribute from BaseAction
     tagger: Any
 
-    def __init__(self, shelf_manager: Any = None) -> None:
+    def __init__(self) -> None:
         """
         Initialize the action.
-
-        Args:
-            shelf_manager: ShelfManager instance
         """
         super().__init__()
-        self.shelf_manager = shelf_manager
 
     def callback(self, objs: List[Any]) -> None:
         """
@@ -43,9 +40,9 @@ class SetShelfAction(BaseAction):
         Args:
             objs: Selected objects in Picard
         """
-        log.debug("%s: SetShelfAction called with %d objects", self.shelf_manager.plugin_name, len(objs))
+        log.debug("%s: SetShelfAction called with %d objects", PLUGIN_NAME, len(objs))
 
-        known_shelves = self.shelf_manager.utils.get_known_shelves()
+        known_shelves = ShelfUtils.get_known_shelves()
 
         dialog = QtWidgets.QInputDialog(self.tagger.window)
         dialog.setWindowTitle("Set Shelf Name")
@@ -62,7 +59,7 @@ class SetShelfAction(BaseAction):
 
         def on_text_changed(text: str) -> None:
             """Update validation label when text changes."""
-            valid, msg = ShelfValidators.validate_shelf_name(text)
+            valid, msg = ShelfUtils.validate_shelf_name(text)
             if msg:
                 validation_label.setText(msg)
                 style = (
@@ -84,7 +81,7 @@ class SetShelfAction(BaseAction):
             if not shelf_name:
                 return
 
-            is_valid, message = ShelfValidators.validate_shelf_name(shelf_name)
+            is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
             if not is_valid:
                 QtWidgets.QMessageBox.warning(
                     self.tagger.window,
@@ -96,15 +93,16 @@ class SetShelfAction(BaseAction):
             for obj in objs:
                 self._set_shelf_recursive(obj, shelf_name)
 
-            self.shelf_manager.utils.add_known_shelf(shelf_name)
+            ShelfUtils.add_known_shelf(shelf_name)
             log.info(
                 "%s: Set shelf to '%s' for %d object(s)",
-                self.shelf_manager.plugin_name,
+                PLUGIN_NAME,
                 shelf_name,
                 len(objs),
             )
 
-    def _set_shelf_recursive(self, obj: Any, shelf_name: str) -> None:
+    @staticmethod
+    def _set_shelf_recursive(obj: Any, shelf_name: str) -> None:
         """
         Set the shelf name recursively on all files in an object.
 
@@ -116,7 +114,7 @@ class SetShelfAction(BaseAction):
             obj.metadata[ShelfConstants.TAG_KEY] = shelf_name
             log.debug(
                 "%s: Set shelf '%s' on %s",
-                self.shelf_manager.plugin_name,
+                PLUGIN_NAME,
                 shelf_name,
                 type(obj).__name__,
             )
@@ -136,16 +134,9 @@ class DetermineShelfAction(BaseAction):
     # Type hint for the tagger attribute from BaseAction
     tagger: Any
 
-    def __init__(self, shelf_manager: ShelfManager) -> None:
-        """
-        Initialize the action.
-
-        Args:
-            shelf_manager: ShelfManager instance
-        """
+    def __init__(self) -> None:
+        """Initialize the action."""
         super().__init__()
-        self.shelf_manager = shelf_manager
-        self.utils = self.shelf_manager.utils
 
     def callback(self, objs: List[Any]) -> None:
         """
@@ -155,7 +146,7 @@ class DetermineShelfAction(BaseAction):
             objs: Selected objects in Picard
         """
         log.debug(
-            "%s: DetermineShelfAction called with %d objects", self.shelf_manager.plugin_name, len(objs)
+            "%s: DetermineShelfAction called with %d objects", PLUGIN_NAME, len(objs)
         )
 
         # Track albums that need reinitialization
@@ -166,9 +157,8 @@ class DetermineShelfAction(BaseAction):
             self._determine_shelf_recursive(obj, albums_to_reinitialize)
 
         # Reinitialize album data in shelf manager
-        if self.shelf_manager:
-            for album_id in albums_to_reinitialize:
-                self.shelf_manager.clear_album(album_id)
+        for album_id in albums_to_reinitialize:
+            clear_album(album_id)
 
         # Re-vote for shelves based on file paths
         for obj in objs:
@@ -176,12 +166,13 @@ class DetermineShelfAction(BaseAction):
 
         log.info(
             "%s: Determined shelf for %d object(s), reinitialized %d album(s)",
-            self.shelf_manager.plugin_name,
+            PLUGIN_NAME,
             len(objs),
             len(albums_to_reinitialize),
         )
 
-    def _determine_shelf_recursive(self, obj: Any, albums_to_reinitialize: set) -> None:
+    @staticmethod
+    def _determine_shelf_recursive(obj: Any, albums_to_reinitialize: set) -> None:
         """
         Determine the shelf name from file paths recursively.
 
@@ -192,11 +183,11 @@ class DetermineShelfAction(BaseAction):
         unique_shelves = set()
         first_shelf = None
 
-        known_shelves = self.shelf_manager.utils.get_known_shelves()
+        known_shelves = ShelfUtils.get_known_shelves()
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
                 # Determine shelf from file path
-                shelf_name = self.utils.get_shelf_from_path(path=file.filename, known_shelves=known_shelves)
+                shelf_name = ShelfUtils.get_shelf_from_path(path=file.filename, known_shelves=known_shelves)
 
                 # Update metadata
                 file.metadata[ShelfConstants.TAG_KEY] = shelf_name
@@ -213,38 +204,39 @@ class DetermineShelfAction(BaseAction):
 
                 log.debug(
                     "%s: Determined shelf '%s' for file: %s",
-                    self.shelf_manager.plugin_name,
+                    PLUGIN_NAME,
                     shelf_name,
                     file.filename,
                 )
 
         # Add all unique shelves to known shelves
         for shelf_name in unique_shelves:
-            self.utils.add_known_shelf(shelf_name)
+            ShelfUtils.add_known_shelf(shelf_name)
 
         # Update object metadata if present
         # Note: Using first file's shelf; ShelfManager voting will resolve conflicts
         if hasattr(obj, "metadata") and first_shelf:
-            log.debug("%s: Update object metadata with %s", self.shelf_manager.plugin_name, first_shelf)
+            log.debug("%s: Update object metadata with %s", PLUGIN_NAME, first_shelf)
             obj.metadata[ShelfConstants.TAG_KEY] = first_shelf
 
-    def _revote_shelf_recursive(self, obj: Any) -> None:
+    @staticmethod
+    def _revote_shelf_recursive(obj: Any) -> None:
         """
         Re-vote for shelf assignments in the shelf manager.
 
         Args:
             obj: Picard object (album, track, etc.)
         """
-        if self.shelf_manager and hasattr(obj, "iterfiles"):
+        if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
                 shelf_name = file.metadata.get(ShelfConstants.TAG_KEY)
                 album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
 
                 if shelf_name and album_id:
-                    self.shelf_manager.vote_for_shelf(album_id, shelf_name)
+                    vote_for_shelf(album_id, shelf_name)
                     log.debug(
                         "%s: Re-voted shelf '%s' for album %s",
-                        self.shelf_manager.plugin_name,
+                        PLUGIN_NAME,
                         shelf_name,
                         album_id,
                     )

@@ -14,8 +14,7 @@ from picard import log
 from picard.config import BoolOption, ListOption, TextOption
 from picard.ui.options import OptionsPage
 
-from .utils import ShelfUtils, ShelfValidators
-from .manager import ShelfManager
+from . import PLUGIN_NAME
 from .constants import DEFAULT_SHELVES, ShelfConstants
 
 class ShelvesOptionsPage(OptionsPage):
@@ -56,10 +55,6 @@ class ShelvesOptionsPage(OptionsPage):
         """
         super().__init__(parent)
 
-        self.shelf_manager: Optional[ShelfManager] = None
-        self.validators: Optional[ShelfValidators] = None
-        self.utils: Optional[ShelfUtils] = None
-
         ui_file = os.path.join(os.path.dirname(__file__), 'shelves_config.ui')
         uic.loadUi(ui_file, self)
 
@@ -80,11 +75,6 @@ class ShelvesOptionsPage(OptionsPage):
             self.on_workflow_stage_changed
         )
 
-    def set_shelf_manager(self, shelf_manager: ShelfManager) -> None:
-        log.debug("%s: Setting ShelfManager in options page", shelf_manager.plugin_name)
-        self.shelf_manager = shelf_manager
-        self.utils = shelf_manager.utils
-        self.validators = shelf_manager.validators
 
     def load(self) -> None:
         """Load already known shelves from config."""
@@ -118,7 +108,7 @@ class ShelvesOptionsPage(OptionsPage):
             self.workflow_enabled.isChecked()
         )
 
-        log.debug("%s: Saved %d shelves to config", self.shelf_manager.plugin_name, len(shelves))
+        log.debug("%s: Saved %d shelves to config", PLUGIN_NAME, len(shelves))
 
     def add_shelf(self) -> None:
         """Add a new shelf."""
@@ -182,7 +172,7 @@ class ShelvesOptionsPage(OptionsPage):
         # Identify shelves to remove
         for i in range(self.shelf_list.count()):
             item_text = self.shelf_list.item(i).text()
-            log.debug("%s: Checking shelf '%s' for existence", self.shelf_manager.plugin_name, item_text)
+            log.debug("%s: Checking shelf '%s' for existence", PLUGIN_NAME, item_text)
             if item_text not in existing_shelves:
                 items_to_remove.append(item_text)
 
@@ -190,7 +180,7 @@ class ShelvesOptionsPage(OptionsPage):
         for item_text in items_to_remove:
             # noinspection PyUnresolvedReferences
             matching_items = self.shelf_list.findItems(item_text, QtCore.Qt.MatchExactly)
-            log.debug("%s: Removing shelf '%s' as it no longer exists", self.shelf_manager.plugin_name, item_text)
+            log.debug("%s: Removing shelf '%s' as it no longer exists", PLUGIN_NAME, item_text)
             for item in matching_items:
                 self.shelf_list.takeItem(self.shelf_list.row(item))
 
@@ -199,7 +189,7 @@ class ShelvesOptionsPage(OptionsPage):
     def _rebuild_workflow_dropdowns(self) -> None:
         """Rebuild the workflow dropdowns based on current shelf list."""
         shelves = list(self.shelf_list.item(i).text() for i in range(self.shelf_list.count()))
-        log.debug("%s: Rebuilding workflow dropdowns with shelves: %s", self.shelf_manager.plugin_name, shelves)
+        log.debug("%s: Rebuilding workflow dropdowns with shelves: %s", PLUGIN_NAME, shelves)
         self.workflow_stage_1.clear()
         self.workflow_stage_1.addItems(shelves)
         self.workflow_stage_1.setCurrentText(
@@ -221,7 +211,7 @@ class ShelvesOptionsPage(OptionsPage):
                     "No Shelves Found",
                     "No subdirectories found in the selected directory.",
                 )
-                log.debug("%s: No shelves found during scan in %s", self.shelf_manager.plugin_name,
+                log.debug("%s: No shelves found during scan in %s", PLUGIN_NAME,
                           self.config.setting["move_files_to"])  # type: ignore[index]
                 return
 
@@ -238,7 +228,7 @@ class ShelvesOptionsPage(OptionsPage):
             self.shelf_list.sortItems()
 
         except (OSError, PermissionError) as e:
-            log.error("%s: Error scanning directory: %s", self.shelf_manager.plugin_name, e)
+            log.error("%s: Error scanning directory: %s", PLUGIN_NAME, e)
             QtWidgets.QMessageBox.critical(
                 self, "Scan Error", f"Error scanning directory: {e}"
             )
@@ -263,7 +253,7 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
     def on_workflow_enabled_changed(self) -> None:
         """ Handle workflow-enabled state change. """
         is_enabled = self.workflow_enabled.isChecked()
-        log.debug("%s: on_workflow_enabled_changed: %s", self.shelf_manager.plugin_name, is_enabled)
+        log.debug("%s: on_workflow_enabled_changed: %s", PLUGIN_NAME, is_enabled)
         self.workflow_transitions.setEnabled(is_enabled)
 
         # Update preview when workflow is toggled
@@ -274,7 +264,7 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
         """Handle workflow stage change."""
         log.debug(
             "%s: on_workflow_stage_changed: stage_1='%s', stage_2='%s'",
-            self.shelf_manager.plugin_name,
+            PLUGIN_NAME,
             self.workflow_stage_1.currentText(),
             self.workflow_stage_2.currentText(),
         )
