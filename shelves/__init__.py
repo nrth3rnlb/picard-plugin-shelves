@@ -21,18 +21,7 @@ from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
-from .actions import SetShelfAction as _SetShelfActionBase, DetermineShelfAction as _DetermineShelfActionBase
-from .context import ShelfContext
-from .options import ShelvesOptionsPage as _ShelvesOptionsPageBase
-from .processors import (
-    file_post_load_processor,
-    file_post_save_processor,
-    file_post_addition_to_track_processor,
-    file_post_removal_from_track_processor,
-    set_shelf_in_metadata
-)
-from .script_functions import func_shelf as _func_shelf_base
-from .utils import ShelfUtils
+
 
 # Plugin metadata
 PLUGIN_NAME = "Shelves"
@@ -57,6 +46,8 @@ PLUGIN_API_VERSIONS = ["2.7", "2.8"]
 PLUGIN_LICENSE = "GPL-2.0-or-later"
 PLUGIN_LICENSE_URL = "https://www.gnu.org/licenses/gpl-2.0.html"
 PLUGIN_USER_GUIDE_URL = "https://github.com/nrth3rnlb/picard-plugin-shelves"
+
+from .utils import ShelfUtils
 
 LogData = namedtuple('LogData', ['album_id', 'votes', 'winner'])
 
@@ -151,6 +142,17 @@ def get_album_shelf(album_id: str) -> str | None:
 def clear_album(album_id: str) -> None:
     """Wrapper for ShelfManager.clear_album."""
     _shelf_manager.clear_album(album_id)
+
+from .actions import SetShelfAction as _SetShelfActionBase, DetermineShelfAction as _DetermineShelfActionBase
+from .options import ShelvesOptionsPage as _ShelvesOptionsPageBase
+from .processors import (
+    file_post_load_processor,
+    file_post_save_processor,
+    file_post_addition_to_track_processor,
+    file_post_removal_from_track_processor,
+    set_shelf_in_metadata
+)
+from .script_functions import func_shelf as _func_shelf_base
 
 class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the ShelvesOptionsPage to ensure proper plugin registration."""
