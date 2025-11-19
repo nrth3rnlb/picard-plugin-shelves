@@ -1,6 +1,6 @@
 [project]
 name = "picard-plugin-shelves"
-version = "1.5.0"
+version = "1.5.1"
 readme = "README.md"
 description = "A MusicBrainz Picard plugin to organize your music into shelves."
 keywords = ["musicbrainz", "picard", "plugin", "shelves", "music", "organization"]
@@ -39,9 +39,6 @@ include-package-data = true
 [tool.setuptools.packages.find]
 include = ["shelves*"]
 exclude = ["tests*"]
-
-[tool.setuptools.package-data]
-"shelves" = ["*.ui", "ui/*.ui", "ui_*.py", "*_ui.py", "resources/*"]
 
 [tool.coverage.run]
 source = ["shelves"]
@@ -93,7 +90,7 @@ precommit-install = "pre-commit install -t commit-msg"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "1.5.0"
+version = "1.5.1"
 tag_format = "v$version"
 update_changelog_on_bump = true
 gpg_sign = true
