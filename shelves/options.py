@@ -54,8 +54,7 @@ class ShelvesOptionsPage(OptionsPage):
             parent: Parent widget
         """
         super().__init__(parent)
-
-        ui_file = os.path.join(os.path.dirname(__file__), 'shelves_config.ui')
+        ui_file = os.path.join(os.path.dirname(__file__), 'shelves.ui')
         uic.loadUi(ui_file, self)
 
         # Connect signals
