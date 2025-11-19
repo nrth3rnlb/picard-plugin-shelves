@@ -2,6 +2,26 @@
 
 <!-- version list -->
 
+## v1.6.0 (2025-11-19)
+
+### Feat
+
+- **options**: Option to remove shelves that no longer exist from the list
+
+### Fix
+
+- **shelves**: Various import errors fixed.
+- **shelves**: Various import errors fixed.
+
+### Refactor
+
+- **options**: update UI file reference and rename shelves_config.ui to shelves.ui
+- **shelves**: Improve thread safety in get_album_shelf and maintainability in vote_for_shelf
+- improve ShelfManager initialization and logging
+- **init,utils,options**: improve ShelfManager initialization and logging
+- am I crazy?
+- **options**: update UI file reference and rename shelves_config.ui to shelves.ui
+
 ## v1.5.0 (2025-11-18)
 
 ### Feat
