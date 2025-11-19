@@ -8,18 +8,8 @@
 
 - **options**: Option to remove shelves that no longer exist from the list
 
-### Fix
-
-- **shelves**: Various import errors fixed.
-- **shelves**: Various import errors fixed.
-
 ### Refactor
 
-- **options**: update UI file reference and rename shelves_config.ui to shelves.ui
-- **shelves**: Improve thread safety in get_album_shelf and maintainability in vote_for_shelf
-- improve ShelfManager initialization and logging
-- **init,utils,options**: improve ShelfManager initialization and logging
-- am I crazy?
 - **options**: update UI file reference and rename shelves_config.ui to shelves.ui
 
 ## v1.5.0 (2025-11-18)
@@ -31,22 +21,17 @@
 ### Fix
 
 - **shelves**: Various import errors fixed.
-- **shelves**: Various import errors fixed.
 - Correct formatting and improve docstring clarity across multiple files
 
 ### Refactor
 
 - **shelves**: Improve thread safety in get_album_shelf and maintainability in vote_for_shelf
-- improve ShelfManager initialization and logging
-- **init,utils,options**: improve ShelfManager initialization and logging
-- am I crazy?
-- Simplify UI component references in options.py
 
 ## v1.4.1 (2025-11-06)
 
 ### Bug Fixes
 
-- Bereinigung des Release-Prozesses
+- Cleaning up the release process
   ([`ffd9369`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/ffd93695a23d95d04622897ea96d54ff913d9d6d))
 
 
