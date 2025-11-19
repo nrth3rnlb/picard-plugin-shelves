@@ -10,6 +10,7 @@ import os
 from typing import Set, Optional
 
 from PyQt5 import QtWidgets, uic, QtCore
+from PyQt5.QtCore import Qt
 from picard import log
 from picard.config import BoolOption, ListOption, TextOption
 from picard.ui.options import OptionsPage
@@ -61,7 +62,7 @@ class ShelvesOptionsPage(OptionsPage):
         if releasetype_shelf_mapping_table is None:
             log.error("%s: QTableWidget `releasetype_shelf_mapping_table` not found", PLUGIN_NAME)
         else:
-            shelves = sorted(get_known_shelves())
+            shelves = sorted(ShelfUtils.get_known_shelves())
             for key, value in (ShelfConstants.SECONDARY_RELEASE_TYPES | ShelfConstants.PRIMARY_RELEASE_TYPES).items():
                 log.debug("%s: Adding release type '%s' with key '%s' to mapping table", PLUGIN_NAME, value, key)
 

@@ -33,9 +33,15 @@ build = [
     "pre-commit>=3.6",
 ]
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 include = ["shelves*"]
 exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"shelves" = ["*.ui", "ui/*.ui", "ui_*.py", "*_ui.py", "resources/*"]
 
 [tool.coverage.run]
 source = ["shelves"]
