@@ -2,12 +2,6 @@
 
 <!-- version list -->
 
-## v1.5.1 (2025-11-19)
-
-### Refactor
-
-- **options**: update UI file reference and rename shelves_config.ui to shelves.ui
-
 ## v1.5.0 (2025-11-18)
 
 ### Feat
