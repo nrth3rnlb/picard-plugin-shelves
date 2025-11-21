@@ -2,6 +2,13 @@
 
 <!-- version list -->
 
+## v1.6.1 (2025-11-21)
+
+### Refactor
+
+- **ui**: redesign shelves config page with tabbed interface
+- **ui**: set shelf name dialog
+
 ## v1.6.0 (2025-11-19)
 
 ### Feat

@@ -41,7 +41,7 @@ Think of your music library as a physical library with different shelves — one
 - **Script function `$shelf()`** for file naming integration
 - **Visual script preview** in settings shows your file naming snippet
 """
-PLUGIN_VERSION = "1.6.0"
+PLUGIN_VERSION = "1.6.1"
 PLUGIN_API_VERSIONS = ["2.7", "2.8"]
 PLUGIN_LICENSE = "GPL-2.0-or-later"
 PLUGIN_LICENSE_URL = "https://www.gnu.org/licenses/gpl-2.0.html"
