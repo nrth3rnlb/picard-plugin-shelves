@@ -74,6 +74,8 @@ class ShelvesOptionsPage(OptionsPage):
             self.on_workflow_stage_changed
         )
 
+        self.tabWidget.setCurrentIndex(1)
+
 
     def load(self) -> None:
         """Load already known shelves from config."""
