@@ -6,9 +6,11 @@ Context menu actions for the Shelves plugin.
 
 from __future__ import annotations
 
+import os
 from typing import Any, List
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtWidgets import QDialog
 from picard import log
 from picard.ui.itemviews import BaseAction
 
@@ -16,6 +18,9 @@ from . import PLUGIN_NAME
 from . import clear_album, vote_for_shelf
 from .constants import ShelfConstants
 from .utils import ShelfUtils
+
+LABEL_VALIDATION_NAME = "label_validation"
+COMBO_SHELF_NAME = "combo_shelves"
 
 class SetShelfAction(BaseAction):
     """
@@ -36,70 +41,36 @@ class SetShelfAction(BaseAction):
     def callback(self, objs: List[Any]) -> None:
         """
         Handle the action callback.
-
         Args:
             objs: Selected objects in Picard
         """
         log.debug("%s: SetShelfAction called with %d objects", PLUGIN_NAME, len(objs))
 
         known_shelves = ShelfUtils.get_known_shelves()
+        dialog = SetShelfNameDialog(self.tagger)
+        shelf_name = dialog.ask_for_shelf_name(known_shelves)
+        if not shelf_name:
+            return
 
-        dialog = QtWidgets.QInputDialog(self.tagger.window)
-        dialog.setWindowTitle("Set Shelf Name")
-        dialog.setLabelText("Select or enter shelf name:")
-        dialog.setComboBoxItems(known_shelves)
-        dialog.setComboBoxEditable(True)
-        dialog.setOption(QtWidgets.QInputDialog.UseListViewForComboBoxItems, True)
-
-        layout = dialog.layout()
-        validation_label = QtWidgets.QLabel("")
-        validation_label.setStyleSheet("QLabel { color: orange; }")
-        if layout:
-            layout.addWidget(validation_label)
-
-        def on_text_changed(text: str) -> None:
-            """Update validation label when text changes."""
-            valid, msg = ShelfUtils.validate_shelf_name(text)
-            if msg:
-                validation_label.setText(msg)
-                style = (
-                    "QLabel { color: red; }"
-                    if not valid
-                    else "QLabel { color: orange; }"
-                )
-                validation_label.setStyleSheet(style)
-            else:
-                validation_label.setText("")
-
-        combo = dialog.findChild(QtWidgets.QComboBox)
-        if combo:
-            combo.currentTextChanged.connect(on_text_changed)
-
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            shelf_name = dialog.textValue().strip()
-
-            if not shelf_name:
-                return
-
-            is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
-            if not is_valid:
-                QtWidgets.QMessageBox.warning(
-                    self.tagger.window,
-                    "Invalid Shelf Name",
-                    f"Cannot use this shelf name: {message}",
-                )
-                return
-
-            for obj in objs:
-                self._set_shelf_recursive(obj, shelf_name)
-
-            ShelfUtils.add_known_shelf(shelf_name)
-            log.info(
-                "%s: Set shelf to '%s' for %d object(s)",
-                PLUGIN_NAME,
-                shelf_name,
-                len(objs),
+        is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
+        if not is_valid:
+            QtWidgets.QMessageBox.warning(
+                self.tagger.window,
+                "Invalid Shelf Name",
+                f"Cannot use this shelf name: {message}",
             )
+            return
+
+        for obj in objs:
+            self._set_shelf_recursive(obj, shelf_name)
+
+        ShelfUtils.add_known_shelf(shelf_name)
+        log.info(
+            "%s: Set shelf to '%s' for %d object(s)",
+            PLUGIN_NAME,
+            shelf_name,
+            len(objs),
+        )
 
     @staticmethod
     def _set_shelf_recursive(obj: Any, shelf_name: str) -> None:
@@ -122,6 +93,68 @@ class SetShelfAction(BaseAction):
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
                 file.metadata[ShelfConstants.TAG_KEY] = shelf_name
+
+class SetShelfNameDialog(QDialog):
+    """
+    Dialog to set the shelf name.
+    """
+
+    tagger: Any
+
+    def __init__(self, tagger) -> None:
+        """
+        Initialize the dialog.
+
+        Args:
+            tagger: Picard tagger instance
+        """
+        super().__init__(tagger.window)
+        self.tagger = tagger
+        ui_file = os.path.join(os.path.dirname(__file__), 'ui', 'actions.ui')
+        uic.loadUi(ui_file, self)
+
+        self.validation_label: QtWidgets.QLabel = self.findChild(QtWidgets.QLabel, LABEL_VALIDATION_NAME)
+        self.shelf_combo: QtWidgets.QComboBox = self.findChild(QtWidgets.QComboBox, COMBO_SHELF_NAME)
+
+        self.shelf_combo.currentTextChanged.connect(self._on_text_changed)
+
+    def ask_for_shelf_name(self, known_shelves: list[str]) -> str | None:
+        """
+        Show the dialog to ask for a shelf name.
+        Args:
+            known_shelves: List of known shelf names
+        Returns:
+            The shelf name entered by the user, or None if cancelled.
+        """
+        self.shelf_combo.clear()
+        self.shelf_combo.addItems(known_shelves)
+        self.shelf_combo.setEditable(True)
+        self.shelf_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+
+        self.validation_label.setText("")
+        self.validation_label.setStyleSheet("QLabel { color: orange; }")
+
+        if self.exec_() == QtWidgets.QDialog.Accepted:
+            value = self.shelf_combo.currentText().strip()
+            return value if value else None
+
+        return None
+
+    def _on_text_changed(self, text: str) -> None:
+        """
+        Handle text changes in the shelf name combo box.
+
+        Args:
+            text: Current text in the combo box
+        """
+        valid, msg = ShelfUtils.validate_shelf_name(text)
+        if msg:
+            self.validation_label.setText(msg)
+            self.validation_label.setStyleSheet(
+                "QLabel { color: red; }" if not valid else "QLabel { color: orange; }"
+            )
+        else:
+            self.validation_label.setText("")
 
 
 class DetermineShelfAction(BaseAction):
