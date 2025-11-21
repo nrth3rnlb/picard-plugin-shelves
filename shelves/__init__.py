@@ -21,8 +21,6 @@ from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
-
-
 # Plugin metadata
 PLUGIN_NAME = "Shelves"
 PLUGIN_AUTHOR = "nrth3rnlb"
@@ -42,7 +40,7 @@ Think of your music library as a physical library with different shelves — one
 - **Visual script preview** in settings shows your file naming snippet
 """
 PLUGIN_VERSION = "1.6.1"
-PLUGIN_API_VERSIONS = ["2.7", "2.8"]
+PLUGIN_API_VERSIONS = ["2.0"]
 PLUGIN_LICENSE = "GPL-2.0-or-later"
 PLUGIN_LICENSE_URL = "https://www.gnu.org/licenses/gpl-2.0.html"
 PLUGIN_USER_GUIDE_URL = "https://github.com/nrth3rnlb/picard-plugin-shelves"
