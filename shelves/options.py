@@ -192,6 +192,9 @@ class ShelvesOptionsPage(OptionsPage):
         shelves = list(self.shelf_list.item(i).text() for i in range(self.shelf_list.count()))
         log.debug("%s: Rebuilding workflow dropdowns with shelves: %s", PLUGIN_NAME, shelves)
         self.workflow_stage_1.clear()
+        # Add wildcard option
+        self.workflow_stage_1.addItem(ShelfConstants.WORKFLOW_STAGE_1_WILDCARD)
+        # Add existing shelves
         self.workflow_stage_1.addItems(shelves)
         self.workflow_stage_1.setCurrentText(
             self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY])  # type: ignore[index]

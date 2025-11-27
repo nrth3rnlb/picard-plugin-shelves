@@ -43,7 +43,7 @@ def func_shelf(parser: Any) -> str:
         return shelf
 
     # Apply workflow transition
-    if shelf == workflow_stage_1:
+    if shelf == workflow_stage_1 or workflow_stage_1 == ShelfConstants.WORKFLOW_STAGE_1_WILDCARD:
         log.debug(
             "%s: Applying workflow transition: '%s' -> '%s'",
             PLUGIN_NAME,

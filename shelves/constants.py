@@ -38,6 +38,10 @@ class ShelfConstants:
     # Album indicators that suggest a name is not a shelf
     ALBUM_INDICATORS = ["Vol.", "Volume", "Disc", "CD", "Part"]
 
+    # Wildcard value that, when set as workflow_stage_1, allows the workflow
+    # transition to proceed regardless of the current shelf value.
+    WORKFLOW_STAGE_1_WILDCARD = "*"
+
 
 # Default configuration values
 DEFAULT_SHELVES = {
