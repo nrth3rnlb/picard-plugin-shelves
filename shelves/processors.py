@@ -17,11 +17,50 @@ from __future__ import annotations
 import traceback
 from typing import Any, Dict
 
-from picard import log
+from picard import config, log
 
 from . import clear_album, PLUGIN_NAME, vote_for_shelf, get_album_shelf
 from .constants import ShelfConstants
 from .utils import ShelfUtils
+
+
+def _apply_workflow_transition(shelf: str) -> str:
+    """
+    Applies the workflow transition to a shelf name if the workflow is enabled.
+    Returns the original shelf if it is None/empty, the workflow is disabled, keys are missing,
+    or an error occurs while reading configuration.
+    """
+    # Guard: if shelf is None or empty, leave it unchanged
+    if not shelf:
+        return shelf
+
+    try:
+        # Safely read config values using .get to avoid KeyError if keys are missing.
+        workflow_stage_1 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]
+        workflow_stage_2 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY]
+
+        # Determine whether the workflow feature is explicitly enabled.
+        workflow_enabled = config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]
+
+        if workflow_enabled:
+            # Apply the transition when the shelf matches stage 1 or when stage 1 is the wildcard.
+            if shelf == workflow_stage_1 or workflow_stage_1 == ShelfConstants.WORKFLOW_STAGE_1_WILDCARD:
+                log.debug(
+                    "%s: Applying workflow transition: '%s' -> '%s'",
+                    PLUGIN_NAME,
+                    shelf,
+                    workflow_stage_2,
+                )
+                return workflow_stage_2
+
+        return shelf
+
+    except Exception as e:
+        # On any unexpected error reading config, leave shelf unchanged and log details.
+        log.debug("%s: Failed to evaluate workflow transition; leaving shelf unchanged: %s", PLUGIN_NAME, e)
+        log.debug("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
+        return shelf
+
 
 def file_post_save_processor(file: Any) -> None:
     """
@@ -41,6 +80,20 @@ def file_post_save_processor(file: Any) -> None:
         log.error("%s: Error in file processor: %s", PLUGIN_NAME, e)
         log.error("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
 
+
+def _set_metadata(obj: Any, key: str, value: Any, label: str) -> None:
+    meta = getattr(obj, "metadata", None)
+    filename = getattr(obj, "filename", "<unknown>")
+    if meta is None:
+        log.debug("%s: %s metadata missing for: %s", PLUGIN_NAME, label, filename)
+        return
+    try:
+        meta[key] = value
+    except TypeError as e:
+        log.debug("%s: Failed to set %s metadata (non-subscriptable) for: %s; %s", PLUGIN_NAME, label, filename, e)
+        log.debug("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
+
+
 def file_post_load_processor(file: Any) -> None:
     """
     Process a file after Picard has scanned it.
@@ -52,17 +105,28 @@ def file_post_load_processor(file: Any) -> None:
         known_shelves = ShelfUtils.get_known_shelves()
         shelf = ShelfUtils.get_shelf_from_path(path=file.filename, known_shelves=known_shelves)
 
-        # file.metadata[ShelfConstants.TAG_KEY] = file_shelf
+        # Apply workflow transition
+        shelf = _apply_workflow_transition(shelf)
+
         ShelfUtils.add_known_shelf(shelf)
         log.debug("%s: Set shelf '%s' for: %s", PLUGIN_NAME, shelf, file.filename)
 
-        album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+        # Preserve original behavior: surface missing metadata as an AttributeError
+        file_meta = getattr(file, "metadata", None)
+        if file_meta is None:
+            raise AttributeError("file.metadata missing for: %s" % getattr(file, "filename", "<unknown>"))
+
+        # Safely set metadata using helper for consistency
+        _set_metadata(file, ShelfConstants.TAG_KEY, shelf, "file")
+
+        album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
         if album_id:
             vote_for_shelf(album_id, shelf)
 
     except (KeyError, AttributeError, ValueError) as e:
         log.error("%s: Error in file processor: %s", PLUGIN_NAME, e)
         log.error("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
+
 
 def file_post_addition_to_track_processor(track, file) -> None:
     """
@@ -72,24 +136,34 @@ def file_post_addition_to_track_processor(track, file) -> None:
         file: Picard file object
     """
     try:
-
         log.debug("%s: (file_post_addition_to_track_processor) Processing file: %s", PLUGIN_NAME,
                   file.filename)
         known_shelves = ShelfUtils.get_known_shelves()
         shelf = ShelfUtils.get_shelf_from_path(path=file.filename, known_shelves=known_shelves)
 
+        # Apply workflow transition
+        shelf = _apply_workflow_transition(shelf)
+
         ShelfUtils.add_known_shelf(shelf)
         log.debug("%s: Set shelf '%s' for: %s", PLUGIN_NAME, shelf, file.filename)
 
-        album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+        # Preserve original behavior: surface missing metadata as an AttributeError
+        file_meta = getattr(file, "metadata", None)
+        if file_meta is None:
+            raise AttributeError("file.metadata missing for: %s" % getattr(file, "filename", "<unknown>"))
+
+        # Use same safe metadata setter for file and track
+        _set_metadata(file, ShelfConstants.TAG_KEY, shelf, "file")
+        _set_metadata(track, ShelfConstants.TAG_KEY, shelf, "track")
+
+        album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
         if album_id:
             vote_for_shelf(album_id, shelf)
-            file.metadata[ShelfConstants.TAG_KEY] = shelf
-            track.metadata[ShelfConstants.TAG_KEY] = shelf
 
     except (KeyError, AttributeError, ValueError) as e:
         log.error("%s: Error in file processor: %s", PLUGIN_NAME, e)
         log.error("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
+
 
 def file_post_removal_from_track_processor(track, file) -> None:
     """
