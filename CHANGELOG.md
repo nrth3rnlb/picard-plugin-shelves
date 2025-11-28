@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v1.7.0 (2025-11-28)
+
+### Chores
+
+- **gitignore**: Ignore tmp.* directories and files
+  ([`39fcd0a`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/39fcd0a588625d95f0dbd1d328fab3ad4845f523))
+
+### Features
+
+- **processors**: Add workflow transition logic
+  ([`b5df392`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/b5df39200e4a289c6f2740598f3d398b6ea9eed4))
+
+- **workflow**: Add wildcard option for workflow stage 1 transition
+  ([`bf0d09a`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/bf0d09ae4f15867a7018fc80c4cf335a61b89bca))
+
+### Refactoring
+
+- **init**: Remove unused PLUGIN_USER_GUIDE_URL constant
+  ([`c6b646a`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/c6b646a588c6f6499a2bf19063f52c5516df17b5))
+
+
 ## v1.6.1 (2025-11-21)
 
 ### Refactor
