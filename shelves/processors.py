@@ -15,7 +15,7 @@ known_shelves and use it directly.
 from __future__ import annotations
 
 import traceback
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from picard import config, log
 
@@ -100,35 +100,10 @@ def file_post_load_processor(file: Any) -> None:
     Args:
         file: Picard file object
     """
-    try:
-        log.debug("%s: Processing file: %s", PLUGIN_NAME, file.filename)
-        known_shelves = ShelfUtils.get_known_shelves()
-        shelf = ShelfUtils.get_shelf_from_path(path=file.filename, known_shelves=known_shelves)
-
-        # Apply workflow transition
-        shelf = _apply_workflow_transition(shelf)
-
-        ShelfUtils.add_known_shelf(shelf)
-        log.debug("%s: Set shelf '%s' for: %s", PLUGIN_NAME, shelf, file.filename)
-
-        # Preserve original behavior: surface missing metadata as an AttributeError
-        file_meta = getattr(file, "metadata", None)
-        if file_meta is None:
-            raise AttributeError("file.metadata missing for: %s" % getattr(file, "filename", "<unknown>"))
-
-        # Safely set metadata using helper for consistency
-        _set_metadata(file, ShelfConstants.TAG_KEY, shelf, "file")
-
-        album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
-        if album_id:
-            vote_for_shelf(album_id, shelf)
-
-    except (KeyError, AttributeError, ValueError) as e:
-        log.error("%s: Error in file processor: %s", PLUGIN_NAME, e)
-        log.error("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
+    file_post_addition_to_track_processor(file=file, track=None)
 
 
-def file_post_addition_to_track_processor(track, file) -> None:
+def file_post_addition_to_track_processor(track: Optional[Any], file: Any) -> None:
     """
     Process a file after it has been added to a track.
     Args:
@@ -152,9 +127,10 @@ def file_post_addition_to_track_processor(track, file) -> None:
         if file_meta is None:
             raise AttributeError("file.metadata missing for: %s" % getattr(file, "filename", "<unknown>"))
 
-        # Use same safe metadata setter for file and track
+        # Use the same safe metadata setter for file and track
         _set_metadata(file, ShelfConstants.TAG_KEY, shelf, "file")
-        _set_metadata(track, ShelfConstants.TAG_KEY, shelf, "track")
+        if track is not None:
+            _set_metadata(track, ShelfConstants.TAG_KEY, shelf, "track")
 
         album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
         if album_id:

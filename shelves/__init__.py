@@ -14,8 +14,11 @@ from collections import namedtuple
 from typing import Any, Dict
 
 from picard import log
-from picard.file import register_file_post_load_processor, \
-    register_file_post_addition_to_track_processor, register_file_post_removal_from_track_processor
+from picard.file import (
+    register_file_post_load_processor,
+    register_file_post_addition_to_track_processor,
+    register_file_post_removal_from_track_processor
+)
 from picard.metadata import register_track_metadata_processor
 from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
@@ -194,7 +197,7 @@ def _file_post_load_processor_wrapper(file: Any) -> None:
     file_post_load_processor(file)
 
 
-def _file_post_addition_to_track_processor(track, file: Any) -> None:
+def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
     file_post_addition_to_track_processor(track, file)
 
@@ -211,7 +214,7 @@ def _set_shelf_in_metadata_wrapper(
     set_shelf_in_metadata(album, metadata, track, release)
 
 
-def _file_post_removal_from_track_processor(track, file: Any) -> None:
+def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
     file_post_removal_from_track_processor(track, file)
 
@@ -234,4 +237,4 @@ register_album_action(DetermineShelfAction())
 register_options_page(ShelvesOptionsPage)
 
 # Register a script function for use in file naming
-register_script_function(func_shelf, "shelf")
+register_script_function(function=func_shelf, name="shelf")
