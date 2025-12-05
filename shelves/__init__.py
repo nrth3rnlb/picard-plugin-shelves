@@ -48,6 +48,7 @@ from .utils import ShelfUtils
 
 LogData = namedtuple('LogData', ['album_id', 'votes', 'winner'])
 
+
 class ShelfManager:
     """Class to manage shelf state and ensure thread-safety.
 
@@ -125,20 +126,25 @@ class ShelfManager:
             self._shelves_by_album.pop(album_id, None)
             self._shelf_votes.pop(album_id, None)
 
+
 # Global instance - initialized once at module import
 _shelf_manager = ShelfManager()
+
 
 def vote_for_shelf(album_id: str, shelf_name: str) -> None:
     """Wrapper for ShelfManager.vote_for_shelf."""
     _shelf_manager.vote_for_shelf(album_id, shelf_name)
 
+
 def get_album_shelf(album_id: str) -> str | None:
     """Wrapper for ShelfManager.get_album_shelf."""
     return _shelf_manager.get_album_shelf(album_id)
 
+
 def clear_album(album_id: str) -> None:
     """Wrapper for ShelfManager.clear_album."""
     _shelf_manager.clear_album(album_id)
+
 
 from .actions import SetShelfAction as _SetShelfActionBase, DetermineShelfAction as _DetermineShelfActionBase
 from .options import ShelvesOptionsPage as _ShelvesOptionsPageBase
@@ -151,12 +157,14 @@ from .processors import (
 )
 from .script_functions import func_shelf as _func_shelf_base
 
+
 class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the ShelvesOptionsPage to ensure proper plugin registration."""
 
     def __init__(self, parent=None) -> None:
         """Initialize with the global shelf_manager instance."""
         super().__init__(parent)
+
 
 class SetShelfAction(_SetShelfActionBase):
     """Wrapper class for SetShelfAction to ensure proper plugin registration."""
@@ -165,12 +173,14 @@ class SetShelfAction(_SetShelfActionBase):
         """Initialize with the global shelf_manager instance."""
         super().__init__()
 
+
 class DetermineShelfAction(_DetermineShelfActionBase):
     """Wrapper class for DetermineShelfAction to ensure proper plugin registration."""
 
     def __init__(self) -> None:
         """Initialize with the global shelf_manager instance."""
         super().__init__()
+
 
 # Wrapper for script function
 def func_shelf(parser: Any) -> str:
@@ -182,6 +192,7 @@ def func_shelf(parser: Any) -> str:
 def _file_post_load_processor_wrapper(file: Any) -> None:
     """Wrapper for file_post_load_processor."""
     file_post_load_processor(file)
+
 
 def _file_post_addition_to_track_processor(track, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
@@ -198,6 +209,7 @@ def _set_shelf_in_metadata_wrapper(
 ) -> None:
     """Wrapper for set_shelf_in_metadata."""
     set_shelf_in_metadata(album, metadata, track, release)
+
 
 def _file_post_removal_from_track_processor(track, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""

@@ -22,7 +22,6 @@
 - **init**: Remove unused PLUGIN_USER_GUIDE_URL constant
   ([`c6b646a`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/c6b646a588c6f6499a2bf19063f52c5516df17b5))
 
-
 ## v1.6.1 (2025-11-21)
 
 ### Refactor
@@ -62,7 +61,6 @@
 - Cleaning up the release process
   ([`ffd9369`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/ffd93695a23d95d04622897ea96d54ff913d9d6d))
 
-
 ## v1.4.0 (2025-11-06)
 
 ### Bug Fixes
@@ -89,7 +87,6 @@
 
 - Add file post addition and removal processors for album shelf management
   ([`3eef069`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/3eef069c5725c9b06da9c85005b4953e867fa646))
-
 
 ## v1.3.1 (2025-11-01)
 
@@ -119,7 +116,6 @@
 - Update repository URL and echo command for PR creation in workflow
   ([`1b8bbc9`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/1b8bbc90a9de232d7cd9b2b009ff2e9eb60012b9))
 
-
 ## v1.3.0 (2025-11-01)
 
 ### Documentation
@@ -132,7 +128,6 @@
 - Add DetermineShelfAction to determine shelf from storage location
   ([`2e14dd5`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/2e14dd56a5a9cc6af42ccc0af6ef136da10b6a9e))
 
-  
 ## v1.2.2 (2025-10-31)
 
 ### Bug Fixes
@@ -145,7 +140,6 @@
 - Enhance plugin description and add license file
   ([`9211574`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/9211574b5bff2a745605eff7f48201ba3525cb79))
 
-
 ## v1.2.1 (2025-10-30)
 
 ### Bug Fixes
@@ -153,12 +147,9 @@
 - __version__ again
   ([`296a08e`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/296a08e227af5d03d755e8db3e439992aa3b8f5a))
 
-
 ## v1.2.0 (2025-10-30)
 
-
 ## v1.1.1 (2025-10-30)
-
 
 ## v1.0.0 (2025-10-30)
 

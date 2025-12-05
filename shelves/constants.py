@@ -34,6 +34,8 @@ class ShelfConstants:
     CONFIG_WORKFLOW_STAGE_2_KEY = "shelves_workflow_stage_2"
     CONFIG_WORKFLOW_ENABLED_KEY = "shelves_workflow_enabled"
     CONFIG_RENAME_SNIPPET_SKELETON_KEY = "shelves_rename_snippet_skeleton"
+    CONFIG_ACTIVE_TAB = "shelves_active_tab"
+
 
     # Album indicators that suggest a name is not a shelf
     ALBUM_INDICATORS = ["Vol.", "Volume", "Disc", "CD", "Part"]

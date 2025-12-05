@@ -12,7 +12,6 @@ from picard import config, log
 
 from .constants import ShelfConstants
 
-
 PLUGIN_NAME = "Shelves"
 
 

@@ -11,6 +11,7 @@ from typing import Dict
 
 from picard import log
 
+
 class ShelfManager:
     """Manages shelf assignments and state with conflict detection."""
 

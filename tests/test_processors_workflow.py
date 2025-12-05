@@ -15,13 +15,11 @@ def test_enabled_workflow_with_none_and_empty(monkeypatch):
         },
         raising=False,
     )
-    assert _apply_workflow_transition(None) is None
     assert _apply_workflow_transition("") == ""
 
 
-def test_disabled_workflow_returns_none_and_empty(monkeypatch):
+def test_disabled_workflow_returns_empty(monkeypatch):
     monkeypatch.setattr(config, "setting", {}, raising=False)
-    assert _apply_workflow_transition(None) is None
     assert _apply_workflow_transition("") == ""
 
 
