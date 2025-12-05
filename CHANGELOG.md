@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v1.7.0 (2025-11-28)
+
+### Chores
+
+- **gitignore**: Ignore tmp.* directories and files
+  ([`39fcd0a`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/39fcd0a588625d95f0dbd1d328fab3ad4845f523))
+
+### Features
+
+- **processors**: Add workflow transition logic
+  ([`b5df392`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/b5df39200e4a289c6f2740598f3d398b6ea9eed4))
+
+- **workflow**: Add a wildcard-option for workflow stage 1 transition
+  ([`bf0d09a`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/bf0d09ae4f15867a7018fc80c4cf335a61b89bca))
+
+### Refactoring
+
+- **init**: Remove unused PLUGIN_USER_GUIDE_URL constant
+  ([`c6b646a`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/c6b646a588c6f6499a2bf19063f52c5516df17b5))
+
+## v1.6.1 (2025-11-21)
+
+### Refactor
+
+- **ui**: redesign shelves config page with tabbed interface
+- **ui**: set shelf name dialog
+
 ## v1.6.0 (2025-11-19)
 
 ### Feat
@@ -10,7 +37,7 @@
 
 ### Refactor
 
-- **options**: update UI file reference and rename shelves_config.ui to shelves.ui
+- **options**: update UI file reference and rename "shelves_config.ui" to "shelves.ui"
 
 ## v1.5.0 (2025-11-18)
 
@@ -33,7 +60,6 @@
 
 - Cleaning up the release process
   ([`ffd9369`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/ffd93695a23d95d04622897ea96d54ff913d9d6d))
-
 
 ## v1.4.0 (2025-11-06)
 
@@ -61,7 +87,6 @@
 
 - Add file post addition and removal processors for album shelf management
   ([`3eef069`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/3eef069c5725c9b06da9c85005b4953e867fa646))
-
 
 ## v1.3.1 (2025-11-01)
 
@@ -91,12 +116,11 @@
 - Update repository URL and echo command for PR creation in workflow
   ([`1b8bbc9`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/1b8bbc90a9de232d7cd9b2b009ff2e9eb60012b9))
 
-
 ## v1.3.0 (2025-11-01)
 
 ### Documentation
 
-- Update README to include link to MusicBrainz Picard and improve clarity
+- Update README to include a link to MusicBrainz Picard and improve clarity
   ([`b0489a7`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/b0489a7561a02f0e129c4ba392621376c3d0d83c))
 
 ### Features
@@ -104,19 +128,17 @@
 - Add DetermineShelfAction to determine shelf from storage location
   ([`2e14dd5`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/2e14dd56a5a9cc6af42ccc0af6ef136da10b6a9e))
 
-  
 ## v1.2.2 (2025-10-31)
 
 ### Bug Fixes
 
-- No shelf if musicbrainz_albumid is not set
+- No shelf if "musicbrainz_albumid" is not set
   ([`f6d6193`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/f6d619379acafa52e0f5928d7ab6201209ef5251))
 
 ### Documentation
 
 - Enhance plugin description and add license file
   ([`9211574`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/9211574b5bff2a745605eff7f48201ba3525cb79))
-
 
 ## v1.2.1 (2025-10-30)
 
@@ -125,12 +147,9 @@
 - __version__ again
   ([`296a08e`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/296a08e227af5d03d755e8db3e439992aa3b8f5a))
 
-
 ## v1.2.0 (2025-10-30)
 
-
 ## v1.1.1 (2025-10-30)
-
 
 ## v1.0.0 (2025-10-30)
 

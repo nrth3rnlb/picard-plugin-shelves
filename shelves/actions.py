@@ -7,20 +7,22 @@ Context menu actions for the Shelves plugin.
 from __future__ import annotations
 
 import os
-from typing import Any, List
+from typing import Any, List, Optional
 
-from PyQt5 import QtWidgets, uic
+from PyQt5 import QtWidgets
+from PyQt5 import uic  # type: ignore # uic has no type stubs
 from PyQt5.QtWidgets import QDialog
 from picard import log
 from picard.ui.itemviews import BaseAction
 
-from . import PLUGIN_NAME
+from . import PLUGIN_NAME, _shelf_manager
 from . import clear_album, vote_for_shelf
 from .constants import ShelfConstants
 from .utils import ShelfUtils
 
 LABEL_VALIDATION_NAME = "label_validation"
 COMBO_SHELF_NAME = "combo_shelves"
+
 
 class SetShelfAction(BaseAction):
     """
@@ -47,7 +49,7 @@ class SetShelfAction(BaseAction):
         log.debug("%s: SetShelfAction called with %d objects", PLUGIN_NAME, len(objs))
 
         known_shelves = ShelfUtils.get_known_shelves()
-        dialog = SetShelfNameDialog(self.tagger)
+        dialog = SetShelfDialog(self.tagger)
         shelf_name = dialog.ask_for_shelf_name(known_shelves)
         if not shelf_name:
             return
@@ -89,12 +91,15 @@ class SetShelfAction(BaseAction):
                 shelf_name,
                 type(obj).__name__,
             )
+        album_id = obj.metadata[ShelfConstants.MUSICBRAINZ_ALBUMID]
+        _shelf_manager.set_album_shelf(album_id, shelf_name, source="manual", lock=True)
 
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
                 file.metadata[ShelfConstants.TAG_KEY] = shelf_name
 
-class SetShelfNameDialog(QDialog):
+
+class SetShelfDialog(QDialog):
     """
     Dialog to set the shelf name.
     """
@@ -113,28 +118,33 @@ class SetShelfNameDialog(QDialog):
         ui_file = os.path.join(os.path.dirname(__file__), 'ui', 'actions.ui')
         uic.loadUi(ui_file, self)
 
-        self.validation_label: QtWidgets.QLabel = self.findChild(QtWidgets.QLabel, LABEL_VALIDATION_NAME)
-        self.shelf_combo: QtWidgets.QComboBox = self.findChild(QtWidgets.QComboBox, COMBO_SHELF_NAME)
+        self.validation_label: Optional[QtWidgets.QLabel] = self.findChild(QtWidgets.QLabel, LABEL_VALIDATION_NAME)
+        self.shelf_combo: Optional[QtWidgets.QComboBox] = self.findChild(QtWidgets.QComboBox, COMBO_SHELF_NAME)
 
-        self.shelf_combo.currentTextChanged.connect(self._on_text_changed)
+        if self.shelf_combo is not None:
+            self.shelf_combo.currentTextChanged.connect(self._on_text_changed)
 
     def ask_for_shelf_name(self, known_shelves: list[str]) -> str | None:
         """
-        Show the dialog to ask for a shelf name.
+        Show the dialog and wait for the user to enter a shelf name.
         Args:
             known_shelves: List of known shelf names
         Returns:
-            The shelf name entered by the user, or None if cancelled.
+            The shelf name entered by the user, or None if canceled.
         """
-        self.shelf_combo.clear()
-        self.shelf_combo.addItems(known_shelves)
-        self.shelf_combo.setEditable(True)
-        self.shelf_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        if self.shelf_combo is not None:
+            self.shelf_combo.clear()
+            self.shelf_combo.addItems(known_shelves)
+            self.shelf_combo.setEditable(True)
+            self.shelf_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
 
-        self.validation_label.setText("")
-        self.validation_label.setStyleSheet("QLabel { color: orange; }")
+        if self.validation_label is not None:
+            self.validation_label.setText("")
+            self.validation_label.setStyleSheet("QLabel { color: orange; }")
 
         if self.exec_() == QtWidgets.QDialog.Accepted:
+            if self.shelf_combo is None:
+                return None
             value = self.shelf_combo.currentText().strip()
             return value if value else None
 
@@ -148,13 +158,14 @@ class SetShelfNameDialog(QDialog):
             text: Current text in the combo box
         """
         valid, msg = ShelfUtils.validate_shelf_name(text)
-        if msg:
-            self.validation_label.setText(msg)
-            self.validation_label.setStyleSheet(
-                "QLabel { color: red; }" if not valid else "QLabel { color: orange; }"
-            )
-        else:
-            self.validation_label.setText("")
+        if self.validation_label is not None:
+            if msg:
+                self.validation_label.setText(msg)
+                self.validation_label.setStyleSheet(
+                    "QLabel { color: red; }" if not valid else "QLabel { color: orange; }"
+                )
+            else:
+                self.validation_label.setText("")
 
 
 class DetermineShelfAction(BaseAction):
@@ -183,14 +194,14 @@ class DetermineShelfAction(BaseAction):
         )
 
         # Track albums that need reinitialization
-        albums_to_reinitialize = set()
+        album_ids_to_reinitialize: set[str] = set()
 
         # Process each object
         for obj in objs:
-            self._determine_shelf_recursive(obj, albums_to_reinitialize)
+            self._determine_shelf_recursive(obj, album_ids_to_reinitialize)
 
         # Reinitialize album data in shelf manager
-        for album_id in albums_to_reinitialize:
+        for album_id in album_ids_to_reinitialize:
             clear_album(album_id)
 
         # Re-vote for shelves based on file paths
@@ -201,17 +212,17 @@ class DetermineShelfAction(BaseAction):
             "%s: Determined shelf for %d object(s), reinitialized %d album(s)",
             PLUGIN_NAME,
             len(objs),
-            len(albums_to_reinitialize),
+            len(album_ids_to_reinitialize),
         )
 
     @staticmethod
-    def _determine_shelf_recursive(obj: Any, albums_to_reinitialize: set) -> None:
+    def _determine_shelf_recursive(obj: Any, album_ids: set[str]) -> None:
         """
         Determine the shelf name from file paths recursively.
 
         Args:
             obj: Picard object (album, track, etc.)
-            albums_to_reinitialize: Set to track albums that need reinitialization
+            album_ids: Set to track albums that need reinitialization
         """
         unique_shelves = set()
         first_shelf = None
@@ -219,7 +230,7 @@ class DetermineShelfAction(BaseAction):
         known_shelves = ShelfUtils.get_known_shelves()
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
-                # Determine shelf from file path
+                # Determine shelf from the file path
                 shelf_name = ShelfUtils.get_shelf_from_path(path=file.filename, known_shelves=known_shelves)
 
                 # Update metadata
@@ -233,7 +244,7 @@ class DetermineShelfAction(BaseAction):
                 # Track album for reinitialization
                 album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
                 if album_id:
-                    albums_to_reinitialize.add(album_id)
+                    album_ids.add(album_id)
 
                 log.debug(
                     "%s: Determined shelf '%s' for file: %s",

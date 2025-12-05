@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Options page for the Shelves plugin.
 """
@@ -9,23 +7,35 @@ from __future__ import annotations
 import os
 from typing import Set, Optional
 
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtCore import Qt
+from PyQt5 import QtWidgets, QtCore
+from PyQt5 import uic  # type: ignore # uic has no type stubs
 from picard import log
-from picard.config import BoolOption, ListOption, TextOption
+from picard.config import BoolOption, ListOption, TextOption, IntOption
 from picard.ui.options import OptionsPage
 
 from . import PLUGIN_NAME, ShelfUtils
 from .constants import DEFAULT_SHELVES, ShelfConstants
 
+
 class ShelvesOptionsPage(OptionsPage):
     """
     Options page for the Shelves plugin.
     """
-
     NAME = "shelves"
     TITLE = "Shelves"
     PARENT = "plugins"
+
+    add_shelf_button: QtWidgets.QPushButton
+    remove_shelf_button: QtWidgets.QPushButton
+    remove_unknown_shelves_button: QtWidgets.QPushButton
+    scan_for_shelves_button: QtWidgets.QPushButton
+    shelf_list: QtWidgets.QListWidget
+    workflow_enabled: QtWidgets.QCheckBox
+    workflow_stage_1: QtWidgets.QComboBox
+    workflow_stage_2: QtWidgets.QComboBox
+    workflow_transitions: QtWidgets.QWidget
+    tabWidget: QtWidgets.QTabWidget
+    naming_script_code: QtWidgets.QPlainTextEdit
 
     options = [
         ListOption(
@@ -45,11 +55,12 @@ class ShelvesOptionsPage(OptionsPage):
             DEFAULT_SHELVES[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY],
         ),
         BoolOption("setting", ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY, True),
+        IntOption("setting", ShelfConstants.CONFIG_ACTIVE_TAB, 0)
     ]
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         """
-        Initialise the option page.
+        Initialize the option page.
 
         Args:
             parent: Parent widget
@@ -100,11 +111,11 @@ class ShelvesOptionsPage(OptionsPage):
 
 
         # Connect signals
-        self.b_add_shelf.clicked.connect(self.add_shelf)
-        self.b_remove_shelf.clicked.connect(self.remove_shelf)
-        self.b_remove_unknown_shelves.clicked.connect(self.rebuild_shelf_list)
+        self.add_shelf_button.clicked.connect(self.add_shelf)
+        self.remove_shelf_button.clicked.connect(self.remove_shelf)
+        self.remove_unknown_shelves_button.clicked.connect(self.rebuild_shelf_list)
 
-        self.b_scan_4_shelves.clicked.connect(self.scan_music_directory)
+        self.scan_for_shelves_button.clicked.connect(self.scan_music_directory)
         self.shelf_list.itemSelectionChanged.connect(
             self.on_shelf_list_selection_changed
         )
@@ -116,7 +127,6 @@ class ShelvesOptionsPage(OptionsPage):
             self.on_workflow_stage_changed
         )
 
-
     def load(self) -> None:
         """Load already known shelves from config."""
         shelves = sorted(ShelfUtils.get_known_shelves())
@@ -126,17 +136,20 @@ class ShelvesOptionsPage(OptionsPage):
         self.workflow_transitions.setEnabled(self.workflow_enabled.isChecked())
         self._rebuild_workflow_dropdowns()
         self.workflow_enabled.setChecked(
-                self.config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY])  # type: ignore[index]
+            self.config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY])  # type: ignore[index]
         # Update preview with current values
         snippet = self.get_rename_snippet()
         self.naming_script_code.setPlainText(snippet)
+
+        self.tabWidget.setCurrentIndex(self.config.setting[ShelfConstants.CONFIG_ACTIVE_TAB])  # type: ignore[index]
 
     def save(self) -> None:
         """Save shelves list to config."""
         shelves = []
         for i in range(self.shelf_list.count()):
-            item_text = self.shelf_list.item(i).text()
-            shelves.append(item_text)
+            item = self.shelf_list.item(i)
+            if item is not None:
+                shelves.append(item.text())
 
         self.config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = shelves  # type: ignore[index]
         self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY] = (  # type: ignore[index]
@@ -147,6 +160,9 @@ class ShelvesOptionsPage(OptionsPage):
         )
         self.config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = (  # type: ignore[index]
             self.workflow_enabled.isChecked()
+        )
+        self.config.setting[ShelfConstants.CONFIG_ACTIVE_TAB] = (  # type: ignore[index]
+            self.tabWidget.currentIndex()
         )
 
         log.debug("%s: Saved %d shelves to config", PLUGIN_NAME, len(shelves))
@@ -164,7 +180,7 @@ class ShelvesOptionsPage(OptionsPage):
         is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
 
         if not is_valid:
-            QtWidgets.QMessageBox.warning(self, "Invalid Name", message)
+            QtWidgets.QMessageBox.warning(self, title="Invalid Name", text=message)
             return
 
         # Check if already exists
@@ -212,10 +228,12 @@ class ShelvesOptionsPage(OptionsPage):
 
         # Identify shelves to remove
         for i in range(self.shelf_list.count()):
-            item_text = self.shelf_list.item(i).text()
-            log.debug("%s: Checking shelf '%s' for existence", PLUGIN_NAME, item_text)
-            if item_text not in existing_shelves:
-                items_to_remove.append(item_text)
+            item = self.shelf_list.item(i)
+            if item is not None:
+                item_text = item.text()
+                log.debug("%s: Checking shelf '%s' for existence", PLUGIN_NAME, item_text)
+                if item_text not in existing_shelves:
+                    items_to_remove.append(item_text)
 
         # Remove identified shelves
         for item_text in items_to_remove:
@@ -228,10 +246,17 @@ class ShelvesOptionsPage(OptionsPage):
         self._rebuild_workflow_dropdowns()
 
     def _rebuild_workflow_dropdowns(self) -> None:
-        """Rebuild the workflow dropdowns based on current shelf list."""
-        shelves = list(self.shelf_list.item(i).text() for i in range(self.shelf_list.count()))
+        """Rebuild the workflow dropdowns based on the current shelf list."""
+        shelves = []
+        for i in range(self.shelf_list.count()):
+            item = self.shelf_list.item(i)
+            if item is not None:
+                shelves.append(item.text())
         log.debug("%s: Rebuilding workflow dropdowns with shelves: %s", PLUGIN_NAME, shelves)
         self.workflow_stage_1.clear()
+        # Add the wildcard option
+        self.workflow_stage_1.addItem(ShelfConstants.WORKFLOW_STAGE_1_WILDCARD)
+        # Add existing shelves
         self.workflow_stage_1.addItems(shelves)
         self.workflow_stage_1.setCurrentText(
             self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY])  # type: ignore[index]
@@ -284,10 +309,9 @@ $set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
 %_shelffolder%
 $if2(%albumartist%,%artist%)/%album%/%title%"""
 
-
     def on_shelf_list_selection_changed(self) -> None:
         """ Enable / disable the remove button based on selection. """
-        self.b_remove_shelf.setEnabled(
+        self.remove_shelf_button.setEnabled(
             self.shelf_list.currentItem() is not None
         )
 
@@ -318,7 +342,9 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
 
         Returns: Set of shelf names
         """
-        return {
-            self.shelf_list.item(i).text()
-            for i in range(self.shelf_list.count())
-        }
+        shelves = set()
+        for i in range(self.shelf_list.count()):
+            item = self.shelf_list.item(i)
+            if item is not None:
+                shelves.add(item.text())
+        return shelves

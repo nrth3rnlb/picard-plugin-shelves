@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>747</width>
+       <width>1163</width>
     <height>748</height>
    </rect>
   </property>
@@ -24,7 +24,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>727</width>
+           <width>1143</width>
         <height>728</height>
        </rect>
       </property>
@@ -51,7 +51,7 @@
           <number>10</number>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse|Qt::TextBrowserInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+             <set>Qt::NoTextInteraction</set>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2"/>
         </widget>
@@ -65,7 +65,7 @@
           </sizepolicy>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+             <number>0</number>
          </property>
          <property name="tabsClosable">
           <bool>false</bool>
@@ -139,16 +139,18 @@
                   </spacer>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="b_add_shelf">
+                     <widget class="QPushButton" name="add_shelf_button">
                    <property name="text">
                     <string>Add Shelf...</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="b_scan_4_shelves">
+                     <widget class="QPushButton" name="scan_for_shelves_button">
                    <property name="toolTip">
-                    <string>Automatically detect shelves from your music library directory</string>
+                       <string>Automatically detect shelves
+                           from your music library directory
+                       </string>
                    </property>
                    <property name="text">
                     <string>Scan Music Directory</string>
@@ -156,7 +158,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="b_remove_shelf">
+                     <widget class="QPushButton" name="remove_shelf_button">
                    <property name="enabled">
                     <bool>false</bool>
                    </property>
@@ -166,9 +168,12 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="b_remove_unknown_shelves">
+                     <widget class="QPushButton" name="remove_unknown_shelves_button">
                    <property name="toolTip">
-                    <string>Remove virtual shelves that have no equivalent in the music directory.</string>
+                       <string>Remove virtual shelves that have
+                           no equivalent in the music
+                           directory.
+                       </string>
                    </property>
                    <property name="text">
                     <string>Remove Unknown</string>
@@ -188,10 +193,19 @@
            <string>Workflow Configuration</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_8">
-           <item alignment="Qt::AlignTop">
+              <item>
+                  <widget class="QCheckBox" name="workflow_enabled">
+                      <property name="text">
+                          <string>Use workflow</string>
+                      </property>
+                  </widget>
+              </item>
+              <item>
             <widget class="QLabel" name="l_workflow_description">
              <property name="text">
-              <string>When enabled, the workflow sets the album’s shelf automatically by the transition configuration. Manual changes override it.</string>
+                 <string>When enabled, the workflow sets the album’s shelf automatically by the transition
+                     configuration.
+                 </string>
              </property>
              <property name="wordWrap">
               <bool>true</bool>
@@ -199,9 +213,9 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="workflow_enabled">
+               <widget class="QLabel" name="label_3">
              <property name="text">
-              <string>Use workflow</string>
+                 <string>Manual changes override it.</string>
              </property>
             </widget>
            </item>
@@ -223,7 +237,7 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>from shelf </string>
+                    <string>from shelf</string>
                 </property>
                </widget>
               </item>
@@ -272,7 +286,7 @@
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="tab">
+            <widget class="QWidget" name="tab_release_type_shelf_mapping">
           <attribute name="title">
            <string>Release Type / Shelf Mapping</string>
           </attribute>
@@ -320,7 +334,9 @@
            <item alignment="Qt::AlignTop">
             <widget class="QLabel" name="l_script_info">
              <property name="text">
-              <string>Use the following code in your file naming script to use the shelves.</string>
+                 <string>Use the following code in your file naming script to use
+                     the shelves.
+                 </string>
              </property>
             </widget>
            </item>

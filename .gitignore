@@ -5,3 +5,4 @@ __pycache__/
 .envrc
 .direnv/
 *.egg-info/
+tmp.*/

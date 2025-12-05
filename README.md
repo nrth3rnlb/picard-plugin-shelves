@@ -1,8 +1,10 @@
 # Shelves Plugin for MusicBrainz Picard
 
-The **Shelves** plugin adds virtual shelf management to [MusicBrainz Picard](https://picard.musicbrainz.org/), allowing you to organise your music files by top-level folders (shelves) in your music library.
+The **Shelves** plugin adds virtual shelf management to [MusicBrainz Picard](https://picard.musicbrainz.org/), allowing
+you to organize your music files by top-level folders (shelves) in your music library.
 
-Think of your music library as a physical library with different shelves — one for your standard collection, one for incoming/unprocessed music, one for Christmas music, etc.
+Think of your music library as a physical library with different shelves — one for your standard collection, one for
+incoming/unprocessed music, one for Christmas music, etc.
 
 ## Features
 
@@ -19,8 +21,8 @@ Think of your music library as a physical library with different shelves — one
 ## Installation
 
 1. Copy the `shelves` folder to your Picard plugins directory:
-   - **System Package**: `~/.config/MusicBrainz/Picard/plugins/`
-   - **Flatpak**: `~/.var/app/org.musicbrainz.Picard/config/MusicBrainz/Picard/plugins`
+    - **System Package**: `~/.config/MusicBrainz/Picard/plugins/`
+    - **Flatpak**: `~/.var/app/org.musicbrainz.Picard/config/MusicBrainz/Picard/plugins`
 
 2. Restart Picard
 
@@ -30,7 +32,7 @@ Think of your music library as a physical library with different shelves — one
 
 ### Directory Structure
 
-The plugin expects your music library to be organised like this:
+The plugin expects your music library to be organized like this:
 
 ```
 ~/Music/
@@ -46,12 +48,12 @@ The plugin expects your music library to be organised like this:
 └── ...
 ```
 
-It is important to remember that each top-level folder in your music directory is considered a “shelf”.
-
+It is important to remember that each top-level folder in your music directory is considered a “shelf.”
 
 ### Automatic Detection
 
 When you scan files in Picard, the plugin automatically:
+
 1. Detects the shelf name from the file path
 2. Sets the `shelf` tag in the file metadata
 3. Adds the shelf to the list of known shelves
@@ -60,19 +62,22 @@ When you scan files in Picard, the plugin automatically:
 
 The plugin has semi-intelligent recognition to avoid confusion:
 
-- **Default and known shelves** are always recognised correctly
+- **Default and known shelves** are always recognized correctly
 - **Suspicious folder names** are automatically identified and treated as misplaced files:
-  - Names containing "-" (typical for "Artist - Album" format)
-  - Very long names (> 30 characters)
-  - Names with many words (> three words)
-  - Names containing album indicators (Vol., Disc, CD, Part)
+    - Names containing "-" (typical for "Artist - Album" format)
+    - Very long names (> 30 characters)
+    - Names with many words (> three words)
+    - Names containing album indicators (Vol., Disc, CD, Part)
 
 **Example:**
-- If you accidentally place files in `~/Music/Wardruna - Runaljod - Yggdrasil/`, the plugin recognises this as an artist/album name (not a shelf)
-- The shelf tag is automatically set to "Standard" instead
-- Files will be organised properly when saved: `~/Music/Standard/Wardruna/Runaljod - Yggdrasil/`
 
-**Note:** If you *really* want to use such a name as a shelf, add it manually in the plugin settings. Once added, it will be recognised as a valid shelf.
+- If you accidentally place files in `~/Music/Wardruna - Runaljod - Yggdrasil/`, the plugin recognizes this as an
+  artist/album name (not a shelf)
+- The shelf tag is automatically set to "Standard" instead
+- Files will be organized properly when saved: `~/Music/Standard/Wardruna/Runaljod - Yggdrasil/`
+
+**Note:** If you *really* want to use such a name as a shelf, add it manually in the plugin settings. Once added, it
+will be recognized as a valid shelf.
 
 ### Manual Assignment
 
@@ -83,12 +88,14 @@ The plugin has semi-intelligent recognition to avoid confusion:
 Open **Options → Plugins → Shelves** to:
 
 #### Shelf Management
+
 - View all known shelves
 - **Add Shelf** — Manually add a new shelf
 - **Remove Shelf** — Remove a shelf from the list
 - **Scan Music Directory** — Automatically detect all shelves from your music folder
 
 #### Workflow Configuration
+
 Enable automatic shelf transitions when saving files:
 
 - **Enable Workflow** — Turn workflow automation on/off
@@ -98,6 +105,7 @@ Enable automatic shelf transitions when saving files:
 When enabled, files from Stage 1 are automatically moved to Stage 2 when you save them.
 
 #### Script Preview
+
 The settings show a ready-to-use file naming script that you can copy to **Options → File Naming**.
 
 ## File Naming Script
@@ -113,6 +121,7 @@ $if2(%albumartist%,%artist%)/%album%/%title%
 ```
 
 The `$shelf()` function:
+
 - Returns the shelf name from the file's metadata
 - Automatically applies workflow transitions if enabled (e.g. "Incoming" → "Standard")
 - Returns an empty string if no shelf is set
@@ -124,16 +133,19 @@ The `$shelf()` function:
 ### Example 1: Incoming → Standard Workflow
 
 Configure in plugin settings:
+
 - Enable Workflow
 - Stage 1: "Incoming"
 - Stage 2: "Standard"
 
 Then:
+
 1. **Scan** music files from `~/Music/Incoming/Artist/Album/`
 2. Plugin sets `shelf` tag to "Incoming"
 3. Do your tagging/editing in Picard
 4. **Save** the files
-5. Files are automatically moved to `~/Music/Standard/Artist/Album/` (because workflow transforms "Incoming" → "Standard")
+5. Files are automatically moved to `~/Music/Standard/Artist/Album/` (because workflow transforms "Incoming" → "
+   Standard")
 
 ### Example 2: Manual Shelf Assignment
 
@@ -171,9 +183,11 @@ If you accidentally place files directly under Music:
 
 ### My folder name is detected as "Standard" instead of the actual folder name
 
-This is intentional! The plugin detected that your folder name looks like an artist/album name rather than a shelf name. Check the log for details about why it was considered suspicious.
+This is intentional! The plugin detected that your folder name looks like an artist/album name rather than a shelf name.
+Check the log for details about why it was considered suspicious.
 
 **Solutions:**
+
 1. **Recommended:** Let the plugin move your files to the correct location (`Standard/Artist/Album/`)
 2. **Alternative:** If this folder name really should be a shelf, add it manually in the plugin settings
 
@@ -188,6 +202,7 @@ You can also check Picard's log (Help → View Error/Debug Log) for detailed inf
 ### The workflow isn't working
 
 Make sure:
+
 - Workflow is **enabled** in plugin settings
 - Your file naming script uses `$shelf()` (not `%shelf%` directly)
 - Stage 1 and Stage 2 are set to different shelves
@@ -212,21 +227,23 @@ shelves/
 
 ## Requirements
 
-- MusicBrainz Picard 2.0 or higher 
+- MusicBrainz Picard 2.0 or higher
 - PyQt5
 - `discid/discid.h` for the installation of the development environment using `pip install -e '.[dev]`
-  - Search for a package with a name like `libdiscid-dev`, `libdiscid-devel` or similar, depending on your Linux distribution.
+    - Search for a package with a name like `libdiscid-dev`, `libdiscid-devel` or similar, depending on your Linux
+      distribution.
 
 ## Automated Release to MusicBrainz Picard Plugins
 
-This repository includes a GitHub Actions workflow that automatically creates pull requests to the [MusicBrainz Picard Plugins repository](https://github.com/metabrainz/picard-plugins).
+This repository includes a GitHub Actions workflow that automatically creates pull requests to
+the [MusicBrainz Picard Plugins repository](https://github.com/metabrainz/picard-plugins).
 
 ### How It Works
 
 The workflow (`.github/workflows/create-pr-to-picard-plugins.yml`) performs the following steps:
 
 1. **Clones the target repository** — Checks out the `2.0` branch of `metabrainz/picard-plugins`
-2. **Synchronises with upstream** — Fetches the latest changes and ensures the local clone is up to date
+2. **Synchronizes with upstream** — Fetches the latest changes and ensures the local clone is up to date
 3. **Copies the plugin** — Copies the `shelves` directory to the `plugins/` folder
 4. **Creates a pull request** — Automatically opens a PR with the updated plugin code
 
@@ -242,13 +259,14 @@ The workflow can be triggered in two ways:
 To use this workflow, you need to set up a Personal Access Token (PAT) with appropriate permissions:
 
 1. Create a [GitHub Personal Access Token](https://github.com/settings/tokens) with the scopes `repo` and `read:org`:
-   - [x] **repo** Full control of private repositories
-   - [ ] **admin.org**
-     - [x] **read:org**
+    - [x] **repo** Full control of private repositories
+    - [ ] **admin.org**
+        - [x] **read:org**
 2. Add it as a repository secret named `PICARD_PLUGINS_PAT`
-   - Repository → Settings → Secrets and variables → Actions → New repository secret
+    - Repository → Settings → Secrets and variables → Actions → New repository secret
 
-The workflow ensures that the target repository is always synchronised with the latest upstream changes before applying updates, preventing conflicts and ensuring a smooth integration process.
+The workflow ensures that the target repository is always synchronized with the latest upstream changes before applying
+updates, preventing conflicts and ensuring a smooth integration process.
 
 ## License
 

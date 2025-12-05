@@ -14,11 +14,13 @@ from picard import config, log
 from . import PLUGIN_NAME
 from .constants import DEFAULT_SHELVES, ShelfConstants
 
+
 class ShelfUtils:
     """
     Utility functions for shelf management.
     Call set_shelf_manager() during plugin initialization to set the ShelfManager instance.
     """
+
     @staticmethod
     def _determine_shelf_recursive(path, known_shelves, base_path):
         """
@@ -81,36 +83,77 @@ class ShelfUtils:
             )
             return workflow_stage_2
 
-
     @staticmethod
-    def validate_shelf_name(name: str) -> Tuple[bool, Optional[str]]:
+    def validate_shelf_name(name: str) -> Tuple[bool, str]:
         """
-        Validate a shelf name for use as a directory name.
+        Validate a shelf name for use as a directory name by processing a list of validation rules.
 
         Args:
             name: The shelf name to validate
 
         Returns:
-            Tuple of (is_valid, warning_message)
+            Tuple of (is_valid, warning_or_error_message)
         """
-        if not name or not name.strip():
+        stripped_name = name.strip()
+        if not stripped_name:
             return False, "Shelf name cannot be empty"
 
-        found_invalid = [c for c in ShelfConstants.INVALID_PATH_CHARS if c in name]
-        if found_invalid:
-            return False, f"Contains invalid characters: {', '.join(found_invalid)}"
+        def check_reserved_names(n):
+            if n in (".", ".."):
+                return False, "Cannot use '.' or '..' as shelf name", True
+            return True, None, False
 
-        if name.startswith(".") or name.endswith("."):
-            return (
-                True,
-                "Warning: Names starting or ending with '.' may cause issues "
-                "on some systems",
-            )
+        def check_invalid_chars(n):
+            invalid = [c for c in ShelfConstants.INVALID_PATH_CHARS if c in n]
+            if invalid:
+                return False, f"Contains invalid characters: {', '.join(invalid)}", True
+            return True, None, False
 
-        if name in [".", ".."]:
-            return False, "Cannot use '.' or '..' as shelf name"
+        def check_length(n):
+            if len(n) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
+                return False, f"Shelf name too long ({len(n)} chars, maximum is {ShelfConstants.MAX_SHELF_NAME_LENGTH})", True
+            return True, None, False
 
-        return True, None
+        def check_word_count(n):
+            words = n.split()
+            if len(words) > ShelfConstants.MAX_WORD_COUNT:
+                return False, f"Shelf name has too many words ({len(words)}, maximum is {ShelfConstants.MAX_WORD_COUNT})", True
+            return True, None, False
+
+        def check_album_indicators(n):
+            found_indicators: List[str] = []
+            for indicator in ShelfConstants.ALBUM_INDICATORS:
+                if indicator in n:
+                    found_indicators.append(n)
+
+            if found_indicators:
+                return False, f"Shelf name contains album indicator(s): {found_indicators}, album indicators are {ShelfConstants.ALBUM_INDICATORS}", True
+
+            return True, None, False
+
+        def check_dots(n):
+            if n.startswith(".") or n.endswith("."):
+                return True, "Warning: Names starting or ending with '.' may cause issues on some systems", False
+            return True, None, False
+
+        validation_functions = [
+            check_reserved_names,
+            check_invalid_chars,
+            check_length,
+            check_word_count,
+            check_album_indicators,
+            check_dots,
+        ]
+
+        warning_message = ""
+        for func in validation_functions:
+            is_valid, message, is_error_message = func(stripped_name)
+            if not is_valid:
+                return False, message
+            if message:
+                warning_message = message
+
+        return True, warning_message
 
     @staticmethod
     def is_likely_shelf_name(name: str, known_shelves: List[str]) -> Tuple[bool, Optional[str]]:

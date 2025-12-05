@@ -59,9 +59,21 @@ class ShelfConstants:
     CONFIG_WORKFLOW_STAGE_2_KEY = "shelves_workflow_stage_2"
     CONFIG_WORKFLOW_ENABLED_KEY = "shelves_workflow_enabled"
     CONFIG_RENAME_SNIPPET_SKELETON_KEY = "shelves_rename_snippet_skeleton"
+    CONFIG_ACTIVE_TAB = "shelves_active_tab"
 
     # Album indicators that suggest a name is not a shelf
     ALBUM_INDICATORS = ["Vol.", "Volume", "Disc", "CD", "Part"]
+
+    # Wildcard value that, when set as workflow_stage_1, allows the workflow
+    # transition to proceed regardless of the current shelf value.
+    WORKFLOW_STAGE_1_WILDCARD = "*"
+
+    # The value set manually by the user is used
+    SHELF_SOURCE_MANUAL = "manual"
+    # Value determined by voting is used
+    SHELF_SOURCE_VOTES = "votes"
+    # If nothing else works, use the value in TAG_KEY
+    SHELF_SOURCE_FALLBACK = "fallback"
 
 
 # Default configuration values
