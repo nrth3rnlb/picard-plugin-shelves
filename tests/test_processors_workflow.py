@@ -68,7 +68,7 @@ def test_missing_stage_keys_with_enabled_true_leaves_shelf(monkeypatch):
         },
         raising=False,
     )
-    # stage2 missing while enabled -> should leave shelf unchanged
+    # stage2 missing while enabled -> should leave the shelf unchanged
     assert _apply_workflow_transition("inbox") == "inbox"
 
 
@@ -83,7 +83,7 @@ def test_missing_stage1_with_enabled_true_leaves_shelf(monkeypatch):
         },
         raising=False,
     )
-    # stage1 missing while enabled -> should leave shelf unchanged
+    # stage1 missing while enabled -> should leave the shelf unchanged
     assert _apply_workflow_transition("inbox") == "inbox"
 
 
@@ -97,5 +97,5 @@ def test_both_stages_missing_with_enabled_true_leaves_shelf(monkeypatch):
         },
         raising=False,
     )
-    # no stages present while enabled -> should leave shelf unchanged
+    # no stages present while enabled -> should leave the shelf unchanged
     assert _apply_workflow_transition("inbox") == "inbox"

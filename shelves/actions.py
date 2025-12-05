@@ -91,7 +91,7 @@ class SetShelfAction(BaseAction):
                 shelf_name,
                 type(obj).__name__,
             )
-        album_id = obj.metadata.get[ShelfConstants.MUSICBRAINZ_ALBUMID]
+        album_id = obj.metadata[ShelfConstants.MUSICBRAINZ_ALBUMID]
         _shelf_manager.set_album_shelf(album_id, shelf_name, source="manual", lock=True)
 
         if hasattr(obj, "iterfiles"):
@@ -130,7 +130,7 @@ class SetShelfDialog(QDialog):
         Args:
             known_shelves: List of known shelf names
         Returns:
-            The shelf name entered by the user, or None if cancelled.
+            The shelf name entered by the user, or None if canceled.
         """
         if self.shelf_combo is not None:
             self.shelf_combo.clear()

@@ -9,7 +9,7 @@ to get_known_shelves() by retrieving known_shelves once and
 passing it to ShelfUtils.get_shelf_from_path. This reduces unnecessary calculations
 and improves performance when processing multiple files.
 The methods file_post_load_processor and file_post_addition_to_track_processor retrieve
-known_shelves and use it directly.
+known_shelves and use them directly.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ def _apply_workflow_transition(shelf: str) -> str:
     Returns the original shelf if it is None/empty, the workflow is disabled, keys are missing,
     or an error occurs while reading configuration.
     """
-    # Guard: if shelf is None or empty, leave it unchanged
+    # Guard: if the shelf is None or empty, leave it unchanged
     if not shelf:
         return shelf
 
@@ -56,7 +56,7 @@ def _apply_workflow_transition(shelf: str) -> str:
         return shelf
 
     except Exception as e:
-        # On any unexpected error reading config, leave shelf unchanged and log details.
+        # On any unexpected error reading config, leave the shelf unchanged and log details.
         log.debug("%s: Failed to evaluate workflow transition; leaving shelf unchanged: %s", PLUGIN_NAME, e)
         log.debug("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
         return shelf

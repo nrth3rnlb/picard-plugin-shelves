@@ -14,7 +14,7 @@
 - **processors**: Add workflow transition logic
   ([`b5df392`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/b5df39200e4a289c6f2740598f3d398b6ea9eed4))
 
-- **workflow**: Add wildcard option for workflow stage 1 transition
+- **workflow**: Add a wildcard-option for workflow stage 1 transition
   ([`bf0d09a`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/bf0d09ae4f15867a7018fc80c4cf335a61b89bca))
 
 ### Refactoring
@@ -37,7 +37,7 @@
 
 ### Refactor
 
-- **options**: update UI file reference and rename shelves_config.ui to shelves.ui
+- **options**: update UI file reference and rename "shelves_config.ui" to "shelves.ui"
 
 ## v1.5.0 (2025-11-18)
 
@@ -120,7 +120,7 @@
 
 ### Documentation
 
-- Update README to include link to MusicBrainz Picard and improve clarity
+- Update README to include a link to MusicBrainz Picard and improve clarity
   ([`b0489a7`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/b0489a7561a02f0e129c4ba392621376c3d0d83c))
 
 ### Features
@@ -132,7 +132,7 @@
 
 ### Bug Fixes
 
-- No shelf if musicbrainz_albumid is not set
+- No shelf if "musicbrainz_albumid" is not set
   ([`f6d6193`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/f6d619379acafa52e0f5928d7ab6201209ef5251))
 
 ### Documentation

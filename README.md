@@ -1,7 +1,7 @@
 # Shelves Plugin for MusicBrainz Picard
 
 The **Shelves** plugin adds virtual shelf management to [MusicBrainz Picard](https://picard.musicbrainz.org/), allowing
-you to organise your music files by top-level folders (shelves) in your music library.
+you to organize your music files by top-level folders (shelves) in your music library.
 
 Think of your music library as a physical library with different shelves — one for your standard collection, one for
 incoming/unprocessed music, one for Christmas music, etc.
@@ -32,7 +32,7 @@ incoming/unprocessed music, one for Christmas music, etc.
 
 ### Directory Structure
 
-The plugin expects your music library to be organised like this:
+The plugin expects your music library to be organized like this:
 
 ```
 ~/Music/
@@ -48,7 +48,7 @@ The plugin expects your music library to be organised like this:
 └── ...
 ```
 
-It is important to remember that each top-level folder in your music directory is considered a “shelf”.
+It is important to remember that each top-level folder in your music directory is considered a “shelf.”
 
 ### Automatic Detection
 
@@ -62,7 +62,7 @@ When you scan files in Picard, the plugin automatically:
 
 The plugin has semi-intelligent recognition to avoid confusion:
 
-- **Default and known shelves** are always recognised correctly
+- **Default and known shelves** are always recognized correctly
 - **Suspicious folder names** are automatically identified and treated as misplaced files:
     - Names containing "-" (typical for "Artist - Album" format)
     - Very long names (> 30 characters)
@@ -71,13 +71,13 @@ The plugin has semi-intelligent recognition to avoid confusion:
 
 **Example:**
 
-- If you accidentally place files in `~/Music/Wardruna - Runaljod - Yggdrasil/`, the plugin recognises this as an
+- If you accidentally place files in `~/Music/Wardruna - Runaljod - Yggdrasil/`, the plugin recognizes this as an
   artist/album name (not a shelf)
 - The shelf tag is automatically set to "Standard" instead
-- Files will be organised properly when saved: `~/Music/Standard/Wardruna/Runaljod - Yggdrasil/`
+- Files will be organized properly when saved: `~/Music/Standard/Wardruna/Runaljod - Yggdrasil/`
 
 **Note:** If you *really* want to use such a name as a shelf, add it manually in the plugin settings. Once added, it
-will be recognised as a valid shelf.
+will be recognized as a valid shelf.
 
 ### Manual Assignment
 
@@ -243,7 +243,7 @@ the [MusicBrainz Picard Plugins repository](https://github.com/metabrainz/picard
 The workflow (`.github/workflows/create-pr-to-picard-plugins.yml`) performs the following steps:
 
 1. **Clones the target repository** — Checks out the `2.0` branch of `metabrainz/picard-plugins`
-2. **Synchronises with upstream** — Fetches the latest changes and ensures the local clone is up to date
+2. **Synchronizes with upstream** — Fetches the latest changes and ensures the local clone is up to date
 3. **Copies the plugin** — Copies the `shelves` directory to the `plugins/` folder
 4. **Creates a pull request** — Automatically opens a PR with the updated plugin code
 
@@ -265,7 +265,7 @@ To use this workflow, you need to set up a Personal Access Token (PAT) with appr
 2. Add it as a repository secret named `PICARD_PLUGINS_PAT`
     - Repository → Settings → Secrets and variables → Actions → New repository secret
 
-The workflow ensures that the target repository is always synchronised with the latest upstream changes before applying
+The workflow ensures that the target repository is always synchronized with the latest upstream changes before applying
 updates, preventing conflicts and ensuring a smooth integration process.
 
 ## License

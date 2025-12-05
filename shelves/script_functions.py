@@ -6,47 +6,44 @@ Script functions for the Shelves plugin.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from picard import config, log
 
+from . import get_album_shelf
 from .constants import ShelfConstants
+from .exeptions import ShelfNotFoundException
 
 PLUGIN_NAME = "Shelves"
 
 
-def _resolve_shelf_from_context(ctx: Any) -> str:
+def _resolve_shelf(context: Any) -> str:
     """
-    Runtime resolver:
-    - If context indicates a manual override, return it as-is.
-    - Else, apply workflow transition if enabled.
+    Returns the shelf name, prioritizing manual overrides and otherwise applying workflow transition.
     """
-    # Base shelf from context (fallback)
-    shelf = ctx.get("shelf", "")
+    album_id = context.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+    shelf, shelf_source = get_album_shelf(context.get(ShelfConstants.MUSICBRAINZ_ALBUMID))
+    if shelf is None:
+        # Fallback
+        shelf = context.metadata[ShelfConstants.TAG_KEY]
+        shelf_source = ShelfConstants.SHELF_SOURCE_FALLBACK
 
-    # Prefer manual override if present
-    shelf_source = ctx.get("shelf_source", "")
-    shelf_locked = bool(ctx.get("shelf_locked", False))
-    if shelf_locked or shelf_source == "manual":
-        return shelf
+    if shelf is None and shelf_source == ShelfConstants.SHELF_SOURCE_FALLBACK:
+        raise ShelfNotFoundException(album_id=album_id, message="Shelf could not be determined.")
+
+    log.debug("Shelf: %s, source: %s", shelf, shelf_source)
 
     # Workflow enabled?
-    try:
-        is_workflow = config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]  # type: ignore[index]
-    except KeyError:
-        return shelf
-
+    is_workflow = config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]  # type: ignore[index]
     if not is_workflow:
         return shelf
-
-    # Workflow stages
-    try:
-        workflow_stage_1 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]  # type: ignore[index]
-        workflow_stage_2 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY]  # type: ignore[index]
-    except KeyError:
+    if shelf_source in (ShelfConstants.SHELF_SOURCE_MANUAL, ShelfConstants.SHELF_SOURCE_FALLBACK):
         return shelf
 
-    # Apply transition only if not manually overridden
+    workflow_stage_1 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]  # type: ignore[index]
+    workflow_stage_2 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY]  # type: ignore[index]
+
+    # Apply transition only if not manually overridden and not fallback
     if shelf == workflow_stage_1 or workflow_stage_1 == ShelfConstants.WORKFLOW_STAGE_1_WILDCARD:
         log.debug(
             "%s: Applying workflow transition: '%s' -> '%s'",
@@ -59,9 +56,14 @@ def _resolve_shelf_from_context(ctx: Any) -> str:
     return shelf
 
 
-def func_shelf(parser: Any) -> str:
+def func_shelf(parser: Any) -> Optional[str]:
     """
     Picard script function: `$shelf()`
-    Returns the shelf name, prioritizing manual overrides and otherwise applying workflow transition.
+    If the album ID cannot be determined, it is most likely because the Picard's settings
+    dialog was open and the changes should be saved.
+    This also triggers the functions, but they have no context to work with.
     """
-    return _resolve_shelf_from_context(parser.context)
+    album_id = parser.context.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+    if album_id is not None:
+        return _resolve_shelf(parser.context)
+    return None

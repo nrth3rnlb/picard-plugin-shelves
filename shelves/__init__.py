@@ -23,6 +23,8 @@ from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
+from .constants import ShelfConstants
+
 # Plugin metadata
 PLUGIN_NAME = "Shelves"
 PLUGIN_AUTHOR = "nrth3rnlb"
@@ -105,21 +107,22 @@ class ShelfManager:
             agg[shelf] = agg.get(shelf, 0.0) + float(weight)
         return max(agg.items(), key=lambda kv: kv[1])[0]
 
-    def set_album_shelf(self, album_id: str, shelf: str, *, source: str = "manual", lock: Optional[bool] = None) -> \
+    def set_album_shelf(self, album_id: str, shelf: str, *, source: str = ShelfConstants.SHELF_SOURCE_MANUAL,
+                        lock: Optional[bool] = None) -> \
             Optional[str]:
         st = _STATE.setdefault(album_id, {})
         if lock is None:
-            lock = (source == "manual")
+            lock = (source == ShelfConstants.SHELF_SOURCE_MANUAL)
 
         # Manually locked => can only be overwritten manually
-        if st.get("shelf_locked") and source != "manual":
+        if st.get("shelf_locked") and source != ShelfConstants.SHELF_SOURCE_MANUAL:
             return st.get("shelf")
 
         st["shelf"] = shelf
         st["shelf_source"] = source
         st["shelf_locked"] = bool(lock)
 
-        if source == "manual":
+        if source == ShelfConstants.SHELF_SOURCE_MANUAL:
             # Register dominant decision (∞ weight)
             self.vote_for_shelf(album_id, shelf, weight=float("inf"), reason="manual override")
 
@@ -129,17 +132,17 @@ class ShelfManager:
     def clear_manual_override(album_id: str) -> None:
         st = _STATE.setdefault(album_id, {})
         st["shelf_locked"] = False
-        if st.get("shelf_source") == "manual":
-            st["shelf_source"] = "auto"
+        if st.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL:
+            st["shelf_source"] = ShelfConstants.SHELF_SOURCE_VOTES
 
     @staticmethod
     def _get_manual_override(album_id: str) -> Optional[str]:
         st = _STATE.get(album_id, {})
-        if st.get("shelf_locked") or st.get("shelf_source") == "manual":
+        if st.get("shelf_locked") or st.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL:
             return st.get("shelf")
         return None
 
-    def get_album_shelf(self, album_id: str) -> Optional[str]:
+    def get_album_shelf(self, album_id: str) -> tuple[Optional[str], str]:
         """
         Read with priority:
         1. Manual lock or `shelf_source=='manual'` => return the current value.
@@ -149,19 +152,19 @@ class ShelfManager:
         # 1. Manual lock
         manual_shelf = self._get_manual_override(album_id)
         if manual_shelf:
-            return manual_shelf
+            return manual_shelf, ShelfConstants.SHELF_SOURCE_MANUAL
 
         # 2. Weighted decision
         chosen = self._winner(_VOTES.get(album_id, []))
         if chosen:
-            return chosen
+            return chosen, ShelfConstants.SHELF_SOURCE_VOTES
 
         # 3. Fallback: simple majority winner from counter
         with self._lock:
             shelf_name = self._shelves_by_album.get(album_id)
             if shelf_name is None:
-                log.warning("%s: Shelf für Album %s konnte nicht sicher bestimmt werden.", PLUGIN_NAME, album_id)
-            return shelf_name
+                log.warning("%s: Shelf for album %s could not be determined with certainty.", PLUGIN_NAME, album_id)
+            return shelf_name, ShelfConstants.SHELF_SOURCE_FALLBACK
 
     def clear_album(self, album_id: str) -> None:
         with self._lock:
@@ -180,7 +183,7 @@ def vote_for_shelf(album_id: str, shelf: str, weight: float = 1.0, reason: str =
     _shelf_manager.vote_for_shelf(album_id, shelf, weight, reason)
 
 
-def get_album_shelf(album_id: str) -> Optional[str]:
+def get_album_shelf(album_id: str) -> tuple[Optional[str], str]:
     return _shelf_manager.get_album_shelf(album_id)
 
 
@@ -225,7 +228,7 @@ class DetermineShelfAction(_DetermineShelfActionBase):
 
 
 # Wrapper for script function
-def func_shelf(parser: Any) -> str:
+def func_shelf(parser: Any) -> Optional[str]:
     """Wrapper for func_shelf to ensure proper plugin registration."""
     return _func_shelf_base(parser)
 

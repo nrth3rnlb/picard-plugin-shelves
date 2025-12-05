@@ -43,6 +43,13 @@ class ShelfConstants:
     # transition to proceed regardless of the current shelf value.
     WORKFLOW_STAGE_1_WILDCARD = "*"
 
+    # The value set manually by the user is used
+    SHELF_SOURCE_MANUAL = "manual"
+    # Value determined by voting is used
+    SHELF_SOURCE_VOTES = "votes"
+    # If nothing else works, use the value in TAG_KEY
+    SHELF_SOURCE_FALLBACK = "fallback"
+
 
 # Default configuration values
 DEFAULT_SHELVES = {
