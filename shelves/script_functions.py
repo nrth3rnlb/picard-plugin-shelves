@@ -15,18 +15,22 @@ from .constants import ShelfConstants
 PLUGIN_NAME = "Shelves"
 
 
-def func_shelf(parser: Any) -> str:
+def _resolve_shelf_from_context(ctx: Any) -> str:
     """
-    Picard script function: `$shelf()`
-    Used in the code snippet created by the plugin and can only be used in conjunction with the plugin.
-    Returns the shelf name, optionally applying workflow transition.
+    Runtime resolver:
+    - If context indicates a manual override, return it as-is.
+    - Else, apply workflow transition if enabled.
+    """
+    # Base shelf from context (fallback)
+    shelf = ctx.get("shelf", "")
 
-    Args:
-        parser: Picard script parser
-    Returns:
-        The shelf name (taking workflow transitions into account, if activated)
-    """
-    shelf = parser.context.get("shelf", "")
+    # Prefer manual override if present
+    shelf_source = ctx.get("shelf_source", "")
+    shelf_locked = bool(ctx.get("shelf_locked", False))
+    if shelf_locked or shelf_source == "manual":
+        return shelf
+
+    # Workflow enabled?
     try:
         is_workflow = config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]  # type: ignore[index]
     except KeyError:
@@ -35,13 +39,14 @@ def func_shelf(parser: Any) -> str:
     if not is_workflow:
         return shelf
 
+    # Workflow stages
     try:
         workflow_stage_1 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]  # type: ignore[index]
         workflow_stage_2 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY]  # type: ignore[index]
     except KeyError:
         return shelf
 
-    # Apply workflow transition
+    # Apply transition only if not manually overridden
     if shelf == workflow_stage_1 or workflow_stage_1 == ShelfConstants.WORKFLOW_STAGE_1_WILDCARD:
         log.debug(
             "%s: Applying workflow transition: '%s' -> '%s'",
@@ -52,3 +57,11 @@ def func_shelf(parser: Any) -> str:
         return workflow_stage_2
 
     return shelf
+
+
+def func_shelf(parser: Any) -> str:
+    """
+    Picard script function: `$shelf()`
+    Returns the shelf name, prioritizing manual overrides and otherwise applying workflow transition.
+    """
+    return _resolve_shelf_from_context(parser.context)

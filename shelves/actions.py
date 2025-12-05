@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QDialog
 from picard import log
 from picard.ui.itemviews import BaseAction
 
-from . import PLUGIN_NAME
+from . import PLUGIN_NAME, _shelf_manager
 from . import clear_album, vote_for_shelf
 from .constants import ShelfConstants
 from .utils import ShelfUtils
@@ -49,7 +49,7 @@ class SetShelfAction(BaseAction):
         log.debug("%s: SetShelfAction called with %d objects", PLUGIN_NAME, len(objs))
 
         known_shelves = ShelfUtils.get_known_shelves()
-        dialog = SetShelfNameDialog(self.tagger)
+        dialog = SetShelfDialog(self.tagger)
         shelf_name = dialog.ask_for_shelf_name(known_shelves)
         if not shelf_name:
             return
@@ -91,13 +91,15 @@ class SetShelfAction(BaseAction):
                 shelf_name,
                 type(obj).__name__,
             )
+        album_id = obj.metadata.get[ShelfConstants.MUSICBRAINZ_ALBUMID]
+        _shelf_manager.set_album_shelf(album_id, shelf_name, source="manual", lock=True)
 
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
                 file.metadata[ShelfConstants.TAG_KEY] = shelf_name
 
 
-class SetShelfNameDialog(QDialog):
+class SetShelfDialog(QDialog):
     """
     Dialog to set the shelf name.
     """

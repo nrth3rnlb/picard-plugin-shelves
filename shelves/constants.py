@@ -36,7 +36,6 @@ class ShelfConstants:
     CONFIG_RENAME_SNIPPET_SKELETON_KEY = "shelves_rename_snippet_skeleton"
     CONFIG_ACTIVE_TAB = "shelves_active_tab"
 
-
     # Album indicators that suggest a name is not a shelf
     ALBUM_INDICATORS = ["Vol.", "Volume", "Disc", "CD", "Part"]
 

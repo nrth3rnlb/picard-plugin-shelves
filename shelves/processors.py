@@ -141,14 +141,7 @@ def file_post_addition_to_track_processor(track: Optional[Any], file: Any) -> No
         log.error("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
 
 
-def file_post_removal_from_track_processor(track, file) -> None:
-    """
-    Process a file after it has been removed from a track.
-
-    Args:
-        track: Track object
-        file: Picard file object
-    """
+def file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     log.debug("%s: (file_post_removal_from_track_processor) Processing file: %s", PLUGIN_NAME,
               file.filename)
     album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)

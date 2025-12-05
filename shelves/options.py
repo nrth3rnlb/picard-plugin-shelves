@@ -86,7 +86,6 @@ class ShelvesOptionsPage(OptionsPage):
             self.on_workflow_stage_changed
         )
 
-
     def load(self) -> None:
         """Load already known shelves from config."""
         shelves = sorted(ShelfUtils.get_known_shelves())
