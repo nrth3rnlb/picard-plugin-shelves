@@ -17,15 +17,15 @@ from .exeptions import ShelfNotFoundException
 PLUGIN_NAME = "Shelves"
 
 
-def _resolve_shelf(context: Any) -> str:
+def _resolve_shelf(parser: Any) -> str:
     """
     Returns the shelf name, prioritizing manual overrides and otherwise applying workflow transition.
     """
-    album_id = context.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
-    shelf, shelf_source = get_album_shelf(context.get(ShelfConstants.MUSICBRAINZ_ALBUMID))
+    album_id = parser.context[ShelfConstants.MUSICBRAINZ_ALBUMID]
+    shelf, shelf_source = get_album_shelf(parser.context[ShelfConstants.MUSICBRAINZ_ALBUMID])
     if shelf is None:
         # Fallback
-        shelf = context.metadata[ShelfConstants.TAG_KEY]
+        shelf = parser.context[ShelfConstants.TAG_KEY]
         shelf_source = ShelfConstants.SHELF_SOURCE_FALLBACK
 
     if shelf is None and shelf_source == ShelfConstants.SHELF_SOURCE_FALLBACK:
@@ -63,7 +63,9 @@ def func_shelf(parser: Any) -> Optional[str]:
     dialog was open and the changes should be saved.
     This also triggers the functions, but they have no context to work with.
     """
-    album_id = parser.context.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+    album_id = parser.context[ShelfConstants.MUSICBRAINZ_ALBUMID]
+    log.debug("album_id %s", album_id)
     if album_id is not None:
-        return _resolve_shelf(parser.context)
-    return None
+        return _resolve_shelf(parser)
+
+    raise ShelfNotFoundException(album_id=album_id, message="Album ID could not be determined.")
