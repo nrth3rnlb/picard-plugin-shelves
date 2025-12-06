@@ -16,8 +16,8 @@ from picard import log
 from picard.ui.itemviews import BaseAction
 
 from . import PLUGIN_NAME, _shelf_manager
-from . import clear_album, vote_for_shelf
 from .constants import ShelfConstants
+from .manager import ShelfManager
 from .utils import ShelfUtils
 
 LABEL_VALIDATION_NAME = "label_validation"
@@ -48,7 +48,7 @@ class SetShelfAction(BaseAction):
         """
         log.debug("%s: SetShelfAction called with %d objects", PLUGIN_NAME, len(objs))
 
-        known_shelves = ShelfUtils.get_known_shelves()
+        known_shelves = ShelfManager.get_configured_shelves()
         dialog = SetShelfDialog(self.tagger)
         shelf_name = dialog.ask_for_shelf_name(known_shelves)
         if not shelf_name:
@@ -63,40 +63,85 @@ class SetShelfAction(BaseAction):
             )
             return
 
+        manual_shelf_tag = f"{shelf_name}{ShelfConstants.MANUAL_SHELF_SUFFIX}"
         for obj in objs:
-            self._set_shelf_recursive(obj, shelf_name)
+            self._set_shelf_recursive(obj, shelf_name, manual_shelf_tag)
 
         ShelfUtils.add_known_shelf(shelf_name)
         log.info(
-            "%s: Set shelf to '%s' for %d object(s)",
+            "%s: Manually set shelf to '%s' for %d object(s)",
             PLUGIN_NAME,
             shelf_name,
             len(objs),
         )
 
     @staticmethod
-    def _set_shelf_recursive(obj: Any, shelf_name: str) -> None:
+    def _set_shelf_recursive(obj: Any, shelf_name: str, shelf_tag: str) -> None:
         """
-        Set the shelf name recursively on all files in an object.
+        Set the shelf tag recursively on all files in an object and lock in manager.
 
         Args:
             obj: Picard object (album, track, etc.)
-            shelf_name: Shelf name to set
+            shelf_name: The clean shelf name.
+            shelf_tag: Shelf tag to set (e.g., "Favorites; manual")
         """
         if hasattr(obj, "metadata"):
-            obj.metadata[ShelfConstants.TAG_KEY] = shelf_name
+            album_id = obj.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+            if album_id:
+                _shelf_manager.set_album_shelf(album_id, shelf_name, source=ShelfConstants.SHELF_SOURCE_MANUAL,
+                                               lock=True)
+
+            obj.metadata[ShelfConstants.TAG_KEY] = shelf_tag
             log.debug(
-                "%s: Set shelf '%s' on %s",
+                "%s: Set shelf tag '%s' on %s",
                 PLUGIN_NAME,
-                shelf_name,
+                shelf_tag,
                 type(obj).__name__,
             )
-        album_id = obj.metadata[ShelfConstants.MUSICBRAINZ_ALBUMID]
-        _shelf_manager.set_album_shelf(album_id, shelf_name, source="manual", lock=True)
 
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
-                file.metadata[ShelfConstants.TAG_KEY] = shelf_name
+                file.metadata[ShelfConstants.TAG_KEY] = shelf_tag
+
+
+class ResetShelfAction(BaseAction):
+    """
+    Context menu action: Reset a manual shelf assignment to automatic.
+    """
+
+    NAME = "Restore automatic shelf"
+
+    def callback(self, objs: List[Any]) -> None:
+        """
+        Handle the action callback.
+        Args:
+            objs: Selected objects in Picard
+        """
+        log.debug("%s: ResetShelfAction called with %d objects", PLUGIN_NAME, len(objs))
+
+        for obj in objs:
+            if hasattr(obj, "iterfiles"):
+                for file in obj.iterfiles():
+                    metadata = file.metadata
+                    album_id = metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+
+                    # Clear lock in manager
+                    if album_id:
+                        _shelf_manager.clear_manual_override(album_id)
+
+                    # Clear tag in metadata
+                    if ShelfConstants.TAG_KEY in metadata:
+                        shelf_value = metadata.get(ShelfConstants.TAG_KEY, "")
+                        if isinstance(shelf_value, str) and ShelfConstants.MANUAL_SHELF_SUFFIX in shelf_value:
+                            metadata[ShelfConstants.TAG_KEY] = ""
+                            log.debug("%s: Cleared manual flag for file %s", PLUGIN_NAME, file.filename)
+
+        # Re-run the determination logic
+        determine_action = DetermineShelfAction()
+        determine_action.tagger = self.tagger
+        determine_action.callback(objs)
+
+        log.info("%s: Reset shelf to automatic for %d object(s)", PLUGIN_NAME, len(objs))
 
 
 class SetShelfDialog(QDialog):
@@ -193,94 +238,33 @@ class DetermineShelfAction(BaseAction):
             "%s: DetermineShelfAction called with %d objects", PLUGIN_NAME, len(objs)
         )
 
-        # Track albums that need reinitialization
-        album_ids_to_reinitialize: set[str] = set()
-
-        # Process each object
         for obj in objs:
-            self._determine_shelf_recursive(obj, album_ids_to_reinitialize)
-
-        # Reinitialize album data in shelf manager
-        for album_id in album_ids_to_reinitialize:
-            clear_album(album_id)
-
-        # Re-vote for shelves based on file paths
-        for obj in objs:
-            self._revote_shelf_recursive(obj)
+            self._determine_shelf_recursive(obj)
 
         log.info(
-            "%s: Determined shelf for %d object(s), reinitialized %d album(s)",
+            "%s: Determined shelf for %d object(s)",
             PLUGIN_NAME,
             len(objs),
-            len(album_ids_to_reinitialize),
         )
 
     @staticmethod
-    def _determine_shelf_recursive(obj: Any, album_ids: set[str]) -> None:
+    def _determine_shelf_recursive(obj: Any) -> None:
         """
         Determine the shelf name from file paths recursively.
 
         Args:
             obj: Picard object (album, track, etc.)
-            album_ids: Set to track albums that need reinitialization
-        """
-        unique_shelves = set()
-        first_shelf = None
-
-        known_shelves = ShelfUtils.get_known_shelves()
-        if hasattr(obj, "iterfiles"):
-            for file in obj.iterfiles():
-                # Determine shelf from the file path
-                shelf_name = ShelfUtils.get_shelf_from_path(path=file.filename, known_shelves=known_shelves)
-
-                # Update metadata
-                file.metadata[ShelfConstants.TAG_KEY] = shelf_name
-                unique_shelves.add(shelf_name)
-
-                # Store first shelf for object metadata
-                if first_shelf is None:
-                    first_shelf = shelf_name
-
-                # Track album for reinitialization
-                album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
-                if album_id:
-                    album_ids.add(album_id)
-
-                log.debug(
-                    "%s: Determined shelf '%s' for file: %s",
-                    PLUGIN_NAME,
-                    shelf_name,
-                    file.filename,
-                )
-
-        # Add all unique shelves to known shelves
-        for shelf_name in unique_shelves:
-            ShelfUtils.add_known_shelf(shelf_name)
-
-        # Update object metadata if present
-        # Note: Using first file's shelf; ShelfManager voting will resolve conflicts
-        if hasattr(obj, "metadata") and first_shelf:
-            log.debug("%s: Update object metadata with %s", PLUGIN_NAME, first_shelf)
-            obj.metadata[ShelfConstants.TAG_KEY] = first_shelf
-
-    @staticmethod
-    def _revote_shelf_recursive(obj: Any) -> None:
-        """
-        Re-vote for shelf assignments in the shelf manager.
-
-        Args:
-            obj: Picard object (album, track, etc.)
         """
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
-                shelf_name = file.metadata.get(ShelfConstants.TAG_KEY)
-                album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
-
-                if shelf_name and album_id:
-                    vote_for_shelf(album_id, shelf_name)
+                known_shelves = ShelfManager.get_configured_shelves()
+                shelf_name, _ = ShelfUtils.get_shelf_from_path(path=file.filename, known_shelves=known_shelves)
+                if shelf_name is not None:
+                    file.metadata[ShelfConstants.TAG_KEY] = shelf_name
                     log.debug(
-                        "%s: Re-voted shelf '%s' for album %s",
+                        "%s: Determined shelf '%s' for file: %s",
                         PLUGIN_NAME,
                         shelf_name,
-                        album_id,
+                        file.filename,
                     )
+                    ShelfUtils.add_known_shelf(shelf_name)

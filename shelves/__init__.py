@@ -4,7 +4,7 @@
 Shelves Plugin for MusicBrainz Picard.
 
 This plugin adds virtual shelf management to MusicBrainz Picard,
-allowing music files to be organised by top-level folders.
+allowing music files to be organized by top-level folders.
 """
 from __future__ import annotations
 
@@ -191,7 +191,8 @@ def clear_album(album_id: str) -> None:
     _shelf_manager.clear_album(album_id)
 
 
-from .actions import SetShelfAction as _SetShelfActionBase, DetermineShelfAction as _DetermineShelfActionBase
+from .actions import SetShelfAction as _SetShelfActionBase, DetermineShelfAction as _DetermineShelfActionBase, \
+    ResetShelfAction as _ResetShelfActionBase
 from .options import ShelvesOptionsPage as _ShelvesOptionsPageBase
 from .processors import (
     file_post_load_processor,
@@ -221,6 +222,14 @@ class SetShelfAction(_SetShelfActionBase):
 
 class DetermineShelfAction(_DetermineShelfActionBase):
     """Wrapper class for DetermineShelfAction to ensure proper plugin registration."""
+
+    def __init__(self) -> None:
+        """Initialize with the global shelf_manager instance."""
+        super().__init__()
+
+
+class ResetShelfAction(_ResetShelfActionBase):
+    """Wrapper class for ResetShelfAction to ensure proper plugin registration."""
 
     def __init__(self) -> None:
         """Initialize with the global shelf_manager instance."""
@@ -274,6 +283,7 @@ register_file_post_removal_from_track_processor(_file_post_removal_from_track_pr
 # Register context menu actions
 register_album_action(SetShelfAction())
 register_album_action(DetermineShelfAction())
+register_album_action(ResetShelfAction())
 
 # Register options page
 register_options_page(ShelvesOptionsPage)

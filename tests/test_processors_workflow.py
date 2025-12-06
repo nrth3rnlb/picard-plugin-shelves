@@ -43,20 +43,6 @@ def test_stage1_match_transitions(monkeypatch):
     assert _apply_workflow_transition("other") == "other"
 
 
-def test_wildcard_stage1_transitions(monkeypatch):
-    monkeypatch.setattr(
-        config,
-        "setting",
-        {
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY: ShelfConstants.WORKFLOW_STAGE_1_WILDCARD,
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY: "done",
-        },
-        raising=False,
-    )
-    # stages present => workflow is considered enabled by fallback; wildcard should match anything
-    assert _apply_workflow_transition("anything") == "done"
-
-
 def test_missing_stage_keys_with_enabled_true_leaves_shelf(monkeypatch):
     monkeypatch.setattr(
         config,

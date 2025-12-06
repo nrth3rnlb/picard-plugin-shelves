@@ -7,9 +7,11 @@ Shelf manager for tracking album shelf assignments.
 from __future__ import annotations
 
 from collections import Counter
-from typing import Dict
+from typing import Dict, List
 
-from picard import log
+from picard import log, config
+
+from shelves import ShelfConstants, ShelfUtils
 
 
 class ShelfManager:
@@ -17,7 +19,7 @@ class ShelfManager:
 
     def __init__(self, plugin_name: str, validators, utils) -> None:
         """
-        Initialise the shelf manager.
+        Initialize the shelf manager.
 
         Args:
             plugin_name: Name of the plugin
@@ -87,3 +89,31 @@ class ShelfManager:
         """
         self._shelves_by_album.pop(album_id, None)
         self._shelf_votes.pop(album_id, None)
+
+    @staticmethod
+    def get_configured_shelves() -> List[str]:
+        """
+        Retrieve the list of known shelves from config with validation.
+        Returns:
+            List of unique, validated shelf names
+        """
+        shelves = config.setting[ShelfConstants.CONFIG_SHELVES_KEY]
+
+        # Validate each shelf name
+        valid_shelves = []
+        for shelf in shelves:
+            if not isinstance(shelf, str):
+                log.warning(
+                    "Ignoring non-string shelf: %s", repr(shelf)
+                )
+                continue
+
+            is_valid, message = ShelfUtils.validate_shelf_name(shelf)
+            if is_valid or not message:  # Allow warnings
+                valid_shelves.append(shelf)
+            else:
+                log.warning(
+                    "Ignoring invalid shelf '%s': %s", shelf, message
+                )
+        log.debug("Known shelves: %s", valid_shelves)
+        return sorted(list(set(valid_shelves)))

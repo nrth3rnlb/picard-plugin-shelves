@@ -40,23 +40,6 @@
                                 </widget>
                             </item>
                             <item>
-                                <widget class="QLabel" name="label">
-                                    <property name="text">
-                                        <string/>
-                                    </property>
-                                    <property name="wordWrap">
-                                        <bool>true</bool>
-                                    </property>
-                                    <property name="margin">
-                                        <number>10</number>
-                                    </property>
-                                    <property name="textInteractionFlags">
-                                        <set>Qt::NoTextInteraction</set>
-                                    </property>
-                                    <layout class="QVBoxLayout" name="verticalLayout_2"/>
-                                </widget>
-                            </item>
-                            <item>
                                 <widget class="QTabWidget" name="tabWidget">
                                     <property name="sizePolicy">
                                         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -65,7 +48,7 @@
                                         </sizepolicy>
                                     </property>
                                     <property name="currentIndex">
-                                        <number>1</number>
+                                        <number>2</number>
                                     </property>
                                     <property name="tabsClosable">
                                         <bool>false</bool>
@@ -105,12 +88,6 @@
                                                                         <horstretch>0</horstretch>
                                                                         <verstretch>0</verstretch>
                                                                     </sizepolicy>
-                                                                </property>
-                                                                <property name="alternatingRowColors">
-                                                                    <bool>true</bool>
-                                                                </property>
-                                                                <property name="selectionMode">
-                                                                    <enum>QAbstractItemView::SingleSelection</enum>
                                                                 </property>
                                                                 <property name="sortingEnabled">
                                                                     <bool>true</bool>
@@ -199,23 +176,19 @@
                                             <string>Workflow Configuration</string>
                                         </attribute>
                                         <layout class="QVBoxLayout" name="verticalLayout_8">
-                                            <item alignment="Qt::AlignTop">
-                                                <widget class="QLabel" name="l_workflow_description">
-                                                    <property name="text">
-                                                        <string>When enabled, the workflow sets the album’s shelf
-                                                            automatically by the transition configuration. Manual
-                                                            changes override it.
-                                                        </string>
-                                                    </property>
-                                                    <property name="wordWrap">
-                                                        <bool>true</bool>
-                                                    </property>
-                                                </widget>
-                                            </item>
                                             <item>
                                                 <widget class="QCheckBox" name="workflow_enabled">
+                                                    <property name="toolTip">
+                                                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When
+                                                            enabled, the workflow sets the album’s shelf automatically
+                                                            by the transition configuration.&lt;/p&gt;&lt;p&gt;Manual
+                                                            changes through the album's context menu override the
+                                                            defined
+                                                            transition. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+                                                        </string>
+                                                    </property>
                                                     <property name="text">
-                                                        <string>Use workflow</string>
+                                                        <string>Use workflow transitions</string>
                                                     </property>
                                                 </widget>
                                             </item>
@@ -225,65 +198,56 @@
                                                         <bool>true</bool>
                                                     </property>
                                                     <property name="title">
-                                                        <string>Configuration of the transition</string>
+                                                        <string>Configuration of the transitions</string>
                                                     </property>
                                                     <layout class="QHBoxLayout" name="horizontalLayout_2">
                                                         <item>
-                                                            <widget class="QLabel" name="l_workflow_stage_1">
-                                                                <property name="sizePolicy">
-                                                                    <sizepolicy hsizetype="Preferred"
-                                                                                vsizetype="Preferred">
-                                                                        <horstretch>0</horstretch>
-                                                                        <verstretch>0</verstretch>
-                                                                    </sizepolicy>
-                                                                </property>
-                                                                <property name="text">
-                                                                    <string>from shelf</string>
-                                                                </property>
+                                                            <widget class="QWidget" name="transition_stage_1"
+                                                                    native="true">
+                                                                <layout class="QVBoxLayout" name="verticalLayout_5">
+                                                                    <item>
+                                                                        <widget class="QLabel"
+                                                                                name="label_workflow_stage_1">
+                                                                            <property name="sizePolicy">
+                                                                                <sizepolicy hsizetype="Preferred"
+                                                                                            vsizetype="Preferred">
+                                                                                    <horstretch>0</horstretch>
+                                                                                    <verstretch>0</verstretch>
+                                                                                </sizepolicy>
+                                                                            </property>
+                                                                            <property name="text">
+                                                                                <string>from shelf or shelves ⇒</string>
+                                                                            </property>
+                                                                        </widget>
+                                                                    </item>
+                                                                    <item>
+                                                                        <widget class="QListWidget"
+                                                                                name="workflow_stage_1"/>
+                                                                    </item>
+                                                                </layout>
                                                             </widget>
                                                         </item>
                                                         <item>
-                                                            <widget class="QComboBox" name="workflow_stage_1">
-                                                                <property name="sizePolicy">
-                                                                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                                                                        <horstretch>0</horstretch>
-                                                                        <verstretch>0</verstretch>
-                                                                    </sizepolicy>
-                                                                </property>
-                                                            </widget>
-                                                        </item>
-                                                        <item>
-                                                            <widget class="QLabel" name="l_workflow_stage_2">
-                                                                <property name="text">
-                                                                    <string>to shelf</string>
-                                                                </property>
-                                                            </widget>
-                                                        </item>
-                                                        <item>
-                                                            <widget class="QComboBox" name="workflow_stage_2">
-                                                                <property name="sizePolicy">
-                                                                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                                                                        <horstretch>0</horstretch>
-                                                                        <verstretch>0</verstretch>
-                                                                    </sizepolicy>
-                                                                </property>
+                                                            <widget class="QWidget" name="transition_stage_2"
+                                                                    native="true">
+                                                                <layout class="QVBoxLayout" name="verticalLayout_7">
+                                                                    <item>
+                                                                        <widget class="QLabel"
+                                                                                name="label_workflow_stage_2">
+                                                                            <property name="text">
+                                                                                <string>to shelf</string>
+                                                                            </property>
+                                                                        </widget>
+                                                                    </item>
+                                                                    <item>
+                                                                        <widget class="QListWidget"
+                                                                                name="workflow_stage_2"/>
+                                                                    </item>
+                                                                </layout>
                                                             </widget>
                                                         </item>
                                                     </layout>
                                                 </widget>
-                                            </item>
-                                            <item>
-                                                <spacer name="verticalSpacer">
-                                                    <property name="orientation">
-                                                        <enum>Qt::Vertical</enum>
-                                                    </property>
-                                                    <property name="sizeHint" stdset="0">
-                                                        <size>
-                                                            <width>20</width>
-                                                            <height>40</height>
-                                                        </size>
-                                                    </property>
-                                                </spacer>
                                             </item>
                                         </layout>
                                     </widget>

@@ -64,11 +64,11 @@
             <receiver>Dialog</receiver>
             <slot>accept()</slot>
             <hints>
-                <hint type="sourcelabel">
+                <hint type="sourceLabel">
                     <x>248</x>
                     <y>254</y>
                 </hint>
-                <hint type="destinationlabel">
+                <hint type="destinationLabel">
                     <x>157</x>
                     <y>274</y>
                 </hint>
@@ -80,11 +80,11 @@
             <receiver>Dialog</receiver>
             <slot>reject()</slot>
             <hints>
-                <hint type="sourcelabel">
+                <hint type="sourceLabel">
                     <x>316</x>
                     <y>260</y>
                 </hint>
-                <hint type="destinationlabel">
+                <hint type="destinationLabel">
                     <x>286</x>
                     <y>274</y>
                 </hint>
