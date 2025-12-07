@@ -7,9 +7,11 @@ Shelf manager for tracking album shelf assignments.
 from __future__ import annotations
 
 from collections import Counter
-from typing import Dict, List
+from typing import Dict, List, Tuple, Optional
 
 from picard import log, config
+
+from shelves import ShelfConstants
 
 
 class ShelfManager:
@@ -118,3 +120,48 @@ class ShelfManager:
                 )
         log.debug("Known shelves: %s", valid_shelves)
         return sorted(list(set(valid_shelves)))
+
+    @staticmethod
+    def is_likely_shelf_name(name: str, known_shelves: List[str]) -> Tuple[bool, Optional[str]]:
+        """
+        Check if a name is likely a shelf name or an artist/album name.
+
+        Args:
+            name: The name to validate
+            known_shelves: List of known shelf names
+
+        Returns:
+            Tuple of (is_likely_shelf, reason_if_not)
+        """
+        if not name:
+            return False, "Empty name"
+
+        if name in known_shelves:
+            return True, None
+
+        # Heuristics for suspicious names
+        suspicious_reasons = []
+
+        # Contains ` - ` (typical for "Artist - Album")
+        if " - " in name:
+            suspicious_reasons.append(
+                "contains ' - ' (typical for 'Artist - Album' format)"
+            )
+
+        # Too long
+        if len(name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
+            suspicious_reasons.append(f"too long ({len(name)} chars)")
+
+        # Too many words
+        word_count = len(name.split())
+        if word_count > ShelfConstants.MAX_WORD_COUNT:
+            suspicious_reasons.append(f"too many words ({word_count})")
+
+        # Contains album indicators
+        if any(indicator in name for indicator in ShelfConstants.ALBUM_INDICATORS):
+            suspicious_reasons.append("contains album indicator (Vol., Disc, etc.)")
+
+        if suspicious_reasons:
+            return False, "; ".join(suspicious_reasons)
+
+        return True, None

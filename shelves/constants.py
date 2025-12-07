@@ -15,9 +15,11 @@ class ShelfConstants:
     TAG_KEY = "shelf"
 
     # Validation limits
+    # TODO Make configurable
     MAX_SHELF_NAME_LENGTH = 30
     MAX_WORD_COUNT = 3
-    INVALID_PATH_CHARS = r'<>:"|?*'
+    INVALID_PATH_CHARS = frozenset(['<', '>', '|', ':', '*', '?', '"', '/', '\\', '\''])
+    ALBUM_INDICATORS = frozenset(["Vol.", "Volume", "Disc", "CD", "Part"])
 
     # Config keys
     CONFIG_SHELVES_KEY = "shelves_known_shelves"
@@ -27,9 +29,6 @@ class ShelfConstants:
     CONFIG_WORKFLOW_ENABLED_KEY = "shelves_workflow_enabled"
     CONFIG_RENAME_SNIPPET_SKELETON_KEY = "shelves_rename_snippet_skeleton"
     CONFIG_ACTIVE_TAB = "shelves_active_tab"
-
-    # Album indicators that suggest a name is not a shelf
-    ALBUM_INDICATORS = ["Vol.", "Volume", "Disc", "CD", "Part"]
 
     # Workflow Wildcard
     WORKFLOW_STAGE_1_WILDCARD = "*"

@@ -21,6 +21,28 @@ class ShelfUtils:
     """
 
     @staticmethod
+    def get_shelf_name_from_tag(tag_value: Optional[str]) -> Optional[str]:
+        """
+        Extract the shelf name from a tag value.
+
+        :param tag_value:
+        :return:
+        """
+
+        if not isinstance(tag_value, str):
+            return None
+        tag = tag_value.strip()
+        if not tag:
+            return None
+        suffix = ShelfConstants.MANUAL_SHELF_SUFFIX
+        if suffix and suffix in tag:
+            # Only strip the trailing occurrence to avoid accidental mid-string matches
+            if tag.endswith(suffix):
+                return tag[: -len(suffix)].strip() or None
+
+        return tag
+
+    @staticmethod
     def get_shelf_from_path(path: str, known_shelves: List[str]) -> Tuple[Optional[str], bool]:
         """
         Extract the shelf name from a file path.
@@ -50,8 +72,7 @@ class ShelfUtils:
                 return None, False
 
             potential_shelf = relative_parts[0]
-            is_likely, reason = ShelfUtils.is_likely_shelf_name(potential_shelf, known_shelves)
-
+            is_likely, reason = ShelfManager.is_likely_shelf_name(potential_shelf, known_shelves)
             if is_likely:
                 log.debug("Confirmed shelf '%s' from path.", potential_shelf)
                 return potential_shelf, True
@@ -68,119 +89,31 @@ class ShelfUtils:
             return None, False
 
     @staticmethod
-    def validate_shelf_name(name: str) -> Tuple[bool, str]:
-        """
-        Validate a shelf name for use as a directory name by processing a list of validation rules.
-
-        Args:
-            name: The shelf name to validate
-
-        Returns:
-            Tuple of (is_valid, warning_or_error_message)
-        """
-        stripped_name = name.strip()
-        if not stripped_name:
+    def validate_shelf_name(name: str) -> Tuple[bool, Optional[str]]:
+        if not isinstance(name, str) or not name.strip():
             return False, "Shelf name cannot be empty"
 
-        def check_reserved_names(n):
-            if n in (".", ".."):
-                return False, "Cannot use '.' or '..' as shelf name", True
-            return True, None, False
+        trimmed = name.strip()
 
-        def check_invalid_chars(n):
-            invalid = [c for c in ShelfConstants.INVALID_PATH_CHARS if c in n]
-            if invalid:
-                return False, f"Contains invalid characters: {', '.join(invalid)}", True
-            return True, None, False
+        if trimmed in {".", ".."}:
+            return False, "Cannot use '.' or '..'"
 
-        def check_length(n):
-            if len(n) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
-                return False, f"Shelf name too long ({len(n)} chars, maximum is {ShelfConstants.MAX_SHELF_NAME_LENGTH})", True
-            return True, None, False
+        bad = [ch for ch in trimmed if ch in ShelfConstants.INVALID_PATH_CHARS]
+        if bad:
+            return False, f"Contains invalid characters: {', '.join(sorted(set(bad)))}"
 
-        def check_word_count(n):
-            words = n.split()
-            if len(words) > ShelfConstants.MAX_WORD_COUNT:
-                return False, f"Shelf name has too many words ({len(words)}, maximum is {ShelfConstants.MAX_WORD_COUNT})", True
-            return True, None, False
+        if len(trimmed) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
+            return False, "Shelf name too long"
 
-        def check_album_indicators(n):
-            found_indicators: List[str] = []
-            for indicator in ShelfConstants.ALBUM_INDICATORS:
-                if indicator in n:
-                    found_indicators.append(n)
+        if len(trimmed.split()) > ShelfConstants.MAX_WORD_COUNT:
+            return False, "Shelf name has too many words"
 
-            if found_indicators:
-                return False, f"Shelf name contains album indicator(s): {found_indicators}, album indicators are {ShelfConstants.ALBUM_INDICATORS}", True
+        lower = trimmed.lower()
+        if any(token.lower() in lower for token in ShelfConstants.ALBUM_INDICATORS):
+            return False, "Name contains album indicator(s)"
 
-            return True, None, False
-
-        def check_dots(n):
-            if n.startswith(".") or n.endswith("."):
-                return True, "Warning: Names starting or ending with '.' may cause issues on some systems", False
-            return True, None, False
-
-        validation_functions = [
-            check_reserved_names,
-            check_invalid_chars,
-            check_length,
-            check_word_count,
-            check_album_indicators,
-            check_dots,
-        ]
-
-        warning_message = ""
-        for func in validation_functions:
-            is_valid, message, is_error_message = func(stripped_name)
-            if not is_valid:
-                return False, message
-            if message:
-                warning_message = message
-
-        return True, warning_message
-
-    @staticmethod
-    def is_likely_shelf_name(name: str, known_shelves: List[str]) -> Tuple[bool, Optional[str]]:
-        """
-        Check if a name is likely a shelf name or an artist/album name.
-
-        Args:
-            name: The name to validate
-            known_shelves: List of known shelf names
-
-        Returns:
-            Tuple of (is_likely_shelf, reason_if_not)
-        """
-        if not name:
-            return False, "Empty name"
-
-        if name in known_shelves:
-            return True, None
-
-        # Heuristics for suspicious names
-        suspicious_reasons = []
-
-        # Contains ` - ` (typical for "Artist - Album")
-        if " - " in name:
-            suspicious_reasons.append(
-                "contains ' - ' (typical for 'Artist - Album' format)"
-            )
-
-        # Too long
-        if len(name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
-            suspicious_reasons.append(f"too long ({len(name)} chars)")
-
-        # Too many words
-        word_count = len(name.split())
-        if word_count > ShelfConstants.MAX_WORD_COUNT:
-            suspicious_reasons.append(f"too many words ({word_count})")
-
-        # Contains album indicators
-        if any(indicator in name for indicator in ShelfConstants.ALBUM_INDICATORS):
-            suspicious_reasons.append("contains album indicator (Vol., Disc, etc.)")
-
-        if suspicious_reasons:
-            return False, "; ".join(suspicious_reasons)
+        if trimmed.startswith(".") or trimmed.endswith("."):
+            return True, "Shelf name may cause issues due to leading/trailing dot"
 
         return True, None
 

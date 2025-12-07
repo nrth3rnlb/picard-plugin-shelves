@@ -21,20 +21,22 @@ def _apply_workflow_transition(shelf: Optional[str]) -> Optional[str]:
     """
     Applies the workflow transition to a shelf name if the workflow is enabled.
     """
+    if not shelf:
+        return shelf
+
     try:
         settings: Any = config.setting
         if not settings[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]:
             return shelf
 
-        workflow_stage_1: list[str] = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
-        workflow_stage_2: list[str] = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+        workflow_stage_1 = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
+        workflow_stage_2_list = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
 
         # Check for wildcard or direct match
-        apply_transition = (ShelfConstants.WORKFLOW_STAGE_1_WILDCARD in workflow_stage_1) or (
-                shelf is not None and shelf in workflow_stage_1)
+        apply_transition = (ShelfConstants.WORKFLOW_STAGE_1_WILDCARD in workflow_stage_1) or (shelf in workflow_stage_1)
 
-        if apply_transition and workflow_stage_2:
-            destination_shelf = workflow_stage_2[0]
+        if apply_transition and workflow_stage_2_list:
+            destination_shelf = workflow_stage_2_list[0]
             # Avoid transitioning to the same shelf
             if shelf != destination_shelf:
                 log.debug(
@@ -98,6 +100,7 @@ def file_post_addition_to_track_processor(track: Optional[Any], file: Any) -> No
 
         shelf_name: Optional[str]
         shelf_tag: Optional[str]
+        shelf_from_path: Optional[str]
 
         known_shelves = ShelfManager.get_configured_shelves()
         shelf_from_path, was_explicitly_found = ShelfUtils.get_shelf_from_path(path=file.filename,
@@ -105,26 +108,19 @@ def file_post_addition_to_track_processor(track: Optional[Any], file: Any) -> No
         existing_tag = file_meta.get(ShelfConstants.TAG_KEY, "")
         is_manual_in_tag = isinstance(existing_tag, str) and ShelfConstants.MANUAL_SHELF_SUFFIX in existing_tag
 
-        # PRIORITY 1: Physical location in a known shelf folder.
-        if was_explicitly_found:
+        # PRIORITY 1: Physical location
+        if shelf_from_path and was_explicitly_found:
             shelf_name = shelf_from_path
-            log.debug("%s: Priority 1: Physical location in specific shelf '%s' detected.", PLUGIN_NAME, shelf_name)
+            shelf_tag = shelf_name
+            log.debug("%s: Priority 1: Physical location in specific shelf '%s' wins.", PLUGIN_NAME, shelf_name)
 
-            existing_shelf_name_part = ShelfUtils.get_shelf_name_from_tag(existing_tag)
-            if is_manual_in_tag and shelf_name == existing_shelf_name_part:
-                shelf_tag = existing_tag
-                log.debug("%s: Physical location matches existing manual tag. Preserving it.", PLUGIN_NAME)
-            else:
-                shelf_tag = shelf_name
-                log.debug("%s: Physical location overrides previous tag. New tag is '%s'.", PLUGIN_NAME, shelf_tag)
-
-        # PRIORITY 2: Persisted manual tag.
+        # PRIORITY 2: Persistent manual tag
         elif is_manual_in_tag:
             shelf_name = ShelfUtils.get_shelf_name_from_tag(existing_tag)
             shelf_tag = existing_tag
             log.debug("%s: Priority 2: Persisted manual tag '%s' wins.", PLUGIN_NAME, shelf_tag)
 
-        # PRIORITY 3: Default logic (path detection and workflow).
+        # PRIORITY 3: Standard logic
         else:
             shelf_name = _apply_workflow_transition(shelf_from_path)
             shelf_tag = shelf_name
@@ -132,7 +128,7 @@ def file_post_addition_to_track_processor(track: Optional[Any], file: Any) -> No
                       shelf_name)
 
         # Set metadata and update manager state
-        if shelf_name is not None:
+        if shelf_name:
             _set_metadata(file, ShelfConstants.TAG_KEY, shelf_tag, "file")
             if track:
                 _set_metadata(track, ShelfConstants.TAG_KEY, shelf_tag, "track")
@@ -141,6 +137,7 @@ def file_post_addition_to_track_processor(track: Optional[Any], file: Any) -> No
 
             album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
             if album_id:
+                # If the decision was based on a physical or persisted manual tag, lock it in.
                 if was_explicitly_found or is_manual_in_tag:
                     _shelf_manager.set_album_shelf(album_id, shelf_name, source=ShelfConstants.SHELF_SOURCE_MANUAL,
                                                    lock=True)
