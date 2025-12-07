@@ -160,9 +160,3 @@ class ShelfUtils:
             log.debug(
                 "Removed shelf '%s' from known shelves", shelf_name
             )
-
-    @staticmethod
-    def get_shelf_name_from_tag(shelf_tag: str) -> Optional[str]:
-        if not isinstance(shelf_tag, str):
-            return None
-        return shelf_tag.split(ShelfConstants.MANUAL_SHELF_SUFFIX)[0].strip()
