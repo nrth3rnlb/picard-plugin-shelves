@@ -11,8 +11,6 @@ from typing import Dict, List
 
 from picard import log, config
 
-from shelves import ShelfConstants, ShelfUtils
-
 
 class ShelfManager:
     """Manages shelf assignments and state with conflict detection."""
@@ -97,7 +95,10 @@ class ShelfManager:
         Returns:
             List of unique, validated shelf names
         """
-        shelves = config.setting[ShelfConstants.CONFIG_SHELVES_KEY]
+        from .constants import ShelfConstants
+        from .utils import ShelfUtils
+
+        shelves = config.setting[ShelfConstants.CONFIG_SHELVES_KEY]  # type: ignore[index]
 
         # Validate each shelf name
         valid_shelves = []
