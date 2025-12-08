@@ -19,14 +19,7 @@ class OptionsPageTest(unittest.TestCase):
     Tests for the ShelvesOptionsPage logic.
     """
 
-    # Centralized list of UI attributes touched by tests; update here if the UI changes.
-    UI_ATTRS = [
-        'shelf_list', 'workflow_stage_1', 'workflow_stage_2',
-        'workflow_enabled', 'workflow_transitions', 'naming_script_code',
-        'tabWidget', 'label_workflow_stage_1', 'add_shelf_button',
-        'remove_shelf_button', 'remove_unknown_shelves_button',
-        'scan_for_shelves_button'
-    ]
+    UI_ATTRS = list(ShelvesOptionsPage.__annotations__.keys())
 
     @patch('shelves.options.uic')
     @patch('picard.ui.options.OptionsPage.__init__', return_value=None)
@@ -113,7 +106,7 @@ class OptionsPageTest(unittest.TestCase):
         """Test adding a new, valid shelf."""
         # Arrange
         self.page._get_configured_shelves = MagicMock(return_value={"ShelfA"})
-        self.page._rebuild_workflow_dropdowns = MagicMock()
+        self.page._rebuild_shelves_for_stages = MagicMock()
 
         # Act
         self.page.add_shelf()
@@ -121,7 +114,7 @@ class OptionsPageTest(unittest.TestCase):
         # Assert
         self.page.shelf_list.addItem.assert_called_with("NewShelf")
         self.page.shelf_list.sortItems.assert_called_once()
-        self.page._rebuild_workflow_dropdowns.assert_called_once()
+        self.page._rebuild_shelves_for_stages.assert_called_once()
 
     @patch('shelves.options.QtWidgets.QMessageBox.question', return_value=QtWidgets.QMessageBox.Yes)
     def test_remove_shelf(self, mock_question):
@@ -132,14 +125,14 @@ class OptionsPageTest(unittest.TestCase):
         self.page.shelf_list.selectedItems.return_value = [mock_item]
         self.page.get_selected_shelves_stage_1 = MagicMock(return_value=[])
         self.page.get_selected_shelves_stage_2 = MagicMock(return_value=[])
-        self.page._rebuild_workflow_dropdowns = MagicMock()
+        self.page._rebuild_shelves_for_stages = MagicMock()
 
         # Act
         self.page.remove_shelf()
 
         # Assert
         self.page.shelf_list.takeItem.assert_called_with(self.page.shelf_list.row(mock_item))
-        self.page._rebuild_workflow_dropdowns.assert_called_once()
+        self.page._rebuild_shelves_for_stages.assert_called_once()
 
 
 if __name__ == "__main__":

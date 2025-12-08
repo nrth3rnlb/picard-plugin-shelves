@@ -77,6 +77,9 @@ class ShelvesOptionsPage(OptionsPage):
         # Allow multi-selection
         self.shelf_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
+        self.plugin_configuration.setCurrentIndex(
+            self.config.setting[ShelfConstants.CONFIG_ACTIVE_TAB])  # type: ignore[index]
+
         # Connect signals
         self.add_shelf_button.clicked.connect(self.add_shelf)
         self.remove_shelf_button.clicked.connect(self.remove_shelf)
@@ -94,8 +97,6 @@ class ShelvesOptionsPage(OptionsPage):
         self.label_workflow_stage_1.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.workflow_stage_1.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.workflow_stage_2.setSelectionMode(QAbstractItemView.SingleSelection)
-
-        self.workflow_enabled.stateChanged.connect(self.on_workflow_enabled_changed)
         self.workflow_stage_1.itemSelectionChanged.connect(
             self.on_workflow_stage_changed
         )
@@ -109,16 +110,13 @@ class ShelvesOptionsPage(OptionsPage):
         self.shelf_list.clear()
         self.shelf_list.addItems(shelves)
 
-        self.workflow_transitions.setEnabled(self.workflow_enabled.isChecked())
-        self._rebuild_workflow_dropdowns()
+        self._rebuild_shelves_for_stages()
 
         self.workflow_enabled.setChecked(
             self.config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY])  # type: ignore[index]
         # Update preview with current values
         snippet = self.get_rename_snippet()
         self.naming_script_code.setPlainText(snippet)
-
-        self.tabWidget.setCurrentIndex(self.config.setting[ShelfConstants.CONFIG_ACTIVE_TAB])  # type: ignore[index]
 
         # Automatically scan for shelves if the list is empty
         if self.shelf_list.count() == 0:
@@ -188,7 +186,7 @@ class ShelvesOptionsPage(OptionsPage):
 
         self.shelf_list.addItem(shelf_name)
         self.shelf_list.sortItems()
-        self._rebuild_workflow_dropdowns()
+        self._rebuild_shelves_for_stages()
 
     def remove_shelf(self) -> None:
         """Remove the selected shelves."""
@@ -227,7 +225,7 @@ class ShelvesOptionsPage(OptionsPage):
         for item in selected_items:
             self.shelf_list.takeItem(self.shelf_list.row(item))
 
-        self._rebuild_workflow_dropdowns()
+        self._rebuild_shelves_for_stages()
 
     def rebuild_shelf_list(self) -> None:
         """Remove shelves that no longer exist in the music directory."""
@@ -251,16 +249,14 @@ class ShelvesOptionsPage(OptionsPage):
             for item in matching_items:
                 self.shelf_list.takeItem(self.shelf_list.row(item))
 
-        self._rebuild_workflow_dropdowns()
+        self._rebuild_shelves_for_stages()
 
-    def _rebuild_workflow_dropdowns(self) -> None:
-        """Rebuild the workflow dropdowns based on the current shelf list."""
+    def _rebuild_shelves_for_stages(self) -> None:
         shelves = []
         for i in range(self.shelf_list.count()):
             item = self.shelf_list.item(i)
             if item is not None:
                 shelves.append(item.text())
-        log.debug("%s: Rebuilding workflow dropdowns with shelves: %s", PLUGIN_NAME, shelves)
 
         self.build_workflow_stage_1(shelves)
         self.build_workflow_stage_2(shelves)
@@ -269,13 +265,9 @@ class ShelvesOptionsPage(OptionsPage):
         self.workflow_stage_1.clear()
         # Add wildcard option first
         self.workflow_stage_1.addItem(ShelfConstants.WORKFLOW_STAGE_1_WILDCARD)
-        self.workflow_stage_1.addItems(shelves)
-
         selected_shelves = self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
-        for i in range(self.workflow_stage_1.count()):
-            element = self.workflow_stage_1.item(i)
-            if element and element.text() in selected_shelves:
-                element.setSelected(True)
+        for selected_shelf in selected_shelves:
+            self.workflow_stage_1.addItem(selected_shelf)
 
     def build_workflow_stage_2(self, shelves: list[str]):
         self.workflow_stage_2.clear()
@@ -314,7 +306,7 @@ class ShelvesOptionsPage(OptionsPage):
 
             if new_shelves_added:
                 self.shelf_list.sortItems()
-                self._rebuild_workflow_dropdowns()
+                self._rebuild_shelves_for_stages()
 
         except (OSError, PermissionError) as e:
             log.error("%s: Error scanning directory: %s", PLUGIN_NAME, e)
@@ -337,16 +329,6 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
         self.remove_shelf_button.setEnabled(
             len(self.shelf_list.selectedItems()) > 0
         )
-
-    def on_workflow_enabled_changed(self) -> None:
-        """ Handle workflow-enabled state change. """
-        is_enabled = self.workflow_enabled.isChecked()
-        log.debug("%s: on_workflow_enabled_changed: %s", PLUGIN_NAME, is_enabled)
-        self.workflow_transitions.setEnabled(is_enabled)
-
-        # Update preview when workflow is toggled
-        snippet = self.get_rename_snippet()
-        self.naming_script_code.setPlainText(snippet)
 
     def on_workflow_stage_changed(self) -> None:
         """Handle workflow stage change."""

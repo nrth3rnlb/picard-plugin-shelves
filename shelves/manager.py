@@ -11,7 +11,7 @@ from typing import Dict, List, Tuple, Optional
 
 from picard import log, config
 
-from shelves import ShelfConstants
+from .constants import ShelfConstants
 
 
 class ShelfManager:
