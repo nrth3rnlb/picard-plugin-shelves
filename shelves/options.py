@@ -41,6 +41,14 @@ class ShelvesOptionsPage(OptionsPage):
     workflow_stage_1: QtWidgets.QListWidget
     workflow_stage_2: QtWidgets.QListWidget
     workflow_transitions: QtWidgets.QWidget
+    button_ALL_to_STAGE_1: QtWidgets.QToolButton
+    button_ALL_to_STAGE_2: QtWidgets.QToolButton
+    button_STAGE_1_to_ALL: QtWidgets.QToolButton
+    button_STAGE_1_to_STAGE_2: QtWidgets.QToolButton
+    button_STAGE_2_to_ALL: QtWidgets.QToolButton
+    button_STAGE_2_to_STAGE_1: QtWidgets.QToolButton
+    plugin_configuration: QtWidgets.QTabWidget
+
 
     options = [
         ListOption(
@@ -76,9 +84,6 @@ class ShelvesOptionsPage(OptionsPage):
 
         # Allow multi-selection
         self.shelf_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
-
-        self.plugin_configuration.setCurrentIndex(
-            self.config.setting[ShelfConstants.CONFIG_ACTIVE_TAB])  # type: ignore[index]
 
         # Connect signals
         self.add_shelf_button.clicked.connect(self.add_shelf)
@@ -118,6 +123,9 @@ class ShelvesOptionsPage(OptionsPage):
         self.shelf_list.addItems(shelves)
 
         self._rebuild_shelves_for_stages()
+
+        self.plugin_configuration.setCurrentIndex(
+            self.config.setting[ShelfConstants.CONFIG_ACTIVE_TAB])  # type: ignore[index]
 
         self.workflow_enabled.setChecked(
             self.config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY])  # type: ignore[index]

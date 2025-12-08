@@ -23,7 +23,8 @@ class OptionsPageTest(unittest.TestCase):
 
     @patch('shelves.options.uic')
     @patch('picard.ui.options.OptionsPage.__init__', return_value=None)
-    def setUp(self, mock_options_init, mock_uic):
+    @patch('picard.ui.options.OptionsPage.style', return_value=MagicMock())
+    def setUp(self, mock_style, mock_options_init, mock_uic):
         """Set up a mock ShelvesOptionsPage instance."""
 
         self.page = ShelvesOptionsPage.__new__(ShelvesOptionsPage)
@@ -36,6 +37,7 @@ class OptionsPageTest(unittest.TestCase):
 
         self.page.config = MagicMock()
         self.page.config.setting = {}
+
 
     def test_save_writes_to_config(self):
         """Test if the save method correctly writes UI state to config."""
@@ -65,7 +67,7 @@ class OptionsPageTest(unittest.TestCase):
         self.assertEqual(settings[ShelfConstants.CONFIG_ACTIVE_TAB], 1)
 
     @patch('shelves.manager.ShelfManager.get_configured_shelves', return_value=["ShelfA", "ShelfB"])
-    def test_load_populates_ui_from_config(self, mock_get_configured):
+    def test_load_populates_ui_from_config(self, mock_get_configured_shelves):
         """Test if the load method correctly populates UI from config."""
         # Arrange
         self.page.config.setting = {
