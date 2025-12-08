@@ -10,7 +10,7 @@ from typing import Set, Optional
 from PyQt5 import QtWidgets, QtCore
 from PyQt5 import uic  # type: ignore # uic has no type stubs
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAbstractItemView
+from PyQt5.QtWidgets import QAbstractItemView, QStyle
 from picard import log
 from picard.config import BoolOption, ListOption, TextOption, IntOption
 from picard.ui.options import OptionsPage
@@ -103,6 +103,13 @@ class ShelvesOptionsPage(OptionsPage):
         self.workflow_stage_2.itemSelectionChanged.connect(
             self.on_workflow_stage_changed
         )
+
+        self.button_ALL_to_STAGE_1.setIcon(self.style().standardIcon(QStyle.SP_ArrowDown))
+        self.button_ALL_to_STAGE_2.setIcon(self.style().standardIcon(QStyle.SP_ArrowDown))
+        self.button_STAGE_1_to_ALL.setIcon(self.style().standardIcon(QStyle.SP_ArrowUp))
+        self.button_STAGE_1_to_STAGE_2.setIcon(self.style().standardIcon(QStyle.SP_ArrowRight))
+        self.button_STAGE_2_to_ALL.setIcon(self.style().standardIcon(QStyle.SP_ArrowUp))
+        self.button_STAGE_2_to_STAGE_1.setIcon(self.style().standardIcon(QStyle.SP_ArrowLeft))
 
     def load(self) -> None:
         """Load already known shelves from config."""
