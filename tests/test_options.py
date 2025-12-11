@@ -46,8 +46,8 @@ class OptionsPageTest(unittest.TestCase):
         mock_item1.text.return_value = "Shelf1"
         mock_item2 = MagicMock()
         mock_item2.text.return_value = "Shelf2"
-        self.page.shelf_list.count.return_value = 2
-        self.page.shelf_list.item.side_effect = [mock_item1, mock_item2]
+        self.page.shelf_management_shelves.count.return_value = 2
+        self.page.shelf_management_shelves.item.side_effect = [mock_item1, mock_item2]
 
         self.page.get_selected_shelves_stage_1 = MagicMock(return_value=["Shelf1"])
         self.page.get_selected_shelves_stage_2 = MagicMock(return_value=["Shelf2"])
@@ -60,7 +60,7 @@ class OptionsPageTest(unittest.TestCase):
 
         # Assert
         settings = self.page.config.setting
-        self.assertEqual(settings[ShelfConstants.CONFIG_SHELVES_KEY], ["Shelf1", "Shelf2"])
+        self.assertEqual(settings[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY], ["Shelf1", "Shelf2"])
         self.assertEqual(settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY], ["Shelf1"])
         self.assertEqual(settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY], ["Shelf2"])
         self.assertTrue(settings[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY])
@@ -82,8 +82,8 @@ class OptionsPageTest(unittest.TestCase):
         mock_item_a.text.return_value = "ShelfA"
         mock_item_b = MagicMock()
         mock_item_b.text.return_value = "ShelfB"
-        self.page.shelf_list.count.return_value = 2
-        self.page.shelf_list.item.side_effect = [mock_item_a, mock_item_b]
+        self.page.shelf_management_shelves.count.return_value = 2
+        self.page.shelf_management_shelves.item.side_effect = [mock_item_a, mock_item_b]
 
         self.page.build_workflow_stage_1 = MagicMock()
         self.page.build_workflow_stage_2 = MagicMock()
@@ -93,8 +93,8 @@ class OptionsPageTest(unittest.TestCase):
         self.page.load()
 
         # Assert
-        self.page.shelf_list.clear.assert_called_once()
-        self.page.shelf_list.addItems.assert_called_with(["ShelfA", "ShelfB"])
+        self.page.shelf_management_shelves.clear.assert_called_once()
+        self.page.shelf_management_shelves.addItems.assert_called_with(["ShelfA", "ShelfB"])
         self.page.workflow_enabled.setChecked.assert_called_with(True)
 
         # The core of the fix: _rebuild_workflow_dropdowns uses the items from shelf_list
@@ -114,8 +114,8 @@ class OptionsPageTest(unittest.TestCase):
         self.page.add_shelf()
 
         # Assert
-        self.page.shelf_list.addItem.assert_called_with("NewShelf")
-        self.page.shelf_list.sortItems.assert_called_once()
+        self.page.shelf_management_shelves.addItem.assert_called_with("NewShelf")
+        self.page.shelf_management_shelves.sortItems.assert_called_once()
         self.page._rebuild_shelves_for_stages.assert_called_once()
 
     @patch('shelves.options.QtWidgets.QMessageBox.question', return_value=QtWidgets.QMessageBox.Yes)
@@ -124,7 +124,7 @@ class OptionsPageTest(unittest.TestCase):
         # Arrange
         mock_item = MagicMock()
         mock_item.text.return_value = "ShelfToRemove"
-        self.page.shelf_list.selectedItems.return_value = [mock_item]
+        self.page.shelf_management_shelves.selectedItems.return_value = [mock_item]
         self.page.get_selected_shelves_stage_1 = MagicMock(return_value=[])
         self.page.get_selected_shelves_stage_2 = MagicMock(return_value=[])
         self.page._rebuild_shelves_for_stages = MagicMock()
@@ -133,7 +133,7 @@ class OptionsPageTest(unittest.TestCase):
         self.page.remove_shelf()
 
         # Assert
-        self.page.shelf_list.takeItem.assert_called_with(self.page.shelf_list.row(mock_item))
+        self.page.shelf_management_shelves.takeItem.assert_called_with(self.page.shelf_management_shelves.row(mock_item))
         self.page._rebuild_shelves_for_stages.assert_called_once()
 
 

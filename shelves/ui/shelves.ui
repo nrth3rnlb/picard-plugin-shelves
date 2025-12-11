@@ -68,7 +68,7 @@
              </property>
              <layout class="QHBoxLayout" name="horizontalLayout">
               <item>
-               <widget class="QListWidget" name="shelf_list">
+               <widget class="QListWidget" name="shelf_management_shelves">
                 <property name="enabled">
                  <bool>true</bool>
                 </property>
@@ -188,9 +188,35 @@
                 <layout class="QVBoxLayout" name="verticalLayout_10">
                  <item>
                   <widget class="QListWidget" name="shelves_for_stages">
+                   <property name="dragDropMode">
+                    <enum>QAbstractItemView::DragDrop</enum>
+                   </property>
                    <property name="defaultDropAction">
                     <enum>Qt::MoveAction</enum>
                    </property>
+                   <property name="selectionMode">
+                    <enum>QAbstractItemView::MultiSelection</enum>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>New Item</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>New Item</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>New Item</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>New Item</string>
+                    </property>
+                   </item>
                   </widget>
                  </item>
                  <item>
@@ -293,8 +319,14 @@
                     </item>
                     <item>
                      <widget class="QListWidget" name="workflow_stage_1">
+                      <property name="dragDropMode">
+                       <enum>QAbstractItemView::DragDrop</enum>
+                      </property>
                       <property name="defaultDropAction">
                        <enum>Qt::MoveAction</enum>
+                      </property>
+                      <property name="selectionMode">
+                       <enum>QAbstractItemView::MultiSelection</enum>
                       </property>
                      </widget>
                     </item>
@@ -348,9 +380,15 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="QListWidget" name="workflow_stage_2">
+                     <widget class="ReducedDropList" name="workflow_stage_2">
+                      <property name="dragDropMode">
+                       <enum>QAbstractItemView::DragDrop</enum>
+                      </property>
                       <property name="defaultDropAction">
                        <enum>Qt::MoveAction</enum>
+                      </property>
+                      <property name="selectionMode">
+                       <enum>QAbstractItemView::MultiSelection</enum>
                       </property>
                      </widget>
                     </item>
@@ -412,6 +450,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ReducedDropList</class>
+   <extends>QListWidget</extends>
+   <header>reduceddroplist</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

@@ -100,7 +100,7 @@ class ShelfManager:
         from .constants import ShelfConstants
         from .utils import ShelfUtils
 
-        shelves = config.setting[ShelfConstants.CONFIG_SHELVES_KEY]  # type: ignore[index]
+        shelves = config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]  # type: ignore[index]
 
         # Validate each shelf name
         valid_shelves = []

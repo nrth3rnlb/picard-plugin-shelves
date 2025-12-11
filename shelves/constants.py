@@ -22,7 +22,7 @@ class ShelfConstants:
     ALBUM_INDICATORS = frozenset(["Vol.", "Volume", "Disc", "CD", "Part"])
 
     # Config keys
-    CONFIG_SHELVES_KEY = "shelves_known_shelves"
+    CONFIG_KNOWN_SHELVES_KEY = "shelves_known_shelves"
     CONFIG_ALBUM_SHELF_KEY = "shelves_album_shelf"
     CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY = "shelves_workflow_stage_1_shelves"
     CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY = "shelves_workflow_stage_2_shelves"

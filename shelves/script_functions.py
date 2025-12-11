@@ -24,4 +24,4 @@ def func_shelf(parser: Any) -> str:
     shelf_name = ShelfUtils.get_shelf_name_from_tag(shelf_tag)
     if not shelf_name:
         return ""
-    return shelf_tag
+    return shelf_name

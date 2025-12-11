@@ -142,7 +142,7 @@ class ShelfUtils:
         shelves = ShelfManager.get_configured_shelves()
         if shelf_name not in shelves:
             shelves.append(shelf_name)
-            config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = sorted(shelves)  # type: ignore[index]
+            config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = sorted(shelves)  # type: ignore[index]
             log.debug("Added shelf '%s' to known shelves", shelf_name)
 
     @staticmethod
@@ -156,7 +156,7 @@ class ShelfUtils:
         shelves = ShelfManager.get_configured_shelves()
         if shelf_name in shelves:
             shelves.remove(shelf_name)
-            config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = shelves  # type: ignore[index]
+            config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = shelves  # type: ignore[index]
             log.debug(
                 "Removed shelf '%s' from known shelves", shelf_name
             )
