@@ -20,6 +20,7 @@ from picard.ui.options import OptionsPage
 from . import PLUGIN_NAME, ShelfUtils
 from .constants import DEFAULT_SHELVES, ShelfConstants
 from .manager import ShelfManager
+from .ui.widgets import MaxItemsDropListWidget
 
 
 class ShelvesOptionsPage(OptionsPage):
@@ -31,26 +32,29 @@ class ShelvesOptionsPage(OptionsPage):
     PARENT = "plugins"
 
     config: picard.config
+
+
     add_shelf_button: QtWidgets.QPushButton
-    label_workflow_stage_1: QtWidgets.QLabel
-    label_workflow_stage_2: QtWidgets.QLabel
-    naming_script_code: QtWidgets.QPlainTextEdit
-    remove_shelf_button: QtWidgets.QPushButton
-    remove_unknown_shelves_button: QtWidgets.QPushButton
-    scan_for_shelves_button: QtWidgets.QPushButton
-    shelf_management_shelves: QtWidgets.QListWidget
-    workflow_enabled: QtWidgets.QCheckBox
-    workflow_stage_1: QtWidgets.QListWidget
-    workflow_stage_2: QtWidgets.QListWidget
-    shelves_for_stages: QtWidgets.QListWidget
-    workflow_transitions: QtWidgets.QWidget
     button_ALL_to_STAGE_1: QtWidgets.QToolButton
     button_ALL_to_STAGE_2: QtWidgets.QToolButton
     button_STAGE_1_to_ALL: QtWidgets.QToolButton
     button_STAGE_1_to_STAGE_2: QtWidgets.QToolButton
     button_STAGE_2_to_ALL: QtWidgets.QToolButton
     button_STAGE_2_to_STAGE_1: QtWidgets.QToolButton
+    label_workflow_stage_1: QtWidgets.QLabel
+    label_workflow_stage_2: QtWidgets.QLabel
+    naming_script_code: QtWidgets.QPlainTextEdit
     plugin_configuration: QtWidgets.QTabWidget
+    remove_shelf_button: QtWidgets.QPushButton
+    remove_unknown_shelves_button: QtWidgets.QPushButton
+    scan_for_shelves_button: QtWidgets.QPushButton
+    shelf_management_shelves: QtWidgets.QListWidget
+    shelves_for_stages: MaxItemsDropListWidget
+    stage_1_includes_non_shelves: QtWidgets.QCheckBox
+    workflow_enabled: QtWidgets.QCheckBox
+    workflow_stage_1: MaxItemsDropListWidget
+    workflow_stage_2: MaxItemsDropListWidget
+    workflow_transitions: QtWidgets.QWidget
 
     options = [
         ListOption(
@@ -70,6 +74,7 @@ class ShelvesOptionsPage(OptionsPage):
             DEFAULT_SHELVES[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY],
         ),
         BoolOption("setting", ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY, True),
+        BoolOption("setting", ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY, False),
         IntOption("setting", ShelfConstants.CONFIG_ACTIVE_TAB, 0)
     ]
 
@@ -100,11 +105,18 @@ class ShelvesOptionsPage(OptionsPage):
         )
 
         # Workflow Configuration
+        self.shelves_for_stages.setMaximumItemCount(MaxItemsDropListWidget.UNLIMITED)
+        self.shelves_for_stages.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
         self.label_workflow_stage_1.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.workflow_stage_1.setMaximumItemCount(MaxItemsDropListWidget.UNLIMITED)
         self.workflow_stage_1.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.workflow_stage_1.itemSelectionChanged.connect(
             self.on_workflow_stage_changed
         )
+
+        self.workflow_stage_2.setMaximumItemCount(1)
+        self.workflow_stage_2.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.workflow_stage_2.itemSelectionChanged.connect(
             self.on_workflow_stage_changed
         )
@@ -124,7 +136,8 @@ class ShelvesOptionsPage(OptionsPage):
         self.button_STAGE_2_to_STAGE_1.clicked.connect(self.moveItem_STAGE_2_to_STAGE_1)
 
 
-    def moveItem(self, source: QtWidgets.QListWidget, target: QtWidgets.QListWidget) -> None:
+    @staticmethod
+    def move_item(source: QtWidgets.QListWidget, target: QtWidgets.QListWidget) -> None:
         item = source.currentItem()
         if not item:
             return
@@ -147,7 +160,7 @@ class ShelvesOptionsPage(OptionsPage):
         self.workflow_stage_2.addItem(incoming)
 
     def moveItem_ALL_to_STAGE_1(self):
-        self.moveItem(self.shelves_for_stages, self.workflow_stage_1)
+        self.move_item(self.shelves_for_stages, self.workflow_stage_1)
 
     def moveItem_ALL_to_STAGE_2(self):
         self.move_to_stage_2(self.shelves_for_stages)
@@ -156,14 +169,13 @@ class ShelvesOptionsPage(OptionsPage):
         self.move_to_stage_2(self.workflow_stage_1)
 
     def moveItem_STAGE_1_to_ALL(self):
-        self.moveItem(self.workflow_stage_1, self.shelves_for_stages)
+        self.move_item(self.workflow_stage_1, self.shelves_for_stages)
 
     def moveItem_STAGE_2_to_ALL(self):
-        self.moveItem(self.workflow_stage_2, self.shelves_for_stages)
+        self.move_item(self.workflow_stage_2, self.shelves_for_stages)
 
     def moveItem_STAGE_2_to_STAGE_1(self):
-        self.moveItem(self.workflow_stage_2, self.workflow_stage_1)
-
+        self.move_item(self.workflow_stage_2, self.workflow_stage_1)
 
     def _rebuild_shelves_for_stages(self) -> None:
         possible_shelves_stage_2 = self.config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]
@@ -220,6 +232,8 @@ class ShelvesOptionsPage(OptionsPage):
         snippet = self.get_rename_snippet()
         self.naming_script_code.setPlainText(snippet)
 
+        self.stage_1_includes_non_shelves.setChecked(self.config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY])  # type: ignore[index]
+
         # Automatically scan for shelves if the list is empty
         if self.shelf_management_shelves.count() == 0:
             log.debug("%s: Shelf list is empty, auto-scanning for shelves.", PLUGIN_NAME)
@@ -232,26 +246,31 @@ class ShelvesOptionsPage(OptionsPage):
             item = self.shelf_management_shelves.item(i)
             if item is not None:
                 shelves.append(item.text())
-
         self.config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = shelves  # type: ignore[index]
 
-        # Stage 1 wie gehabt
+        shelves_stage_1 = []
+        for i in range(self.workflow_stage_1.count()):
+            element = self.workflow_stage_1.item(i)
+            if element is not None:
+                shelves_stage_1.append(element.text())
         self.config.setting[
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = self.get_selected_shelves_stage_1()  # type: ignore[index]
+            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = shelves_stage_1  # type: ignore[index]
 
-        # Für Stage 2 nur das erste Item sichern
-        stage2 = []
-        if self.workflow_stage_2.count() > 0:
-            it = self.workflow_stage_2.item(0)
-            if it is not None:
-                stage2.append(it.text())
-        self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = stage2  # type: ignore[index]
+        shelves_stage_2 = []
+        for i in range(self.workflow_stage_2.count()):
+            element = self.workflow_stage_2.item(i)
+            if element is not None:
+                shelves_stage_2.append(element.text())
+        self.config.setting[
+            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = shelves_stage_2  # type: ignore[index]
 
         self.config.setting[
             ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = self.workflow_enabled.isChecked()  # type: ignore[index]
         self.config.setting[
             ShelfConstants.CONFIG_ACTIVE_TAB] = self.plugin_configuration.currentIndex()  # type: ignore[index]
         log.debug("%s: Saved %d shelves to config", PLUGIN_NAME, len(shelves))
+
+        self.config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = self.stage_1_includes_non_shelves.isChecked()  # type: ignore[index]
 
     def get_selected_shelves_stage_1(self) -> list[str]:
         selected_shelves_stage_1: list[str] = []

@@ -187,7 +187,7 @@
                <widget class="QWidget" name="widget_3" native="true">
                 <layout class="QVBoxLayout" name="verticalLayout_10">
                  <item>
-                  <widget class="QListWidget" name="shelves_for_stages">
+                  <widget class="MaxItemsDropListWidget" name="shelves_for_stages">
                    <property name="dragDropMode">
                     <enum>QAbstractItemView::DragDrop</enum>
                    </property>
@@ -318,7 +318,7 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="QListWidget" name="workflow_stage_1">
+                     <widget class="MaxItemsDropListWidget" name="workflow_stage_1">
                       <property name="dragDropMode">
                        <enum>QAbstractItemView::DragDrop</enum>
                       </property>
@@ -380,7 +380,7 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="ReducedDropList" name="workflow_stage_2">
+                     <widget class="MaxItemsDropListWidget" name="workflow_stage_2">
                       <property name="dragDropMode">
                        <enum>QAbstractItemView::DragDrop</enum>
                       </property>
@@ -452,9 +452,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ReducedDropList</class>
+   <class>MaxItemsDropListWidget</class>
    <extends>QListWidget</extends>
-   <header>reduceddroplist</header>
+   <header>widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

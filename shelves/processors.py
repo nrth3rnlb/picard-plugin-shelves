@@ -30,13 +30,14 @@ def _apply_workflow_transition(shelf: Optional[str]) -> Optional[str]:
             return shelf
 
         workflow_stage_1 = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
-        workflow_stage_2_list = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+        workflow_stage_2 = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+        stage_1_includes_non_shelves = settings[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY]
 
-        # Check for wildcard or direct match
-        apply_transition = (ShelfConstants.WORKFLOW_STAGE_1_WILDCARD in workflow_stage_1) or (shelf in workflow_stage_1)
+        # Check for known shelves wildcard or direct match
+        apply_transition = shelf in workflow_stage_1 or stage_1_includes_non_shelves
 
-        if apply_transition and workflow_stage_2_list:
-            destination_shelf = workflow_stage_2_list[0]
+        if apply_transition and workflow_stage_2:
+            destination_shelf = workflow_stage_2[0]
             # Avoid transitioning to the same shelf
             if shelf != destination_shelf:
                 log.debug(
