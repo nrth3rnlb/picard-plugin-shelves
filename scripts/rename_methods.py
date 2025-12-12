@@ -6,11 +6,6 @@ from bowler import Query
 
 MAPPING = {
 "button_ALL_to_STAGE_1": "button_all_to_stage_1",
-"_moveItem_STAGE_2_to_ALL": "_moveitem_stage_2_to_all",
-"_moveItem_STAGE_2_to_STAGE_1": "_moveitem_stage_2_to_stage_1",
-"button_STAGE_2_to_STAGE_1": "button_stage_2_to_stage_1",
-"button_ALL_to_STAGE_2": "button_all_to_stage_2",
-"button_ALL_to_STAGE_1": "button_all_to_stage_1",
 }
 
 def run(dry_run: bool = True, root: str = ".") -> None:

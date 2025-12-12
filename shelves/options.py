@@ -16,11 +16,7 @@ from PyQt5 import (
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QAbstractItemView
-# Imported to trigger inclusion of N_() in builtins
-from picard import (
-    # noqa: F401,E402 # pylint: disable=unused-import
-    log,
-)
+from picard import log
 from picard.config import BoolOption, IntOption, ListOption, TextOption
 from picard.ui.options import OptionsPage
 
@@ -36,7 +32,7 @@ class ShelvesOptionsPage(OptionsPage):
     """
 
     NAME = "shelves"
-    TITLE = N_("Shelves")
+    TITLE = "Shelves"
     PARENT = "plugins"
 
     options = [
