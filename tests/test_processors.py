@@ -25,7 +25,7 @@ class ProcessorsTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment."""
         self.config = {
-            "setting": {
+            "settings": {
                 ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
                 ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
                 ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],

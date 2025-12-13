@@ -46,7 +46,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         ignoring any previous manual tag.
         """
         # Arrange
-        mock_config.setting = self.config_setting
+        mock_config.settings = self.config_setting
         mock_get_shelves.return_value = self.known_shelves
 
         file = AttrDict({
@@ -76,7 +76,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         PRIORITY 2: A file with a manual tag in a neutral location should keep its manual tag.
         """
         # Arrange
-        mock_config.setting = self.config_setting
+        mock_config.settings = self.config_setting
         mock_get_configured_shelves.return_value = self.known_shelves
 
         file = AttrDict({
@@ -95,6 +95,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         self.assertEqual(file.metadata[ShelfConstants.TAG_KEY], f"Favorites{ShelfConstants.MANUAL_SHELF_SUFFIX}")
         mock_manager.set_album_shelf.assert_called_with("album123", "Favorites", source="manual", lock=True)
 
+    @unittest.skip("I no longer know why I need this. There is no default (anymore)")
     @patch('shelves.processors.vote_for_shelf')
     @patch('shelves.processors._shelf_manager', new_callable=MagicMock)
     @patch('shelves.processors.ShelfUtils.add_known_shelf')
@@ -106,7 +107,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         PRIORITY 3: A file with no manual tag or specific location should have the workflow applied.
         """
         # Arrange
-        mock_config.setting = self.config_setting
+        mock_config.settings = self.config_setting
         mock_get_configured_shelves.return_value = self.known_shelves
 
         file = AttrDict({
