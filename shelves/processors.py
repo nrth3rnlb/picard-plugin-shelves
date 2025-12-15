@@ -11,9 +11,14 @@ from typing import Any, Dict, Optional
 
 from picard import config, log
 
-from . import PLUGIN_NAME, clear_album, vote_for_shelf, get_album_shelf, _shelf_manager
+from . import (
+    PLUGIN_NAME,
+    clear_album,
+    vote_for_shelf,
+    get_album_shelf,
+    _shelf_manager,
+)
 from .constants import ShelfConstants
-from .manager import ShelfManager
 from .utils import ShelfUtils
 
 
@@ -25,13 +30,12 @@ def _apply_workflow_transition(shelf: Optional[str]) -> Optional[str]:
         return shelf
 
     try:
-        settings: Any = config.setting
-        if not settings[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]:
+        if not config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]:
             return shelf
 
-        workflow_stage_1 = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
-        workflow_stage_2 = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
-        stage_1_includes_non_shelves = settings[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY]
+        workflow_stage_1 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
+        workflow_stage_2 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+        stage_1_includes_non_shelves = config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY]
 
         # Check for known shelves wildcard or direct match
         apply_transition = shelf in workflow_stage_1 or stage_1_includes_non_shelves
@@ -103,7 +107,9 @@ def file_post_addition_to_track_processor(track: Optional[Any], file: Any) -> No
         shelf_tag: Optional[str]
         shelf_from_path: Optional[str]
 
-        known_shelves = ShelfManager.get_configured_shelves()
+        from shelves.ui.options import OptionsPage
+
+        known_shelves = ShelfUtils.get_configured_shelves()
         shelf_from_path, was_explicitly_found = ShelfUtils.get_shelf_from_path(path=file.filename,
                                                                                known_shelves=known_shelves)
         existing_tag = file_meta.get(ShelfConstants.TAG_KEY, "")

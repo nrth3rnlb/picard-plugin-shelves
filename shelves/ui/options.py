@@ -1,5 +1,5 @@
 """
-Options page for the Shelves plugin.
+Options options_page for the Shelves plugin.
 """
 
 from __future__ import annotations
@@ -15,48 +15,47 @@ from PyQt5 import (
     uic,  # type: ignore # uic has no type stubs
 )
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAbstractItemView
-from picard import log
-from picard.config import BoolOption, IntOption, ListOption, TextOption
-from picard.ui.options import OptionsPage
+from PyQt5.QtWidgets import QAbstractItemView, QListWidget
+from picard import log, config
+from picard.config import BoolOption, IntOption, ListOption, TextOption, Option
+from picard.ui.options import OptionsPage as PicardOptions
 
-from . import PLUGIN_NAME, ShelfUtils
-from .constants import DEFAULT_SHELVES, ShelfConstants
-from .manager import ShelfManager
-from .ui.widgets import MaxItemsDropListWidget
+from shelves import PLUGIN_NAME, ShelfUtils
+from shelves.constants import DEFAULT_SHELVES, ShelfConstants
+from shelves.ui.widgets import MaxItemsDropListWidget
 
 
-class ShelvesOptionsPage(OptionsPage):
+class OptionsPage(PicardOptions):
     """
-    Options page for the Shelves plugin.
+    Options options_page for the Shelves plugin.
     """
 
     NAME = "shelves"
     TITLE = "Shelves"
     PARENT = "plugins"
 
-    options = [
+    options: list[Option] = [
         ListOption(
-            "settings",
+            "setting",
             ShelfConstants.CONFIG_KNOWN_SHELVES_KEY,
-            list(DEFAULT_SHELVES.values()),
+            [],
         ),
-        TextOption("settings", ShelfConstants.CONFIG_ALBUM_SHELF_KEY, ""),
+        TextOption("setting", ShelfConstants.CONFIG_ALBUM_SHELF_KEY, ""),
         ListOption(
-            "settings",
+            "setting",
             ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY,
             DEFAULT_SHELVES[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY],
         ),
         ListOption(
-            "settings",
+            "setting",
             ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY,
             DEFAULT_SHELVES[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY],
         ),
-        BoolOption("settings", ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY, True),
+        BoolOption("setting", ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY, True),
         BoolOption(
-            "settings", ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY, False
+            "setting", ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY, False
         ),
-        IntOption("settings", ShelfConstants.CONFIG_ACTIVE_TAB, 0),
+        IntOption("setting", ShelfConstants.CONFIG_ACTIVE_TAB, 0),
     ]
 
     add_shelf_button: QtWidgets.QPushButton
@@ -88,7 +87,7 @@ class ShelvesOptionsPage(OptionsPage):
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         """
-        Initialize the option page.
+        Initialize the option options_page.
 
         Args:
             parent: Parent widget
@@ -96,10 +95,10 @@ class ShelvesOptionsPage(OptionsPage):
         super().__init__(parent)
 
         # ui_dir = Path(__file__).parent / "ui"
-        ui_dir = os.path.join(os.path.dirname(__file__), "ui")
+        ui_dir = os.path.join(os.path.dirname(__file__), "")
         sys.path.insert(0, str(ui_dir))
 
-        ui_file = os.path.join(os.path.dirname(__file__), "ui", "shelves.ui")
+        ui_file = os.path.join(os.path.dirname(__file__), "", "shelves.ui")
         uic.loadUi(ui_file, self)
 
         # Shelf Management
@@ -142,12 +141,18 @@ class ShelvesOptionsPage(OptionsPage):
         self.button_all_to_stage_1.clicked.connect(self._move_item_all_to_stage_1)
         self.button_all_to_stage_2.clicked.connect(self._move_item_all_to_stage_2)
         self.button_stage_1_to_all.clicked.connect(self._move_item_stage_1_to_all)
-        self.button_stage_1_to_stage_2.clicked.connect(self._move_item_stage_1_to_stage_2)
+        self.button_stage_1_to_stage_2.clicked.connect(
+            self._move_item_stage_1_to_stage_2
+        )
         self.button_stage_2_to_all.clicked.connect(self._move_item_stage_2_to_all)
-        self.button_stage_2_to_stage_1.clicked.connect(self._move_item_stage_2_to_stage_1)
+        self.button_stage_2_to_stage_1.clicked.connect(
+            self._move_item_stage_2_to_stage_1
+        )
 
     @staticmethod
-    def _move_item(source: QtWidgets.QListWidget, target: QtWidgets.QListWidget) -> None:
+    def _move_item(
+        source: QtWidgets.QListWidget, target: QtWidgets.QListWidget
+    ) -> None:
 
         item = source.currentItem()
         if not item:
@@ -189,10 +194,12 @@ class ShelvesOptionsPage(OptionsPage):
         self._move_item(self.workflow_stage_2, self.workflow_stage_1)
 
     def _rebuild_shelves_for_stages(self) -> None:
-        possible_shelves_stage_2 = self.config.settings[
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY
+        possible_shelves_stage_2 = config.setting[
+            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY  # type: ignore[index]
         ]
-        possible_shelves_stage_1 = self._build_workflow_stage_2(possible_shelves_stage_2)
+        possible_shelves_stage_1 = self._build_workflow_stage_2(
+            possible_shelves_stage_2
+        )
         remaining_shelves = self._build_workflow_stage_1(possible_shelves_stage_1)
         self._build_workflow_shelves_stages(remaining_shelves)
 
@@ -200,111 +207,36 @@ class ShelvesOptionsPage(OptionsPage):
         self.shelves_for_stages.clear()
         self.shelves_for_stages.addItems(remaining_shelves)
 
-    def _build_workflow_stage_2(self, possible_shelves: list[str]) -> list[str]:
-        self.workflow_stage_2.clear()
+    @staticmethod
+    def _build_workflow_stage(
+        possible_shelves: list[str], config_key: str, widget: QListWidget
+    ) -> list[str]:
+        widget.clear()
 
-        selected_shelves = set(
-            self.config.settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
-        )
+        selected_shelves = set(config.setting[config_key])  # type: ignore[index]
         remaining: list[str] = []
 
         for shelf in possible_shelves:
             if shelf in selected_shelves:
-                self.workflow_stage_2.addItem(shelf)
+                widget.addItem(shelf)
             else:
                 remaining.append(shelf)
 
         return remaining
+
+    def _build_workflow_stage_2(self, possible_shelves: list[str]) -> list[str]:
+        return self._build_workflow_stage(
+            possible_shelves,
+            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY,
+            self.workflow_stage_2,
+        )
 
     def _build_workflow_stage_1(self, possible_shelves: list[str]) -> list[str]:
-        self.workflow_stage_1.clear()
-
-        selected_shelves = set(
-            self.config.settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
+        return self._build_workflow_stage(
+            possible_shelves,
+            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY,
+            self.workflow_stage_1,
         )
-        remaining: list[str] = []
-
-        for shelf in possible_shelves:
-            if shelf in selected_shelves:
-                self.workflow_stage_1.addItem(shelf)
-            else:
-                remaining.append(shelf)
-
-        return remaining
-
-    def load(self) -> None:
-        """Load already known shelves from config."""
-        shelves: list[str] = sorted(ShelfManager.get_configured_shelves())
-        self.shelf_management_shelves.clear()
-        if len(shelves) > 0:
-            self.shelf_management_shelves.addItems(shelves)
-
-        self._rebuild_shelves_for_stages()
-
-        self.plugin_configuration.setCurrentIndex(
-            self.config.settings[ShelfConstants.CONFIG_ACTIVE_TAB]
-        )  # type: ignore[index]
-
-        self.workflow_enabled.setChecked(
-            self.config.settings[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]
-        )  # type: ignore[index]
-        # Update preview with current values
-        snippet = self._get_rename_snippet()
-        self.naming_script_code.setPlainText(snippet)
-
-        self.stage_1_includes_non_shelves.setChecked(
-            self.config.settings[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY]
-        )  # type: ignore[index]
-
-        # Automatically scan for shelves if the list is empty
-        if self.shelf_management_shelves.count() == 0:
-            log.debug(
-                "%s: Shelf list is empty, auto-scanning for shelves.", PLUGIN_NAME
-            )
-            self._populate_shelf_list()
-
-    def save(self) -> None:
-        """Save shelves list to config."""
-        self.config.settings[ShelfConstants.CONFIG_ACTIVE_TAB] = (
-            self.plugin_configuration.currentIndex()
-        )  # type: ignore[index]
-
-        shelves = []
-        for i in range(self.shelf_management_shelves.count()):
-            item = self.shelf_management_shelves.item(i)
-            if item is not None:
-                shelves.append(item.text())
-        self.config.settings[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = (
-            shelves  # type: ignore[index]
-        )
-
-        shelves_stage_1 = []
-        for i in range(self.workflow_stage_1.count()):
-            element = self.workflow_stage_1.item(i)
-            if element is not None:
-                shelves_stage_1.append(element.text())
-        self.config.settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = (
-            shelves_stage_1  # type: ignore[index]
-        )
-
-        shelves_stage_2 = []
-        for i in range(self.workflow_stage_2.count()):
-            element = self.workflow_stage_2.item(i)
-            if element is not None:
-                shelves_stage_2.append(element.text())
-        self.config.settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = (
-            shelves_stage_2  # type: ignore[index]
-        )
-
-        self.config.settings[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = (
-            self.workflow_enabled.isChecked()
-        )  # type: ignore[index]
-
-        log.debug("%s: Saved %d shelves to config", PLUGIN_NAME, len(shelves))
-
-        self.config.settings[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (
-            self.stage_1_includes_non_shelves.isChecked()
-        )  # type: ignore[index]
 
     def _get_selected_shelves_stage_1(self) -> list[str]:
         selected_shelves_stage_1: list[str] = []
@@ -332,7 +264,6 @@ class ShelvesOptionsPage(OptionsPage):
 
         shelf_name = shelf_name.strip()
         is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
-
         if not is_valid:
             # Stelle sicher, dass `text` ein `str` ist (kein `None`)
             QtWidgets.QMessageBox.warning(
@@ -340,7 +271,7 @@ class ShelvesOptionsPage(OptionsPage):
             )
             return
 
-        existing_shelves = self._get_configured_shelves()
+        existing_shelves = self._get_shelf_management_shelves()
         if shelf_name in existing_shelves:
             QtWidgets.QMessageBox.information(
                 self, "Already Exists", f"Shelf '{shelf_name}' already exists."
@@ -428,7 +359,7 @@ class ShelvesOptionsPage(OptionsPage):
 
         self._rebuild_shelves_for_stages()
 
-    def _populate_shelf_list (self) -> None:
+    def _populate_shelf_list(self) -> None:
         """Scan Picard's target directory for shelves."""
         try:
             # Load existing directories
@@ -442,12 +373,12 @@ class ShelvesOptionsPage(OptionsPage):
                 log.debug(
                     "%s: No shelves found during scan in %s",
                     PLUGIN_NAME,
-                    self.config.settings["move_files_to"],
-                )  # type: ignore[index]
+                    config.setting["move_files_to"],  # type: ignore[index]
+                )
                 return
 
             # Get currently configured shelves to avoid duplicates
-            configured_shelves = self._get_configured_shelves()
+            configured_shelves = self._get_shelf_management_shelves()
             new_shelves_added = False
             for shelf in shelves_found:
                 if shelf not in configured_shelves:
@@ -466,16 +397,6 @@ class ShelvesOptionsPage(OptionsPage):
                 self, "Scan Error", f"Error scanning directory: {e}"
             )
 
-    @staticmethod
-    def _get_rename_snippet() -> str:
-        """Get the renaming script snippet."""
-        # noinspection SpellCheckingInspection
-        return """$set(_shelffolder,$shelf())
-$set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
-
-%_shelffolder%
-$if2(%albumartist%,%artist%)/%album%/%title%"""
-
     def _on_shelf_list_selection_changed(self) -> None:
         """Enable / disable the remove button based on selection."""
         self.remove_shelf_button.setEnabled(
@@ -484,10 +405,9 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
 
     def _on_workflow_stage_changed(self) -> None:
         """Handle workflow stage change."""
-        snippet = self._get_rename_snippet()
-        self.naming_script_code.setPlainText(snippet)
+        self.naming_script_code.setPlainText(ShelfUtils.get_rename_snippet())
 
-    def _get_configured_shelves(self) -> Set[str]:
+    def _get_shelf_management_shelves(self) -> Set[str]:
         """
         Get a set of currently listed shelves.
 
@@ -499,3 +419,81 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
             if item is not None:
                 shelves.add(item.text())
         return shelves
+
+    def load(self) -> None:
+        """Load already known shelves from config."""
+
+        log.debug("%s: Loading shelves from config", PLUGIN_NAME)
+
+        shelves: list[str] = sorted(ShelfUtils.get_configured_shelves())
+        self.shelf_management_shelves.clear()
+        if len(shelves) > 0:
+            self.shelf_management_shelves.addItems(shelves)
+
+        self._rebuild_shelves_for_stages()
+
+        self.plugin_configuration.setCurrentIndex(
+            config.setting[ShelfConstants.CONFIG_ACTIVE_TAB]  # type: ignore[index]
+        )
+
+        self.workflow_enabled.setChecked(
+            config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]  # type: ignore[index]
+        )
+        # Update preview with current values
+        snippet = ShelfUtils.get_rename_snippet()
+        self.naming_script_code.setPlainText(snippet)
+
+        self.stage_1_includes_non_shelves.setChecked(
+            config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY]  # type: ignore[index]
+        )  # type: ignore[index]
+
+        # Automatically scan for shelves if the list is empty
+        if self.shelf_management_shelves.count() == 0:
+            log.debug(
+                "%s: Shelf list is empty, auto-scanning for shelves.", PLUGIN_NAME
+            )
+            self._populate_shelf_list()
+
+    def save(self) -> None:
+        """Save shelves list to config."""
+        config.setting[ShelfConstants.CONFIG_ACTIVE_TAB] = (  # type: ignore[index]
+            self.plugin_configuration.currentIndex()
+        )
+
+        shelves = []
+        for i in range(self.shelf_management_shelves.count()):
+            item = self.shelf_management_shelves.item(i)
+            if item is not None:
+                shelves.append(item.text())
+
+        config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = (  # type: ignore[index]
+            shelves
+        )
+
+        shelves_stage_1 = []
+        for i in range(self.workflow_stage_1.count()):
+            element = self.workflow_stage_1.item(i)
+            if element is not None:
+                shelves_stage_1.append(element.text())
+        config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = (  # type: ignore[index]
+            shelves_stage_1
+        )
+
+        shelves_stage_2 = []
+        for i in range(self.workflow_stage_2.count()):
+            element = self.workflow_stage_2.item(i)
+            if element is not None:
+                shelves_stage_2.append(element.text())
+        config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = (  # type: ignore[index]
+            shelves_stage_2
+        )
+
+        config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = (  # type: ignore[index]
+            self.workflow_enabled.isChecked()
+        )
+
+        log.debug("%s: Saved %d shelves to config", PLUGIN_NAME, len(shelves))
+
+        config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (  # type: ignore[index]
+            self.stage_1_includes_non_shelves.isChecked()
+        )

@@ -37,7 +37,7 @@ class ProcessorPriorityTest(unittest.TestCase):
     @patch('shelves.processors.vote_for_shelf')
     @patch('shelves.processors._shelf_manager', new_callable=MagicMock)
     @patch('shelves.processors.ShelfUtils.add_known_shelf')
-    @patch('shelves.processors.ShelfManager.get_configured_shelves')
+    @patch('shelves.utils.ShelfUtils.get_configured_shelves')
     @patch('shelves.processors.config', new_callable=MagicMock)
     def test_physical_location_overrides_manual_tag(self, mock_config, mock_get_shelves,
                                                     mock_add_shelf, mock_manager, mock_vote):
@@ -68,7 +68,7 @@ class ProcessorPriorityTest(unittest.TestCase):
     @patch('shelves.processors.vote_for_shelf')
     @patch('shelves.processors._shelf_manager', new_callable=MagicMock)
     @patch('shelves.processors.ShelfUtils.add_known_shelf')
-    @patch('shelves.processors.ShelfManager.get_configured_shelves')
+    @patch('shelves.utils.ShelfUtils.get_configured_shelves')
     @patch('shelves.processors.config', new_callable=MagicMock)
     def test_manual_tag_overrides_workflow(self, mock_config, mock_get_configured_shelves, mock_add_shelf,
                                            mock_manager, mock_vote):
@@ -99,7 +99,7 @@ class ProcessorPriorityTest(unittest.TestCase):
     @patch('shelves.processors.vote_for_shelf')
     @patch('shelves.processors._shelf_manager', new_callable=MagicMock)
     @patch('shelves.processors.ShelfUtils.add_known_shelf')
-    @patch('shelves.processors.ShelfManager.get_configured_shelves')
+    @patch('shelves.utils.ShelfUtils.get_configured_shelves')
     @patch('shelves.processors.config', new_callable=MagicMock)
     def test_workflow_applies_by_default(self, mock_config, mock_get_configured_shelves, mock_add_shelf,
                                          mock_manager, mock_vote):

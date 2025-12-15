@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Dict, List, Tuple, Optional
 
-from picard import log, config
+from picard import log
 
 from .constants import ShelfConstants
 
@@ -90,36 +90,7 @@ class ShelfManager:
         self._shelves_by_album.pop(album_id, None)
         self._shelf_votes.pop(album_id, None)
 
-    @staticmethod
-    def get_configured_shelves() -> List[str]:
-        """
-        Retrieve the list of known shelves from config with validation.
-        Returns:
-            List of unique, validated shelf names
-        """
-        from .constants import ShelfConstants
-        from .utils import ShelfUtils
 
-        shelves = config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]  # type: ignore[index]
-
-        # Validate each shelf name
-        valid_shelves = []
-        for shelf in shelves:
-            if not isinstance(shelf, str):
-                log.warning(
-                    "Ignoring non-string shelf: %s", repr(shelf)
-                )
-                continue
-
-            is_valid, message = ShelfUtils.validate_shelf_name(shelf)
-            if is_valid or not message:  # Allow warnings
-                valid_shelves.append(shelf)
-            else:
-                log.warning(
-                    "Ignoring invalid shelf '%s': %s", shelf, message
-                )
-        log.debug("Known shelves: %s", valid_shelves)
-        return sorted(list(set(valid_shelves)))
 
     @staticmethod
     def is_likely_shelf_name(name: str, known_shelves: List[str]) -> Tuple[bool, Optional[str]]:

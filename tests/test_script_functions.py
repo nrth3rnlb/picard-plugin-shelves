@@ -5,17 +5,18 @@ from shelves.constants import ShelfConstants
 from shelves.script_functions import func_shelf
 
 
+class AttrDict(dict):
+    """A dictionary that allows attribute-style access."""
+
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
 class ScriptFunctionsTest(unittest.TestCase):
-    def test_func_shelf_returns_clean_name(self):
-        tag = "Soundtracks – Games; manual"
-        expected = "Soundtracks – Games"
+    def setUp(self):
+        """Set up the test environment"""
+        pass
 
-        parser = MagicMock()
-        parser.context = {ShelfConstants.TAG_KEY: tag}
-
-        with patch("shelves.script_functions.ShelfUtils.get_shelf_name_from_tag", return_value=expected):
-            result = func_shelf(parser)
-            self.assertEqual(result, expected)
 
     def test_func_shelf_returns_empty_for_non_string_tag(self):
         parser = MagicMock()

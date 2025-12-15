@@ -5,10 +5,60 @@ Tests for the utility functions.
 """
 
 import unittest
+from unittest.mock import patch, MagicMock
 
 from shelves.constants import ShelfConstants
 from shelves.manager import ShelfManager
 from shelves.utils import ShelfUtils
+
+
+class AttrDict(dict):
+    """A dictionary that allows attribute-style access."""
+
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+
+class UtilsTest(unittest.TestCase):
+    def setUp(self):
+        """Set up the test environment"""
+        self.config_setting = {
+            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
+            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
+            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
+            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: sorted(
+                ["Incoming", "Standard", "Stash", "Live"]
+            ),
+        }
+
+    @patch("shelves.utils.ShelfUtils.validate_shelf_name", new_callable=MagicMock)
+    @patch("shelves.utils.config", new_callable=MagicMock)
+    def test_get_configured_shelves_filters_and_sorts(self, mock_config, mock_validate):
+        # Arrange: config contains duplicates, a non-string and one invalid entry
+        mock_config.setting = {
+            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: [
+                "beta",
+                "alpha",
+                "alpha",
+                42,
+                "gamma",
+            ]
+        }
+
+        # validate_shelf_name: accept "alpha" and "beta", reject "gamma"
+        def validate_side_effect(name):
+            if name in ("alpha", "beta"):
+                return True, None
+            return False, "invalid"
+
+        mock_validate.side_effect = validate_side_effect
+
+        # Act
+        result = ShelfUtils.get_configured_shelves()
+
+        # Assert: duplicates removed, sorted, non-strings ignored, invalid excluded
+        self.assertEqual(result, ["alpha", "beta"])
 
 
 class UtilsValidationTest(unittest.TestCase):
@@ -88,42 +138,56 @@ class UtilsLikelyShelfTest(unittest.TestCase):
 
     def test_is_likely_known_shelf(self):
         """A known shelf is always likely."""
-        is_likely, reason = ShelfManager.is_likely_shelf_name("Soundtracks", self.known_shelves)
+        is_likely, reason = ShelfManager.is_likely_shelf_name(
+            "Soundtracks", self.known_shelves
+        )
         self.assertTrue(is_likely)
         self.assertIsNone(reason)
 
     def test_is_likely_good_new_name(self):
         """A new, valid name is likely."""
-        is_likely, reason = ShelfManager.is_likely_shelf_name("New Shelf", self.known_shelves)
+        is_likely, reason = ShelfManager.is_likely_shelf_name(
+            "New Shelf", self.known_shelves
+        )
         self.assertTrue(is_likely)
         self.assertIsNone(reason)
 
     def test_is_not_likely_artist_album_format(self):
         """A name with ' - ' is not likely."""
-        is_likely, reason = ShelfManager.is_likely_shelf_name("Artist - Album", self.known_shelves)
+        is_likely, reason = ShelfManager.is_likely_shelf_name(
+            "Artist - Album", self.known_shelves
+        )
         self.assertFalse(is_likely)
         self.assertIn("contains ' - '", reason)  # type: ignore[arg-type]
 
     def test_is_not_likely_too_long(self):
         """A very long name is not likely."""
         long_name = "This is a very long name that is probably an album title"
-        is_likely, reason = ShelfManager.is_likely_shelf_name(long_name, self.known_shelves)
+        is_likely, reason = ShelfManager.is_likely_shelf_name(
+            long_name, self.known_shelves
+        )
         self.assertFalse(is_likely)
         self.assertIn("too long", reason)  # type: ignore[arg-type]
 
     def test_is_not_likely_too_many_words(self):
         """A name with many words is not likely."""
-        is_likely, reason = ShelfManager.is_likely_shelf_name("A Shelf With Too Many Words", self.known_shelves)
+        is_likely, reason = ShelfManager.is_likely_shelf_name(
+            "A Shelf With Too Many Words", self.known_shelves
+        )
         self.assertFalse(is_likely)
         self.assertIn("too many words", reason)  # type: ignore[arg-type]
 
     def test_is_not_likely_album_indicator(self):
         """A name with 'Vol.' or 'Disc' is not likely."""
-        is_likely, reason = ShelfManager.is_likely_shelf_name("Greatest Hits Vol. 2", self.known_shelves)
+        is_likely, reason = ShelfManager.is_likely_shelf_name(
+            "Greatest Hits Vol. 2", self.known_shelves
+        )
         self.assertFalse(is_likely)
         self.assertIn("contains album indicator", reason)  # type: ignore[arg-type]
 
-        is_likely, reason = ShelfManager.is_likely_shelf_name("The Album (Disc 1)", self.known_shelves)
+        is_likely, reason = ShelfManager.is_likely_shelf_name(
+            "The Album (Disc 1)", self.known_shelves
+        )
         self.assertFalse(is_likely)
         self.assertIn("contains album indicator", reason)  # type: ignore[arg-type]
 

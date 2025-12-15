@@ -16,7 +16,7 @@ from picard import log
 from picard.file import (
     register_file_post_load_processor,
     register_file_post_addition_to_track_processor,
-    register_file_post_removal_from_track_processor
+    register_file_post_removal_from_track_processor,
 )
 from picard.metadata import register_track_metadata_processor
 from picard.script import register_script_function
@@ -193,7 +193,7 @@ def clear_album(album_id: str) -> None:
 
 from .actions import SetShelfAction as _SetShelfActionBase, DetermineShelfAction as _DetermineShelfActionBase, \
     ResetShelfAction as _ResetShelfActionBase
-from .options import ShelvesOptionsPage as _ShelvesOptionsPageBase
+from shelves.ui.options import OptionsPage as _ShelvesOptionsPageBase
 from .processors import (
     file_post_load_processor,
     file_post_save_processor,
@@ -205,7 +205,7 @@ from .script_functions import func_shelf as _func_shelf_base
 
 
 class ShelvesOptionsPage(_ShelvesOptionsPageBase):
-    """Wrapper class for the ShelvesOptionsPage to ensure proper plugin registration."""
+    """Wrapper class for the OptionsPage to ensure proper plugin registration."""
 
     def __init__(self, parent=None) -> None:
         """Initialize with the global shelf_manager instance."""
@@ -285,7 +285,7 @@ register_album_action(SetShelfAction())
 register_album_action(DetermineShelfAction())
 register_album_action(ResetShelfAction())
 
-# Register options page
+# Register options options_page
 register_options_page(ShelvesOptionsPage)
 
 # Register a script function for use in file naming

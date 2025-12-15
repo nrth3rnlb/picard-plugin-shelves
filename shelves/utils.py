@@ -21,6 +21,46 @@ class ShelfUtils:
     """
 
     @staticmethod
+    def get_configured_shelves() -> List[str]:
+        """
+        Get the list of known shelves from the configuration.
+
+        :return:
+        """
+        shelves = config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]
+
+        log.debug("Known shelves from config: %s", shelves)
+        # Validate each shelf name
+        valid_shelves = []
+        for shelf in shelves:
+            if not isinstance(shelf, str):
+                log.warning(
+                    "Ignoring non-string shelf: %s", repr(shelf)
+                )
+                continue
+
+            is_valid, message = ShelfUtils.validate_shelf_name(shelf)
+            if is_valid or not message:  # Allow warnings
+                valid_shelves.append(shelf)
+            else:
+                log.warning(
+                    "Ignoring invalid shelf '%s': %s", shelf, message
+                )
+        log.debug("Known shelves: %s", valid_shelves)
+        return sorted(list(set(valid_shelves)))
+
+
+    @staticmethod
+    def get_rename_snippet() -> str:
+        """Get the renaming script snippet."""
+        # noinspection SpellCheckingInspection
+        return """$set(_shelffolder,$shelf())
+$set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
+
+%_shelffolder%
+$if2(%albumartist%,%artist%)/%album%/%title%"""
+
+    @staticmethod
     def get_shelf_name_from_tag(tag_value: Optional[str]) -> Optional[str]:
         """
         Extract the shelf name from a tag value.
@@ -58,7 +98,7 @@ class ShelfUtils:
               or if it's a fallback value (`False`).
         """
         try:
-            base_path_str = config.setting["move_files_to"]
+            base_path_str = config.setting["move_files_to"] # type: ignore[index]
             base_path = Path(base_path_str).resolve()
             file_path = Path(path).resolve()
 
@@ -123,7 +163,7 @@ class ShelfUtils:
         Load existing directories from the music directory.
         Returns: List of directory names
         """
-        music_dir_str = config.setting["move_files_to"]  # type: ignore[index]
+        music_dir_str = config.setting["move_files_to"]
         music_dir = Path(music_dir_str)
 
         shelves_found = [entry.name for entry in music_dir.iterdir() if entry.is_dir()]
@@ -139,24 +179,9 @@ class ShelfUtils:
         if not shelf_name or not shelf_name.strip():
             return
 
-        shelves = ShelfManager.get_configured_shelves()
+        shelves = ShelfUtils.get_configured_shelves()
         if shelf_name not in shelves:
             shelves.append(shelf_name)
             config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = sorted(shelves)  # type: ignore[index]
             log.debug("Added shelf '%s' to known shelves", shelf_name)
 
-    @staticmethod
-    def remove_known_shelf(shelf_name: str) -> None:
-        """
-        Remove a shelf name from the list of known shelves.
-
-        Args:
-            shelf_name: Name of the shelf to remove
-        """
-        shelves = ShelfManager.get_configured_shelves()
-        if shelf_name in shelves:
-            shelves.remove(shelf_name)
-            config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = shelves  # type: ignore[index]
-            log.debug(
-                "Removed shelf '%s' from known shelves", shelf_name
-            )

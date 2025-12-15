@@ -27,6 +27,7 @@ class ManagerTest(unittest.TestCase):
         )
         self.album_id = "album123"
 
+
     def test_vote_for_shelf_increments_counter(self):
         """Test that voting for a shelf increments its vote count."""
         self.manager.vote_for_shelf(self.album_id, "ShelfA")
