@@ -6,104 +6,158 @@ Shelf manager for tracking album shelf assignments.
 
 from __future__ import annotations
 
-from collections import Counter
-from typing import Dict, List, Tuple, Optional
+import threading
+from collections import Counter, namedtuple
+from collections import defaultdict
+from typing import Dict, List, Tuple, Optional, Any
 
 from picard import log
 
 from .constants import ShelfConstants
 
+LogData = namedtuple("LogData", ["album_id", "votes", "winner"])
+
+
+# Minimaler In‑Memory‑State
+_STATE: Dict[str, Dict[str, Any]] = defaultdict(dict)
+_VOTES: Dict[str, List[Tuple[str, float, str]]] = defaultdict(list)
+
 
 class ShelfManager:
     """Manages shelf assignments and state with conflict detection."""
 
-    def __init__(self, plugin_name: str, validators, utils) -> None:
+    def __init__(self) -> None:
         """
         Initialize the shelf manager.
-
-        Args:
-            plugin_name: Name of the plugin
-            validators: ShelfValidators instance
-            utils: ShelfUtils instance
         """
 
-        self.validators = validators
-        self.utils = utils
-
-        self.plugin_name = plugin_name
         self._shelves_by_album: Dict[str, str] = {}
         self._shelf_votes: Dict[str, Counter] = {}
 
-    def vote_for_shelf(self, album_id: str, shelf_name: str) -> None:
-        """
-        Register a shelf vote for an album (used when multiple files suggest different shelves).
+        self._lock = threading.Lock()
 
-        Args:
-            album_id: MusicBrainz album ID
-            shelf_name: Name of the shelf to vote for
-        """
-        if not shelf_name or not shelf_name.strip():
+    def vote_for_shelf(
+        self, album_id: str, shelf: str, weight: float, reason: str
+    ) -> None:
+        if not shelf or not shelf.strip():
             return
 
-        if album_id not in self._shelf_votes:
-            self._shelf_votes[album_id] = Counter()
+        log_data = None
+        with self._lock:
+            # Weighted counting (counter can only use ints,
+            # therefore, additionally _VOTES for weights)
+            if album_id not in self._shelf_votes:
+                self._shelf_votes[album_id] = Counter()
+            # For a quick "majority" view, we increase the count by 1
+            self._shelf_votes[album_id][shelf] += 1
+            winner = self._shelf_votes[album_id].most_common(1)[0][0]
+            if len(self._shelf_votes[album_id]) > 1:
+                all_votes = self._shelf_votes[album_id].most_common()
+                log_data = (album_id, dict(all_votes), winner)
+            self._shelves_by_album[album_id] = winner
 
-        self._shelf_votes[album_id][shelf_name] += 1
+        # Weighted for the real decision
+        _VOTES.setdefault(album_id, []).append(
+            (shelf, float(weight), str(reason or ""))
+        )
 
-        # Get the shelf with most votes
-        winner = self._shelf_votes[album_id].most_common(1)[0][0]
-
-        # Check for conflicts
-        if len(self._shelf_votes[album_id]) > 1:
-            all_votes = self._shelf_votes[album_id].most_common()
+        if log_data:
             log.warning(
-                "%s: Album %s has files from different shelves. Votes: %s. Using: '%s'",
-                self.plugin_name,
-                album_id,
-                dict(all_votes),
-                winner,
+                "Album %s has files from different shelves. Votes: %s. Use: '%s'",
+                log_data[0],
+                log_data[1],
+                log_data[2],
             )
 
-        self._shelves_by_album[album_id] = winner
+    # def vote_for_shelf(self, album_id: str, shelf_name: str) -> None:
+    #     if not shelf_name or not shelf_name.strip():
+    #         return
+    #
+    #     if album_id not in self._shelf_votes:
+    #         self._shelf_votes[album_id] = Counter()
+    #
+    #     self._shelf_votes[album_id][shelf_name] += 1
+    #
+    #     # Get the shelf with most votes
+    #     winner = self._shelf_votes[album_id].most_common(1)[0][0]
+    #
+    #     # Check for conflicts
+    #     if len(self._shelf_votes[album_id]) > 1:
+    #         all_votes = self._shelf_votes[album_id].most_common()
+    #         log.warning(
+    #             "%s: Album %s has files from different shelves. Votes: %s. Using: '%s'",
+    #             self.plugin_name,
+    #             album_id,
+    #             dict(all_votes),
+    #             winner,
+    #         )
+    #
+    #     self._shelves_by_album[album_id] = winner
 
-    def get_album_shelf(self, album_id: str) -> str | None:
-        """
-        Retrieve the shelf name for an album.
-        Args:
-            album_id: MusicBrainz album ID
-        Returns:
-            The shelf name for the album. If the album is not found, it returns the default shelf value.
-        """
-        if self._shelves_by_album.get(album_id) is not None:
-            return self._shelves_by_album.get(album_id)
-        log.warning("%s: The shelf of the album %s could not be identified with certainty.", self.plugin_name, album_id)
+    @staticmethod
+    def _winner(votes: List[Tuple[str, float, str]]) -> Optional[str]:
+        if not votes:
+            return None
+        agg: Dict[str, float] = {}
+        for shelf, weight, _ in votes:
+            agg[shelf] = agg.get(shelf, 0.0) + float(weight)
+        return max(agg.items(), key=lambda kv: kv[1])[0]
 
+    @staticmethod
+    def _get_manual_override(album_id: str) -> Optional[str]:
+        st = _STATE.get(album_id, {})
+        if (
+            st.get("shelf_locked")
+            or st.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL
+        ):
+            return st.get("shelf")
         return None
 
-    def clear_album(self, album_id: str) -> None:
-        """
-        Clear all data for an album.
+    # def get_album_shelf(self, album_id: str) -> str | None:
+    #     if self._shelves_by_album.get(album_id) is not None:
+    #         return self._shelves_by_album.get(album_id)
+    #     log.warning(
+    #         "The shelf of the album %s could not be identified with certainty.",
+    #         album_id,
+    #     )
+    #
+    #     return None
 
-        Args:
-            album_id: MusicBrainz album ID
+    def get_album_shelf(self, album_id: str) -> tuple[Optional[str], str]:
         """
+        Read with priority:
+        1. Manual lock or `shelf_source=='manual'` => return the current value.
+        2. Otherwise, weighted winner from `_VOTES`.
+        3. Fallback to the last observed winner (`_shelves_by_album`).
+        """
+        # 1. Manual lock
+        manual_shelf = self._get_manual_override(album_id)
+        if manual_shelf:
+            return manual_shelf, ShelfConstants.SHELF_SOURCE_MANUAL
+
+        # 2. Weighted decision
+        chosen = self._winner(_VOTES.get(album_id, []))
+        if chosen:
+            return chosen, ShelfConstants.SHELF_SOURCE_VOTES
+
+        # 3. Fallback: simple majority winner from counter
+        with self._lock:
+            shelf_name = self._shelves_by_album.get(album_id)
+            if shelf_name is None:
+                log.warning(
+                    "Shelf for album %s could not be determined with certainty.",
+                    album_id,
+                )
+            return shelf_name, ShelfConstants.SHELF_SOURCE_FALLBACK
+
+    def clear_album(self, album_id: str) -> None:
         self._shelves_by_album.pop(album_id, None)
         self._shelf_votes.pop(album_id, None)
 
-
-
     @staticmethod
-    def is_likely_shelf_name(name: str, known_shelves: List[str]) -> Tuple[bool, Optional[str]]:
-        """
-        Check if a name is likely a shelf name or an artist/album name.
-
-        Args:
-            name: The name to validate
-            known_shelves: List of known shelf names
-
-        Returns:
-            Tuple of (is_likely_shelf, reason_if_not)
-        """
+    def is_likely_shelf_name(
+        name: str, known_shelves: List[str]
+    ) -> Tuple[bool, Optional[str]]:
         if not name:
             return False, "Empty name"
 
@@ -136,3 +190,40 @@ class ShelfManager:
             return False, "; ".join(suspicious_reasons)
 
         return True, None
+
+    def set_album_shelf(
+        self,
+        album_id: str,
+        shelf: str,
+        source: str = ShelfConstants.SHELF_SOURCE_MANUAL,
+        lock: Optional[bool] = None,
+    ) -> Optional[str]:
+        state = _STATE.setdefault(album_id, {})
+        if lock is None:
+            lock = source == ShelfConstants.SHELF_SOURCE_MANUAL
+
+        # Manually locked => can only be overwritten manually
+        if state.get("shelf_locked") and source != ShelfConstants.SHELF_SOURCE_MANUAL:
+            return state.get("shelf")
+
+        state["shelf"] = shelf
+        state["shelf_source"] = source
+        state["shelf_locked"] = bool(lock)
+
+        if source == ShelfConstants.SHELF_SOURCE_MANUAL:
+            # Register dominant decision (∞ weight)
+            self.vote_for_shelf(
+                album_id=album_id,
+                shelf=shelf,
+                weight=float("inf"),
+                reason="manual override",
+            )
+
+        return shelf
+
+    @staticmethod
+    def clear_manual_override(album_id: str) -> None:
+        state = _STATE.setdefault(album_id, {})
+        state["shelf_locked"] = False
+        if state.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL:
+            state["shelf_source"] = ShelfConstants.SHELF_SOURCE_VOTES
