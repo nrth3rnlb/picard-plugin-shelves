@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from . import ShelfUtils
 from .constants import ShelfConstants
+from .utils import ShelfUtils
 
 
 def func_shelf(parser: Any) -> str:

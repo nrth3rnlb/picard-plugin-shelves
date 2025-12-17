@@ -34,13 +34,11 @@ class ProcessorPriorityTest(unittest.TestCase):
         }
         self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
 
-    @patch("shelves.processors.vote_for_shelf")
-    @patch("shelves.manager.ShelfManager", new_callable=MagicMock)
-    @patch("shelves.processors.ShelfUtils.add_known_shelf")
+    @patch("shelves.manager.SHELF_MANAGER", new_callable=MagicMock)
     @patch("shelves.utils.ShelfUtils.get_configured_shelves")
     @patch("shelves.processors.config", new_callable=MagicMock)
     def test_physical_location_overrides_manual_tag(
-        self, mock_config, mock_get_shelves, mock_add_shelf, mock_manager, mock_vote
+        self, mock_config, mock_get_shelves, mock_manager
     ):
         """
         PRIORITY 1: A file physically moved to a known shelf folder should adopt that shelf,
@@ -73,7 +71,7 @@ class ProcessorPriorityTest(unittest.TestCase):
             "album123", "Soundtracks", source="manual", lock=True
         )
 
-    @patch("shelves.manager.ShelfManager.set_album_shelf", new_callable=MagicMock)
+    @patch("shelves.manager.SHELF_MANAGER.set_album_shelf", new_callable=MagicMock)
     @patch("shelves.utils.ShelfUtils.get_shelf_from_path", new_callable=MagicMock)
     @patch("shelves.utils.ShelfUtils.get_configured_shelves", new_callable=MagicMock)
     @patch("shelves.processors.config", new_callable=MagicMock)

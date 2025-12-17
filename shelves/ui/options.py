@@ -20,9 +20,9 @@ from picard import log, config
 from picard.config import BoolOption, IntOption, ListOption, TextOption, Option
 from picard.ui.options import OptionsPage as PicardOptions
 
-from shelves import PLUGIN_NAME, ShelfUtils
 from shelves.constants import DEFAULT_SHELVES, ShelfConstants
 from shelves.ui.widgets import MaxItemsDropListWidget
+from shelves.utils import ShelfUtils
 
 
 class OptionsPage(PicardOptions):
@@ -337,9 +337,7 @@ class OptionsPage(PicardOptions):
             item = self.shelf_management_shelves.item(i)
             if item is not None:
                 item_text = item.text()
-                log.debug(
-                    "%s: Checking shelf '%s' for existence", PLUGIN_NAME, item_text
-                )
+                log.debug("Checking shelf '%s' for existence", item_text)
                 if item_text not in existing_shelves:
                     items_to_remove.append(item_text)
 
@@ -349,9 +347,7 @@ class OptionsPage(PicardOptions):
             matching_items = self.shelf_management_shelves.findItems(
                 item_text, QtCore.Qt.MatchExactly
             )
-            log.debug(
-                "%s: Removing shelf '%s' as it no longer exists", PLUGIN_NAME, item_text
-            )
+            log.debug("Removing shelf '%s' as it no longer exists", item_text)
             for item in matching_items:
                 self.shelf_management_shelves.takeItem(
                     self.shelf_management_shelves.row(item)
@@ -371,8 +367,7 @@ class OptionsPage(PicardOptions):
                     "No subdirectories found in the selected directory.",
                 )
                 log.debug(
-                    "%s: No shelves found during scan in %s",
-                    PLUGIN_NAME,
+                    "No shelves found during scan in %s",
                     config.setting["move_files_to"],  # type: ignore[index]
                 )
                 return
@@ -392,7 +387,7 @@ class OptionsPage(PicardOptions):
                 self._rebuild_shelves_for_stages()
 
         except (OSError, PermissionError) as e:
-            log.error("%s: Error scanning directory: %s", PLUGIN_NAME, e)
+            log.error("Error scanning directory: %s", e)
             QtWidgets.QMessageBox.critical(
                 self, "Scan Error", f"Error scanning directory: {e}"
             )
@@ -423,7 +418,7 @@ class OptionsPage(PicardOptions):
     def load(self) -> None:
         """Load already known shelves from config."""
 
-        log.debug("%s: Loading shelves from config", PLUGIN_NAME)
+        log.debug("Loading shelves from config")
 
         shelves: list[str] = sorted(ShelfUtils.get_configured_shelves())
         self.shelf_management_shelves.clear()
@@ -449,9 +444,7 @@ class OptionsPage(PicardOptions):
 
         # Automatically scan for shelves if the list is empty
         if self.shelf_management_shelves.count() == 0:
-            log.debug(
-                "%s: Shelf list is empty, auto-scanning for shelves.", PLUGIN_NAME
-            )
+            log.debug("Shelf list is empty, auto-scanning for shelves.")
             self._populate_shelf_list()
 
     def save(self) -> None:
@@ -492,7 +485,7 @@ class OptionsPage(PicardOptions):
             self.workflow_enabled.isChecked()
         )
 
-        log.debug("%s: Saved %d shelves to config", PLUGIN_NAME, len(shelves))
+        log.debug("Saved %d shelves to config", len(shelves))
 
         config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (  # type: ignore[index]
             self.stage_1_includes_non_shelves.isChecked()

@@ -15,9 +15,7 @@ from PyQt5.QtWidgets import QDialog
 from picard import log
 from picard.ui.itemviews import BaseAction
 
-from . import PLUGIN_NAME
 from .constants import ShelfConstants
-from .manager import ShelfManager
 from .utils import ShelfUtils
 
 LABEL_VALIDATION_NAME = "label_validation"
@@ -29,11 +27,17 @@ class SetShelfAction(BaseAction):
 
     tagger: Any
 
+    @property
+    def shelf_manager(self):
+        from . import manager
+
+        return manager.SHELF_MANAGER
+
     def __init__(self) -> None:
         super().__init__()
 
     def callback(self, objs: List[Any]) -> None:
-        log.debug("%s: SetShelfAction called with %d objects", PLUGIN_NAME, len(objs))
+        log.debug("SetShelfAction called with %d objects", len(objs))
 
         known_shelves = ShelfUtils.get_configured_shelves()
 
@@ -57,18 +61,16 @@ class SetShelfAction(BaseAction):
 
         ShelfUtils.add_known_shelf(shelf_name)
         log.info(
-            "%s: Manually set shelf to '%s' for %d object(s)",
-            PLUGIN_NAME,
+            "Manually set shelf to '%s' for %d object(s)",
             shelf_name,
             len(objs),
         )
 
-    @staticmethod
-    def _set_shelf_recursive(obj: Any, shelf_name: str, shelf_tag: str) -> None:
+    def _set_shelf_recursive(self, obj: Any, shelf_name: str, shelf_tag: str) -> None:
         if hasattr(obj, "metadata"):
             album_id = obj.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
             if album_id:
-                ShelfManager.set_album_shelf(
+                self.shelf_manager.set_album_shelf(
                     album_id,
                     shelf_name,
                     source=ShelfConstants.SHELF_SOURCE_MANUAL,
@@ -77,8 +79,7 @@ class SetShelfAction(BaseAction):
 
             obj.metadata[ShelfConstants.TAG_KEY] = shelf_tag
             log.debug(
-                "%s: Set shelf tag '%s' on %s",
-                PLUGIN_NAME,
+                "Set shelf tag '%s' on %s",
                 shelf_tag,
                 type(obj).__name__,
             )
@@ -93,6 +94,12 @@ class ResetShelfAction(BaseAction):
 
     tagger: Any
 
+    @property
+    def shelf_manager(self):
+        from . import manager
+
+        return manager.SHELF_MANAGER
+
     def callback(self, objs: List[Any]) -> None:
         for obj in objs:
             if hasattr(obj, "iterfiles"):
@@ -102,7 +109,7 @@ class ResetShelfAction(BaseAction):
 
                     # Clear lock in manager
                     if album_id:
-                        ShelfManager.clear_manual_override(album_id)
+                        self.shelf_manager.clear_manual_override(album_id)
 
                     # Clear tag in metadata
                     if ShelfConstants.TAG_KEY in metadata:
@@ -113,29 +120,30 @@ class ResetShelfAction(BaseAction):
                         ):
                             metadata[ShelfConstants.TAG_KEY] = ""
                             log.debug(
-                                "%s: Cleared manual flag for file %s",
-                                PLUGIN_NAME,
+                                "Cleared manual flag for file %s",
                                 file.filename,
                             )
 
-        # Re-run the determination logic
-        determine_action = DetermineShelfAction()
-        determine_action.tagger = self.tagger
-        determine_action.callback(objs)
+        # # Re-run the determination logic
+        # determine_action = DetermineShelfAction()
+        # determine_action.tagger = self.tagger
+        # determine_action.callback(objs)
 
-        log.info(
-            "%s: Reset shelf to automatic for %d object(s)", PLUGIN_NAME, len(objs)
-        )
+        log.info("Reset shelf to automatic for %d object(s)", len(objs))
 
 
 class SetShelfDialog(QDialog):
     NAME = "Set Shelf"
 
-    tagger: Any
+    # @property
+    # def shelf_manager(self):
+    #     from . import manager
+    #
+    #     return manager.SHELF_MANAGER
 
-    def __init__(self, tagger) -> None:
-        super().__init__(tagger.window)
-        self.tagger = tagger
+    def __init__(self) -> None:
+        super().__init__()
+
         ui_file = os.path.join(os.path.dirname(__file__), "ui", "actions.ui")
         uic.loadUi(ui_file, self)
 
@@ -190,17 +198,20 @@ class DetermineShelfAction(BaseAction):
     def __init__(self) -> None:
         super().__init__()
 
+    @property
+    def shelf_manager(self):
+        from . import manager
+
+        return manager.SHELF_MANAGER
+
     def callback(self, objs: List[Any]) -> None:
-        log.debug(
-            "%s: DetermineShelfAction called with %d objects", PLUGIN_NAME, len(objs)
-        )
+        log.debug("DetermineShelfAction called with %d objects", len(objs))
 
         for obj in objs:
             self._determine_shelf_recursive(obj)
 
         log.info(
-            "%s: Determined shelf for %d object(s)",
-            PLUGIN_NAME,
+            "Determined shelf for %d object(s)",
             len(objs),
         )
 
@@ -215,8 +226,7 @@ class DetermineShelfAction(BaseAction):
                 if shelf_name is not None:
                     file.metadata[ShelfConstants.TAG_KEY] = shelf_name
                     log.debug(
-                        "%s: Determined shelf '%s' for file: %s",
-                        PLUGIN_NAME,
+                        "Determined shelf '%s' for file: %s",
                         shelf_name,
                         file.filename,
                     )

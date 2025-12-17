@@ -6,12 +6,42 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from shelves import SetShelfAction
+from shelves.actions import SetShelfDialog, DetermineShelfAction, ResetShelfAction
+from shelves.constants import ShelfConstants
 
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
+
+
+class ResetShelfActionTest(unittest.TestCase):
+
+    def setUp(self):
+        """Set up the test environment"""
+        self.actions = ResetShelfAction.__new__(ResetShelfAction)
+
+    @patch("shelves.manager.SHELF_MANAGER", new_callable=MagicMock)
+    def test_callback(self, mock_shelf_manager):
+        """Test the callback method"""
+        # Arrange
+
+        obj = MagicMock()
+        file_mock = MagicMock()
+        file_mock.filename = "test.mp3"
+        file_mock.metadata = {
+            ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
+            ShelfConstants.TAG_KEY: "Standard" + ShelfConstants.MANUAL_SHELF_SUFFIX,
+        }
+        obj.iterfiles.return_value = [file_mock]
+
+        # Act
+        self.actions.callback([obj])
+
+        # Assert
+        mock_shelf_manager.clear_manual_override.assert_called_once_with("album123")
+        self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "")
 
 
 class SetShelfActionTest(unittest.TestCase):
@@ -62,12 +92,6 @@ class SetShelfActionTest(unittest.TestCase):
         self.actions._set_shelf_recursive.assert_called_once()
 
 
-import unittest
-from unittest.mock import MagicMock, patch
-
-from shelves.actions import SetShelfDialog
-
-
 class SetShelfDialogTest(unittest.TestCase):
 
     def setUp(self):
@@ -109,12 +133,6 @@ class SetShelfDialogTest(unittest.TestCase):
         # Assert
         self.assertEqual(result, "NewShelf")
         self.dialog.exec_.assert_called_once()
-
-
-import unittest
-from unittest.mock import MagicMock, patch
-
-from shelves import DetermineShelfAction
 
 
 class DetermineShelfActionTest(unittest.TestCase):
@@ -185,41 +203,3 @@ class DetermineShelfActionTest(unittest.TestCase):
         )
         self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "Incoming")
         mock_add_known_shelf.assert_called_once_with("Incoming")
-
-
-import unittest
-from unittest.mock import MagicMock, patch
-
-from shelves.actions import ResetShelfAction
-from shelves.constants import ShelfConstants
-
-
-class ResetShelfActionTest(unittest.TestCase):
-
-    def setUp(self):
-        """Set up the test environment"""
-        self.action = ResetShelfAction.__new__(ResetShelfAction)
-        self.action.tagger = MagicMock()
-
-    @patch("shelves.actions.DetermineShelfAction", new_callable=MagicMock)
-    @patch("shelves.manager.ShelfManager", new_callable=MagicMock)
-    def test_callback(self, mock_shelf_manager, mock_determine_action_class):
-        """Test the callback method"""
-        # Arrange
-        mock_determine_action_class.return_value = MagicMock()
-
-        obj = MagicMock()
-        file_mock = MagicMock()
-        file_mock.filename = "test.mp3"
-        file_mock.metadata = {
-            ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
-            ShelfConstants.TAG_KEY: "Standard" + ShelfConstants.MANUAL_SHELF_SUFFIX,
-        }
-        obj.iterfiles.return_value = [file_mock]
-
-        # Act
-        self.action.callback([obj])
-
-        # Assert
-        mock_shelf_manager.clear_manual_override.assert_called_once_with("album123")
-        self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "")

@@ -1,32 +1,27 @@
 # -*- coding: utf-8 -*-
 
 """
-Tests for the ShelfManager class.
+Tests for the _ShelfManager class.
 """
 
 import unittest
 from unittest.mock import MagicMock
 
-from shelves.manager import ShelfManager
+from shelves.manager import _ShelfManager
 
 
 class ManagerTest(unittest.TestCase):
     """
-    Tests for the core state management logic in ShelfManager.
+    Tests for the core state management logic in _ShelfManager.
     """
 
     def setUp(self):
-        """Set up a new ShelfManager instance for each test."""
-        # Mock the dependencies required by the ShelfManager constructor
+        """Set up a new _ShelfManager instance for each test."""
+        # Mock the dependencies required by the _ShelfManager constructor
         self.mock_validators = MagicMock()
         self.mock_utils = MagicMock()
-        self.manager = ShelfManager(
-            plugin_name="TestShelves",
-            validators=self.mock_validators,
-            utils=self.mock_utils
-        )
+        self.manager = _ShelfManager()
         self.album_id = "album123"
-
 
     def test_vote_for_shelf_increments_counter(self):
         """Test that voting for a shelf increments its vote count."""

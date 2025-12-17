@@ -12,13 +12,18 @@ from typing import List, Optional, Tuple
 from picard import config, log
 
 from .constants import ShelfConstants
-from .manager import ShelfManager
 
 
 class ShelfUtils:
     """
     Utility functions for shelf management.
     """
+
+    @property
+    def shelf_manager(self):
+        from . import manager
+
+        return manager.SHELF_MANAGER
 
     @staticmethod
     def get_configured_shelves() -> List[str]:
@@ -34,21 +39,16 @@ class ShelfUtils:
         valid_shelves = []
         for shelf in shelves:
             if not isinstance(shelf, str):
-                log.warning(
-                    "Ignoring non-string shelf: %s", repr(shelf)
-                )
+                log.warning("Ignoring non-string shelf: %s", repr(shelf))
                 continue
 
             is_valid, message = ShelfUtils.validate_shelf_name(shelf)
             if is_valid or not message:  # Allow warnings
                 valid_shelves.append(shelf)
             else:
-                log.warning(
-                    "Ignoring invalid shelf '%s': %s", shelf, message
-                )
+                log.warning("Ignoring invalid shelf '%s': %s", shelf, message)
         log.debug("Known shelves: %s", valid_shelves)
         return sorted(list(set(valid_shelves)))
-
 
     @staticmethod
     def get_rename_snippet() -> str:
@@ -83,7 +83,9 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
         return tag
 
     @staticmethod
-    def get_shelf_from_path(path: str, known_shelves: List[str]) -> Tuple[Optional[str], bool]:
+    def get_shelf_from_path(
+        path: str, known_shelves: List[str]
+    ) -> Tuple[Optional[str], bool]:
         """
         Extract the shelf name from a file path.
 
@@ -98,7 +100,7 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
               or if it's a fallback value (`False`).
         """
         try:
-            base_path_str = config.setting["move_files_to"] # type: ignore[index]
+            base_path_str = config.setting["move_files_to"]  # type: ignore[index]
             base_path = Path(base_path_str).resolve()
             file_path = Path(path).resolve()
 
@@ -112,7 +114,9 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
                 return None, False
 
             potential_shelf = relative_parts[0]
-            is_likely, reason = ShelfManager.is_likely_shelf_name(potential_shelf, known_shelves)
+            is_likely, reason = ShelfUtils.shelf_manager.is_likely_shelf_name(
+                potential_shelf, known_shelves
+            )
             if is_likely:
                 log.debug("Confirmed shelf '%s' from path.", potential_shelf)
                 return potential_shelf, True
@@ -120,7 +124,8 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
                 log.warning(
                     "Folder '%s' is not a likely shelf (%s). "
                     "If this is a shelf, add it in settings.",
-                    potential_shelf, reason
+                    potential_shelf,
+                    reason,
                 )
                 return None, False
 
@@ -184,4 +189,3 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
             shelves.append(shelf_name)
             config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = sorted(shelves)  # type: ignore[index]
             log.debug("Added shelf '%s' to known shelves", shelf_name)
-

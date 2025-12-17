@@ -17,22 +17,23 @@ from .constants import ShelfConstants
 
 LogData = namedtuple("LogData", ["album_id", "votes", "winner"])
 
-
 # Minimaler In‑Memory‑State
 _STATE: Dict[str, Dict[str, Any]] = defaultdict(dict)
 _VOTES: Dict[str, List[Tuple[str, float, str]]] = defaultdict(list)
 
 
-class ShelfManager:
+class _ShelfManager:
     """Manages shelf assignments and state with conflict detection."""
+
+    _shelves_by_album: Dict[str, str]
+    _shelf_votes: Dict[str, Counter]
 
     def __init__(self) -> None:
         """
         Initialize the shelf manager.
         """
-
-        self._shelves_by_album: Dict[str, str] = {}
-        self._shelf_votes: Dict[str, Counter] = {}
+        self._shelves_by_album = {}
+        self._shelf_votes = {}
 
         self._lock = threading.Lock()
 
@@ -150,6 +151,7 @@ class ShelfManager:
                 )
             return shelf_name, ShelfConstants.SHELF_SOURCE_FALLBACK
 
+    @staticmethod
     def clear_album(self, album_id: str) -> None:
         self._shelves_by_album.pop(album_id, None)
         self._shelf_votes.pop(album_id, None)
@@ -227,3 +229,6 @@ class ShelfManager:
         state["shelf_locked"] = False
         if state.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL:
             state["shelf_source"] = ShelfConstants.SHELF_SOURCE_VOTES
+
+
+SHELF_MANAGER = _ShelfManager()
