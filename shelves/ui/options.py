@@ -20,9 +20,9 @@ from picard import log, config
 from picard.config import BoolOption, IntOption, ListOption, TextOption, Option
 from picard.ui.options import OptionsPage as PicardOptions
 
-from shelves.constants import DEFAULT_SHELVES, ShelfConstants
-from shelves.ui.widgets import MaxItemsDropListWidget
-from shelves.utils import ShelfUtils
+from .widgets import MaxItemsDropListWidget
+from ..constants import DEFAULT_SHELVES, ShelfConstants
+from ..utils import ShelfUtils
 
 
 class OptionsPage(PicardOptions):

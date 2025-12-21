@@ -21,21 +21,14 @@ from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
-from shelves.ui.options import OptionsPage as _ShelvesOptionsPageBase
 from .actions import (
     SetShelfAction as _SetShelfActionBase,
     DetermineShelfAction as _DetermineShelfActionBase,
     ResetShelfAction as _ResetShelfActionBase,
 )
-from .processors import (
-    file_post_load_processor,
-    file_post_save_processor,
-    file_post_addition_to_track_processor,
-    file_post_removal_from_track_processor,
-    set_shelf_in_metadata,
-)
-from .processors.FilePostSaveProcessor import file_post_save_processor
+from .processors import ShelfProcessors
 from .script_functions import func_shelf as _func_shelf_base
+from .ui.options import OptionsPage as _ShelvesOptionsPageBase
 
 # Plugin metadata
 PLUGIN_NAME = "Shelves"
@@ -102,12 +95,12 @@ def func_shelf(parser: Any) -> Optional[str]:
 # Wrapper functions that pass shelf_manager to processors
 def _file_post_load_processor_wrapper(file: Any) -> None:
     """Wrapper for file_post_load_processor."""
-    file_post_load_processor(file)
+    ShelfProcessors.file_post_load_processor(file)
 
 
 def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
-    file_post_addition_to_track_processor(track, file)
+    ShelfProcessors.file_post_addition_to_track_processor(track, file)
 
 
 # def _file_post_save_processor_wrapper(file: Any) -> None:
@@ -119,12 +112,12 @@ def _set_shelf_in_metadata_wrapper(
     album: Any, metadata: Dict[str, Any], track: Any, release: Any
 ) -> None:
     """Wrapper for set_shelf_in_metadata."""
-    set_shelf_in_metadata(album, metadata, track, release)
+    ShelfProcessors.set_shelf_in_metadata(album, metadata, track, release)
 
 
 def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
-    file_post_removal_from_track_processor(track, file)
+    ShelfProcessors.file_post_removal_from_track_processor(track, file)
 
 
 log.debug("%s: Registering plugin components")
