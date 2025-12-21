@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from picard import log
 from picard.file import (
     register_file_post_load_processor,
     register_file_post_addition_to_track_processor,
@@ -86,6 +85,8 @@ class ResetShelfAction(_ResetShelfActionBase):
     #     super().__init__()
 
 
+shelf_processors = ShelfProcessors()
+
 # Wrapper for script function
 def func_shelf(parser: Any) -> Optional[str]:
     """Wrapper for func_shelf to ensure proper plugin registration."""
@@ -95,12 +96,12 @@ def func_shelf(parser: Any) -> Optional[str]:
 # Wrapper functions that pass shelf_manager to processors
 def _file_post_load_processor_wrapper(file: Any) -> None:
     """Wrapper for file_post_load_processor."""
-    ShelfProcessors.file_post_load_processor(file)
+    shelf_processors.file_post_load_processor(file=file)
 
 
 def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
-    ShelfProcessors.file_post_addition_to_track_processor(track, file)
+    shelf_processors.file_post_addition_to_track_processor(track=track, file=file)
 
 
 # def _file_post_save_processor_wrapper(file: Any) -> None:
@@ -112,15 +113,13 @@ def _set_shelf_in_metadata_wrapper(
     album: Any, metadata: Dict[str, Any], track: Any, release: Any
 ) -> None:
     """Wrapper for set_shelf_in_metadata."""
-    ShelfProcessors.set_shelf_in_metadata(album, metadata, track, release)
+    shelf_processors.set_shelf_in_metadata(album, metadata, track, release)
 
 
 def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
-    ShelfProcessors.file_post_removal_from_track_processor(track, file)
+    shelf_processors.file_post_removal_from_track_processor(track=track, file=file)
 
-
-log.debug("%s: Registering plugin components")
 
 # Register metadata processors
 register_track_metadata_processor(_set_shelf_in_metadata_wrapper)

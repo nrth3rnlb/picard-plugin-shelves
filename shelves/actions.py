@@ -16,6 +16,7 @@ from picard import log
 from picard.ui.itemviews import BaseAction
 
 from .constants import ShelfConstants
+from .manager import ShelfManager
 from .utils import ShelfUtils
 
 LABEL_VALIDATION_NAME = "label_validation"
@@ -27,21 +28,12 @@ class SetShelfAction(BaseAction):
 
     tagger: Any
 
-    @property
-    def shelf_manager(self):
-        from . import manager
-
-        return manager.SHELF_MANAGER
-
-    def __init__(self) -> None:
-        super().__init__()
-
     def callback(self, objs: List[Any]) -> None:
         log.debug("SetShelfAction called with %d objects", len(objs))
 
         known_shelves = ShelfUtils.get_configured_shelves()
 
-        dialog = SetShelfDialog(self.tagger)
+        dialog = SetShelfDialog()
         shelf_name = dialog.ask_for_shelf_name(known_shelves)
         if not shelf_name:
             return
@@ -66,11 +58,12 @@ class SetShelfAction(BaseAction):
             len(objs),
         )
 
-    def _set_shelf_recursive(self, obj: Any, shelf_name: str, shelf_tag: str) -> None:
+    @staticmethod
+    def _set_shelf_recursive(obj: Any, shelf_name: str, shelf_tag: str) -> None:
         if hasattr(obj, "metadata"):
             album_id = obj.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
             if album_id:
-                self.shelf_manager.set_album_shelf(
+                ShelfManager.set_album_shelf(
                     album_id,
                     shelf_name,
                     source=ShelfConstants.SHELF_SOURCE_MANUAL,
@@ -94,12 +87,6 @@ class ResetShelfAction(BaseAction):
 
     tagger: Any
 
-    @property
-    def shelf_manager(self):
-        from . import manager
-
-        return manager.SHELF_MANAGER
-
     def callback(self, objs: List[Any]) -> None:
         for obj in objs:
             if hasattr(obj, "iterfiles"):
@@ -109,7 +96,7 @@ class ResetShelfAction(BaseAction):
 
                     # Clear lock in manager
                     if album_id:
-                        self.shelf_manager.clear_manual_override(album_id)
+                        ShelfManager.clear_manual_override(album_id)
 
                     # Clear tag in metadata
                     if ShelfConstants.TAG_KEY in metadata:
@@ -134,12 +121,6 @@ class ResetShelfAction(BaseAction):
 
 class SetShelfDialog(QDialog):
     NAME = "Set Shelf"
-
-    # @property
-    # def shelf_manager(self):
-    #     from . import manager
-    #
-    #     return manager.SHELF_MANAGER
 
     def __init__(self) -> None:
         super().__init__()
@@ -194,15 +175,6 @@ class DetermineShelfAction(BaseAction):
     NAME = "Determine shelf"
 
     tagger: Any
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    @property
-    def shelf_manager(self):
-        from . import manager
-
-        return manager.SHELF_MANAGER
 
     def callback(self, objs: List[Any]) -> None:
         log.debug("DetermineShelfAction called with %d objects", len(objs))

@@ -12,18 +12,13 @@ from typing import List, Optional, Tuple
 from picard import config, log
 
 from .constants import ShelfConstants
+from .manager import ShelfManager
 
 
 class ShelfUtils:
     """
     Utility functions for shelf management.
     """
-
-    @property
-    def shelf_manager(self):
-        from . import manager
-
-        return manager.SHELF_MANAGER
 
     @staticmethod
     def get_configured_shelves() -> List[str]:
@@ -114,20 +109,20 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
                 return None, False
 
             potential_shelf = relative_parts[0]
-            is_likely, reason = ShelfUtils.shelf_manager.is_likely_shelf_name(
+            is_likely, reason = ShelfManager.is_likely_shelf_name(
                 potential_shelf, known_shelves
             )
             if is_likely:
                 log.debug("Confirmed shelf '%s' from path.", potential_shelf)
                 return potential_shelf, True
-            else:
-                log.warning(
-                    "Folder '%s' is not a likely shelf (%s). "
-                    "If this is a shelf, add it in settings.",
-                    potential_shelf,
-                    reason,
-                )
-                return None, False
+            
+            log.warning(
+                "Folder '%s' is not a likely shelf (%s). "
+                "If this is a shelf, add it in settings.",
+                potential_shelf,
+                reason,
+            )
+            return None, False
 
         except (KeyError, ValueError, OSError) as e:
             log.error("Error extracting shelf from path '%s': %s.", path, e)

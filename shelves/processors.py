@@ -12,16 +12,11 @@ from typing import Any, Dict, Optional
 from picard import config, log
 
 from .constants import ShelfConstants
+from .manager import ShelfManager
 from .utils import ShelfUtils
 
 
 class ShelfProcessors:
-
-    @property
-    def shelf_manager(self):
-        from . import manager
-
-        return manager.SHELF_MANAGER
 
     @staticmethod
     def _set_metadata(obj: Any, key: str, value: Any, label: str) -> None:
@@ -82,7 +77,8 @@ class ShelfProcessors:
 
         return shelf
 
-    def file_post_removal_from_track_processor(self, track: Any, file: Any) -> None:
+    @staticmethod
+    def file_post_removal_from_track_processor(track: Any, file: Any) -> None:
         """
         Process a file after it has been removed from a track.
         """
@@ -92,7 +88,7 @@ class ShelfProcessors:
         )
         album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
         if album_id:
-            self.shelf_manager.clear_album(album_id)
+            ShelfManager.clear_album(album_id)
 
     def file_post_addition_to_track_processor(
         self, track: Optional[Any], file: Any
@@ -108,8 +104,6 @@ class ShelfProcessors:
             shelf_name: Optional[str]
             shelf_tag: Optional[str]
             shelf_from_path: Optional[str]
-
-            from shelves.ui.options import OptionsPage
 
             known_shelves = ShelfUtils.get_configured_shelves()
             shelf_from_path, was_explicitly_found = ShelfUtils.get_shelf_from_path(
@@ -144,7 +138,7 @@ class ShelfProcessors:
                 shelf_name = self._apply_workflow_transition(shelf_from_path)
                 shelf_tag = shelf_name
                 log.debug(
-                    "%s: Priority 3: Default logic. Path shelf '%s', final shelf '%s'.",
+                    "Priority 3: Default logic. Path shelf '%s', final shelf '%s'.",
                     shelf_from_path,
                     shelf_name,
                 )
@@ -163,15 +157,15 @@ class ShelfProcessors:
                 if album_id:
                     # If the decision was based on a physical or persisted manual tag, lock it in.
                     if was_explicitly_found or is_manual_in_tag:
-                        self.shelf_manager.shelf_manager.set_album_shelf(
+                        ShelfManager.set_album_shelf(
                             album_id=album_id,
                             shelf=shelf_name,
                             source=ShelfConstants.SHELF_SOURCE_MANUAL,
                             lock=True,
                         )
                     else:
-                        self.shelf_manager.shelf_manager.vote_for_shelf(
-                            album_id=album_id, shelf_name=shelf_name
+                        ShelfManager.vote_for_shelf(
+                            album_id=album_id, shelf=shelf_name
                         )
 
                 log.debug("Final shelf for %s is '%s'", file.filename, shelf_name)
@@ -180,7 +174,8 @@ class ShelfProcessors:
             log.error("Error in file processor: %s", e)
             log.error("Traceback: %s", traceback.format_exc())
 
-    def file_post_save_processor(self, file: Any) -> None:
+    @staticmethod
+    def file_post_save_processor(file: Any) -> None:
         """
         Process a file after Picard has saved it.
         """
@@ -188,7 +183,7 @@ class ShelfProcessors:
             log.debug("Processing file: %s", file.filename)
             album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
             if album_id:
-                self.shelf_manager.clear_album(album_id)
+                ShelfManager.clear_album(album_id)
         except (KeyError, AttributeError, ValueError) as e:
             log.error("Error in file processor: %s", e)
             log.error("Traceback: %s", traceback.format_exc())
@@ -199,9 +194,8 @@ class ShelfProcessors:
         """
         self.file_post_addition_to_track_processor(file=file, track=None)
 
-    def set_shelf_in_metadata(
-        self, _album: Any, metadata: Dict[str, Any], _track: Any, _release: Any
-    ) -> None:
+    @staticmethod
+    def set_shelf_in_metadata(_album: Any, metadata: Dict[str, Any], _track: Any, _release: Any) -> None:
         """
         Set a shelf in track metadata from album assignment.
         """
@@ -209,7 +203,7 @@ class ShelfProcessors:
         if not album_id:
             return
 
-        shelf_name, source = self.shelf_manager.get_album_shelf(album_id)
+        shelf_name, source = ShelfManager.get_album_shelf(album_id=album_id)
         if shelf_name is not None:
             log.debug(
                 "Setting shelf '%s' on track from source '%s'",

@@ -20,42 +20,48 @@ LogData = namedtuple("LogData", ["album_id", "votes", "winner"])
 # Minimaler In‑Memory‑State
 _STATE: Dict[str, Dict[str, Any]] = defaultdict(dict)
 _VOTES: Dict[str, List[Tuple[str, float, str]]] = defaultdict(list)
+_LOCK = threading.Lock()
 
+class SingletonMeta(type):
+    _instances: dict[type, object] = {}
 
-class _ShelfManager:
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class ShelfManager(metaclass=SingletonMeta):
     """Manages shelf assignments and state with conflict detection."""
-
-    _shelves_by_album: Dict[str, str]
-    _shelf_votes: Dict[str, Counter]
+    _shelves_by_album: Dict[str, str] = {}
+    _shelf_votes: Dict[str, Counter] = {}
 
     def __init__(self) -> None:
-        """
-        Initialize the shelf manager.
-        """
-        self._shelves_by_album = {}
-        self._shelf_votes = {}
+        self._store = {}
+        
+    def _get(self, key, default=None):
+        return self._store.get(key, default)
 
-        self._lock = threading.Lock()
+    def _set(self, key, value):
+        self._store[key] = value
 
-    def vote_for_shelf(
-        self, album_id: str, shelf: str, weight: float, reason: str
-    ) -> None:
+    @staticmethod
+    def vote_for_shelf(album_id: str, shelf: str, weight: float, reason: str) -> None:
         if not shelf or not shelf.strip():
             return
 
         log_data = None
-        with self._lock:
+        with _LOCK:
             # Weighted counting (counter can only use ints,
             # therefore, additionally _VOTES for weights)
-            if album_id not in self._shelf_votes:
-                self._shelf_votes[album_id] = Counter()
+            if album_id not in ShelfManager._shelf_votes:
+                ShelfManager._shelf_votes[album_id] = Counter()
             # For a quick "majority" view, we increase the count by 1
-            self._shelf_votes[album_id][shelf] += 1
-            winner = self._shelf_votes[album_id].most_common(1)[0][0]
-            if len(self._shelf_votes[album_id]) > 1:
-                all_votes = self._shelf_votes[album_id].most_common()
+            ShelfManager._shelf_votes[album_id][shelf] += 1
+            winner = ShelfManager._shelf_votes[album_id].most_common(1)[0][0]
+            if len(ShelfManager._shelf_votes[album_id]) > 1:
+                all_votes = ShelfManager._shelf_votes[album_id].most_common()
                 log_data = (album_id, dict(all_votes), winner)
-            self._shelves_by_album[album_id] = winner
+            ShelfManager._shelves_by_album[album_id] = winner
 
         # Weighted for the real decision
         _VOTES.setdefault(album_id, []).append(
@@ -124,7 +130,8 @@ class _ShelfManager:
     #
     #     return None
 
-    def get_album_shelf(self, album_id: str) -> tuple[Optional[str], str]:
+    @staticmethod
+    def get_album_shelf(album_id: str) -> tuple[Optional[str], str]:
         """
         Read with priority:
         1. Manual lock or `shelf_source=='manual'` => return the current value.
@@ -132,18 +139,18 @@ class _ShelfManager:
         3. Fallback to the last observed winner (`_shelves_by_album`).
         """
         # 1. Manual lock
-        manual_shelf = self._get_manual_override(album_id)
+        manual_shelf = ShelfManager._get_manual_override(album_id=album_id)
         if manual_shelf:
             return manual_shelf, ShelfConstants.SHELF_SOURCE_MANUAL
 
         # 2. Weighted decision
-        chosen = self._winner(_VOTES.get(album_id, []))
+        chosen = ShelfManager._winner(_VOTES.get(album_id, []))
         if chosen:
             return chosen, ShelfConstants.SHELF_SOURCE_VOTES
 
         # 3. Fallback: simple majority winner from counter
-        with self._lock:
-            shelf_name = self._shelves_by_album.get(album_id)
+        with _LOCK:
+            shelf_name = ShelfManager._shelves_by_album.get(album_id)
             if shelf_name is None:
                 log.warning(
                     "Shelf for album %s could not be determined with certainty.",
@@ -152,9 +159,9 @@ class _ShelfManager:
             return shelf_name, ShelfConstants.SHELF_SOURCE_FALLBACK
 
     @staticmethod
-    def clear_album(self, album_id: str) -> None:
-        self._shelves_by_album.pop(album_id, None)
-        self._shelf_votes.pop(album_id, None)
+    def clear_album(album_id: str) -> None:
+        ShelfManager._shelves_by_album.pop(album_id, None)
+        ShelfManager._shelf_votes.pop(album_id, None)
 
     @staticmethod
     def is_likely_shelf_name(
@@ -193,8 +200,8 @@ class _ShelfManager:
 
         return True, None
 
+    @staticmethod
     def set_album_shelf(
-        self,
         album_id: str,
         shelf: str,
         source: str = ShelfConstants.SHELF_SOURCE_MANUAL,
@@ -214,7 +221,7 @@ class _ShelfManager:
 
         if source == ShelfConstants.SHELF_SOURCE_MANUAL:
             # Register dominant decision (∞ weight)
-            self.vote_for_shelf(
+            ShelfManager.vote_for_shelf(
                 album_id=album_id,
                 shelf=shelf,
                 weight=float("inf"),
@@ -229,6 +236,3 @@ class _ShelfManager:
         state["shelf_locked"] = False
         if state.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL:
             state["shelf_source"] = ShelfConstants.SHELF_SOURCE_VOTES
-
-
-SHELF_MANAGER = _ShelfManager()

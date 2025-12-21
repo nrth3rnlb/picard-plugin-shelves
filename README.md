@@ -216,7 +216,7 @@ shelves/
 ├── __init__.py           # Plugin registration and setup
 ├── constants.py          # Constants and defaults
 ├── validators.py         # Shelf name validation
-├── manager.py            # _ShelfManager class
+├── manager.py            # ShelfManager class
 ├── utils.py              # Utility functions
 ├── processors.py         # File and metadata processors
 ├── actions.py            # Context menu actions
