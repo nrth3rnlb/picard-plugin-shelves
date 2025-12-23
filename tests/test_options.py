@@ -3,7 +3,7 @@ Tests for the options options_page logic.
 """
 
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, call, patch
 
 from PyQt5 import QtWidgets
 
@@ -27,7 +27,7 @@ class OptionsPageTest(unittest.TestCase):
     UI_ATTRS = list(OptionsPage.__annotations__.keys())
 
     def setUp(self):
-        """Set up a mock OptionsPage instance."""
+        """Set up a mock OptionsPage _instance."""
         self.options_page: OptionsPage = OptionsPage.__new__(OptionsPage)
         # Manually mock all UI elements that might be touched.
         for attr in self.UI_ATTRS:
@@ -61,7 +61,7 @@ class OptionsPageTest(unittest.TestCase):
 
     @patch("shelves.ui.options.config", new_callable=MagicMock)
     def test_save_writes_to_config(self, mock_config):
-        """Test if the save method correctly writes UI state to config."""
+        """Test if the save method correctly writes UI _state to config."""
         # Arrange
         mock_config.setting = self.config_setting
         mock_config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = False

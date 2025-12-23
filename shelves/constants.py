@@ -9,6 +9,7 @@ from __future__ import annotations
 
 class ShelfConstants:
     """Central constants for the Shelves plugin."""
+
     # noinspection SpellCheckingInspection
     MUSICBRAINZ_ALBUMID = "musicbrainz_albumid"
     # noinspection SpellCheckingInspection
@@ -18,7 +19,7 @@ class ShelfConstants:
     # TODO Make configurable
     MAX_SHELF_NAME_LENGTH = 30
     MAX_WORD_COUNT = 3
-    INVALID_PATH_CHARS = frozenset(['<', '>', '|', ':', '*', '?', '"', '/', '\\', '\''])
+    INVALID_PATH_CHARS = frozenset(["<", ">", "|", ":", "*", "?", '"', "/", "\\", "'"])
     ALBUM_INDICATORS = frozenset(["Vol.", "Volume", "Disc", "CD", "Part"])
 
     # Config keys
@@ -35,7 +36,7 @@ class ShelfConstants:
     SHELF_SOURCE_MANUAL = "manual"
     MANUAL_SHELF_SUFFIX = f"; {SHELF_SOURCE_MANUAL}"
     # Value determined by voting is used
-    SHELF_SOURCE_VOTES = "votes"
+    SHELF_SOURCE_VOTES = "_votes"
     # If nothing else works, use the value in TAG_KEY
     SHELF_SOURCE_FALLBACK = "fallback"
 

@@ -11,8 +11,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from picard.file import (
-    register_file_post_load_processor,
-    register_file_post_addition_to_track_processor,
+    register_file_post_addition_to_track_processor, register_file_post_load_processor,
     register_file_post_removal_from_track_processor,
 )
 from picard.metadata import register_track_metadata_processor
@@ -21,9 +20,8 @@ from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
 from .actions import (
+    DetermineShelfAction as _DetermineShelfActionBase, ResetShelfAction as _ResetShelfActionBase,
     SetShelfAction as _SetShelfActionBase,
-    DetermineShelfAction as _DetermineShelfActionBase,
-    ResetShelfAction as _ResetShelfActionBase,
 )
 from .processors import ShelfProcessors
 from .script_functions import func_shelf as _func_shelf_base
@@ -57,7 +55,7 @@ class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the OptionsPage to ensure proper plugin registration."""
 
     # def __init__(self, parent=None) -> None:
-    #     """Initialize with the global shelf_manager instance."""
+    #     """Initialize with the global shelf_manager _instance."""
     #     # super().__init__(parent)
 
 
@@ -65,7 +63,7 @@ class SetShelfAction(_SetShelfActionBase):
     """Wrapper class for SetShelfAction to ensure proper plugin registration."""
 
     # def __init__(self) -> None:
-    #     """Initialize with the global shelf_manager instance."""
+    #     """Initialize with the global shelf_manager _instance."""
     #     super().__init__()
 
 
@@ -73,7 +71,7 @@ class DetermineShelfAction(_DetermineShelfActionBase):
     """Wrapper class for DetermineShelfAction to ensure proper plugin registration."""
 
     # def __init__(self) -> None:
-    #     """Initialize with the global shelf_manager instance."""
+    #     """Initialize with the global shelf_manager _instance."""
     #     super().__init__()
 
 
@@ -81,11 +79,12 @@ class ResetShelfAction(_ResetShelfActionBase):
     """Wrapper class for ResetShelfAction to ensure proper plugin registration."""
 
     # def __init__(self) -> None:
-    #     """Initialize with the global shelf_manager instance."""
+    #     """Initialize with the global shelf_manager _instance."""
     #     super().__init__()
 
 
 shelf_processors = ShelfProcessors()
+
 
 # Wrapper for script function
 def func_shelf(parser: Any) -> Optional[str]:

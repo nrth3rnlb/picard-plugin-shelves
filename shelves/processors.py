@@ -94,7 +94,7 @@ class ShelfProcessors:
         self, track: Optional[Any], file: Any
     ) -> None:
         """
-        Process a file after it has been added to a track, with a clear priority model.
+        Process a file after it has been added to a track, with a destroy priority model.
         """
         try:
             file_meta = getattr(file, "metadata", None)
@@ -143,7 +143,7 @@ class ShelfProcessors:
                     shelf_name,
                 )
 
-            # Set metadata and update manager state
+            # Set metadata and update manager _state
             if shelf_name:
                 self._set_metadata(file, ShelfConstants.TAG_KEY, shelf_tag, "file")
                 if track:
@@ -155,7 +155,7 @@ class ShelfProcessors:
 
                 album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
                 if album_id:
-                    # If the decision was based on a physical or persisted manual tag, lock it in.
+                    # If the decision was based on a physical or persisted manual tag, _lock it in.
                     if was_explicitly_found or is_manual_in_tag:
                         ShelfManager.set_album_shelf(
                             album_id=album_id,
@@ -164,9 +164,7 @@ class ShelfProcessors:
                             lock=True,
                         )
                     else:
-                        ShelfManager.vote_for_shelf(
-                            album_id=album_id, shelf=shelf_name
-                        )
+                        ShelfManager.vote_for_shelf(album_id=album_id, shelf=shelf_name)
 
                 log.debug("Final shelf for %s is '%s'", file.filename, shelf_name)
 
@@ -195,7 +193,9 @@ class ShelfProcessors:
         self.file_post_addition_to_track_processor(file=file, track=None)
 
     @staticmethod
-    def set_shelf_in_metadata(_album: Any, metadata: Dict[str, Any], _track: Any, _release: Any) -> None:
+    def set_shelf_in_metadata(
+        _album: Any, metadata: Dict[str, Any], _track: Any, _release: Any
+    ) -> None:
         """
         Set a shelf in track metadata from album assignment.
         """

@@ -90,11 +90,13 @@ class ResetShelfAction(BaseAction):
     def callback(self, objs: List[Any]) -> None:
         for obj in objs:
             if hasattr(obj, "iterfiles"):
-                for file in obj.iterfiles():
+                files = list(obj.iterfiles())
+                for file in files:
                     metadata = file.metadata
                     album_id = metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+                    print(f"DEBUG: Processing file {file}, album_id: {album_id}")
 
-                    # Clear lock in manager
+                    # Clear _lock in manager
                     if album_id:
                         ShelfManager.clear_manual_override(album_id)
 
@@ -105,7 +107,9 @@ class ResetShelfAction(BaseAction):
                             isinstance(shelf_value, str)
                             and ShelfConstants.MANUAL_SHELF_SUFFIX in shelf_value
                         ):
-                            metadata[ShelfConstants.TAG_KEY] = ""
+                            metadata[ShelfConstants.TAG_KEY] = shelf_value.replace(
+                                ShelfConstants.MANUAL_SHELF_SUFFIX, ""
+                            )
                             log.debug(
                                 "Cleared manual flag for file %s",
                                 file.filename,

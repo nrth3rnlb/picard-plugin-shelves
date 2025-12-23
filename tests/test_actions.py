@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from shelves import SetShelfAction
-from shelves.actions import SetShelfDialog, DetermineShelfAction, ResetShelfAction
+from shelves.actions import DetermineShelfAction, ResetShelfAction, SetShelfDialog
 from shelves.constants import ShelfConstants
 
 
@@ -22,8 +22,8 @@ class ResetShelfActionTest(unittest.TestCase):
         """Set up the test environment"""
         self.actions = ResetShelfAction.__new__(ResetShelfAction)
 
-    @patch("shelves.manager.SHELF_MANAGER", new_callable=MagicMock)
-    def test_callback(self, mock_shelf_manager):
+    @patch("shelves.manager.ShelfManager.clear_manual_override")
+    def test_callback(self, mock_clear_override):
         """Test the callback method"""
         # Arrange
 
@@ -40,8 +40,8 @@ class ResetShelfActionTest(unittest.TestCase):
         self.actions.callback([obj])
 
         # Assert
-        mock_shelf_manager.clear_manual_override.assert_called_once_with("album123")
-        self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "")
+        self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "Standard")
+        mock_clear_override.assert_called_once_with("album123")
 
 
 class SetShelfActionTest(unittest.TestCase):
@@ -80,7 +80,7 @@ class SetShelfActionTest(unittest.TestCase):
         # Minimal initialization so that constructor-side dependencies do not occur
         self.actions.tagger = MagicMock()
 
-        # Mocked dialog class -> Provide instance
+        # Mocked dialog class -> Provide _instance
         self.actions.dialog = mock_dialog_cls.return_value
         self.actions.dialog.ask_for_shelf_name.return_value = "Standard"
 
