@@ -437,8 +437,8 @@ class OptionsPage(PicardOptions):
         self.naming_script_code.setPlainText(snippet)
 
         self.stage_1_includes_non_shelves.setChecked(
-            config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY]  # type: ignore[index]
-        )  # type: ignore[index]
+            config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY]  # type: ignore[index] # noqa
+        )
 
         # Automatically scan for shelves if the list is empty
         if self.shelf_management_shelves.count() == 0:

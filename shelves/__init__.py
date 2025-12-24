@@ -11,7 +11,8 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from picard.file import (
-    register_file_post_addition_to_track_processor, register_file_post_load_processor,
+    register_file_post_addition_to_track_processor,
+    register_file_post_load_processor,
     register_file_post_removal_from_track_processor,
 )
 from picard.metadata import register_track_metadata_processor
@@ -20,7 +21,8 @@ from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
 from .actions import (
-    DetermineShelfAction as _DetermineShelfActionBase, ResetShelfAction as _ResetShelfActionBase,
+    DetermineShelfAction as _DetermineShelfActionBase,
+    ResetShelfAction as _ResetShelfActionBase,
     SetShelfAction as _SetShelfActionBase,
 )
 from .processors import ShelfProcessors
@@ -117,7 +119,7 @@ def _set_shelf_in_metadata_wrapper(
 
 def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
-    shelf_processors.file_post_removal_from_track_processor(track=track, file=file)
+    shelf_processors.file_post_removal_from_track_processor(_track=track, file=file)
 
 
 # Register metadata processors
