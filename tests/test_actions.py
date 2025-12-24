@@ -27,13 +27,14 @@ class ResetShelfActionTest(unittest.TestCase):
         """Test the callback method"""
         # Arrange
 
-        obj = MagicMock()
         file_mock = MagicMock()
         file_mock.filename = "test.mp3"
         file_mock.metadata = {
             ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
             ShelfConstants.TAG_KEY: "Standard" + ShelfConstants.MANUAL_SHELF_SUFFIX,
         }
+
+        obj = MagicMock()
         obj.iterfiles.return_value = [file_mock]
 
         # Act

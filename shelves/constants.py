@@ -23,6 +23,7 @@ class ShelfConstants:
     ALBUM_INDICATORS = frozenset(["Vol.", "Volume", "Disc", "CD", "Part"])
 
     # Config keys
+    CONFIG_MOVE_FILES_TO_KEY = "move_files_to"
     CONFIG_ACTIVE_TAB = "shelves_active_tab"
     CONFIG_ALBUM_SHELF_KEY = "shelves_album_shelf"
     CONFIG_KNOWN_SHELVES_KEY = "shelves_known_shelves"

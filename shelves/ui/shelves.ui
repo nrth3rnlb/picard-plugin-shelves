@@ -1,782 +1,677 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
-	<class>Shelves</class>
-	<widget class="QWidget" name="Shelves">
-		<property name="geometry">
-			<rect>
-				<x>0</x>
-				<y>0</y>
-				<width>926</width>
-				<height>617</height>
-			</rect>
-		</property>
-		<property name="windowTitle">
-			<string>Shelves Configuration</string>
-		</property>
-		<layout class="QVBoxLayout" name="mainLayout">
-			<item>
-				<widget class="QScrollArea" name="scrollArea">
-					<property name="frameShape">
-						<enum>QFrame::NoFrame</enum>
-					</property>
-					<property name="widgetResizable">
-						<bool>true</bool>
-					</property>
-					<widget class="QWidget" name="scrollAreaWidgetContents">
-						<layout class="QVBoxLayout" name="verticalLayout">
-							<property name="leftMargin">
-								<number>0</number>
-							</property>
-							<property name="topMargin">
-								<number>0</number>
-							</property>
-							<property name="rightMargin">
-								<number>0</number>
-							</property>
-							<property name="bottomMargin">
-								<number>0</number>
-							</property>
-							<item>
-								<widget class="QTabWidget" name="plugin_configuration">
-									<property name="sizePolicy">
-										<sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-											<horstretch>0</horstretch>
-											<verstretch>0</verstretch>
-										</sizepolicy>
-									</property>
-									<property name="currentIndex">
-										<number>0</number>
-									</property>
-									<property name="tabsClosable">
-										<bool>false</bool>
-									</property>
-									<widget class="QWidget" name="tab_shelf_management">
-										<attribute name="title">
-											<string>Shelf Management</string>
-										</attribute>
-										<layout class="QVBoxLayout" name="verticalLayout_3">
-											<item alignment="Qt::AlignTop">
-												<widget class="QLabel" name="shelves_description">
-													<property name="text">
-														<string>Manage your virtual shelves.</string>
-													</property>
-													<property name="wordWrap">
-														<bool>true</bool>
-													</property>
-												</widget>
-											</item>
-											<item>
-												<widget class="QWidget" name="widget" native="true">
-													<property name="sizePolicy">
-														<sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-															<horstretch>0</horstretch>
-															<verstretch>0</verstretch>
-														</sizepolicy>
-													</property>
-													<layout class="QHBoxLayout" name="horizontalLayout">
-														<property name="leftMargin">
-															<number>0</number>
-														</property>
-														<property name="topMargin">
-															<number>0</number>
-														</property>
-														<property name="rightMargin">
-															<number>0</number>
-														</property>
-														<property name="bottomMargin">
-															<number>0</number>
-														</property>
-														<item>
-															<widget class="QListWidget" name="shelf_management_shelves">
-																<property name="enabled">
-																	<bool>true</bool>
-																</property>
-																<property name="sizePolicy">
-																	<sizepolicy hsizetype="Expanding"
-																				vsizetype="Minimum">
-																		<horstretch>0</horstretch>
-																		<verstretch>0</verstretch>
-																	</sizepolicy>
-																</property>
-																<property name="sortingEnabled">
-																	<bool>true</bool>
-																</property>
-															</widget>
-														</item>
-														<item>
-															<widget class="QWidget" name="widget_2" native="true">
-																<property name="sizePolicy">
-																	<sizepolicy hsizetype="Preferred"
-																				vsizetype="Preferred">
-																		<horstretch>0</horstretch>
-																		<verstretch>0</verstretch>
-																	</sizepolicy>
-																</property>
-																<layout class="QVBoxLayout" name="verticalLayout_6">
-																	<property name="leftMargin">
-																		<number>0</number>
-																	</property>
-																	<property name="topMargin">
-																		<number>0</number>
-																	</property>
-																	<property name="rightMargin">
-																		<number>0</number>
-																	</property>
-																	<property name="bottomMargin">
-																		<number>0</number>
-																	</property>
-																	<item>
-																		<spacer name="verticalSpacer_2">
-																			<property name="orientation">
-																				<enum>Qt::Vertical</enum>
-																			</property>
-																			<property name="sizeHint" stdset="0">
-																				<size>
-																					<width>20</width>
-																					<height>40</height>
-																				</size>
-																			</property>
-																		</spacer>
-																	</item>
-																	<item>
-																		<widget class="QPushButton"
-																				name="add_shelf_button">
-																			<property name="text">
-																				<string>Add Shelf...</string>
-																			</property>
-																		</widget>
-																	</item>
-																	<item>
-																		<widget class="QPushButton"
-																				name="scan_for_shelves_button">
-																			<property name="toolTip">
-																				<string>Automatically detect shelves
-																					from your music library directory
-																				</string>
-																			</property>
-																			<property name="text">
-																				<string>Scan Music Directory</string>
-																			</property>
-																		</widget>
-																	</item>
-																	<item>
-																		<widget class="QPushButton"
-																				name="remove_shelf_button">
-																			<property name="enabled">
-																				<bool>false</bool>
-																			</property>
-																			<property name="text">
-																				<string>Remove Selected</string>
-																			</property>
-																		</widget>
-																	</item>
-																	<item>
-																		<widget class="QPushButton"
-																				name="remove_unknown_shelves_button">
-																			<property name="toolTip">
-																				<string>Remove virtual shelves that have
-																					no equivalent in the music
-																					directory.
-																				</string>
-																			</property>
-																			<property name="text">
-																				<string>Remove Unknown</string>
-																			</property>
-																		</widget>
-																	</item>
-																</layout>
-															</widget>
-														</item>
-													</layout>
-												</widget>
-											</item>
-										</layout>
-									</widget>
-									<widget class="QWidget" name="tab_shelf_workflow_configuration">
-										<attribute name="title">
-											<string>Workflow Configuration</string>
-										</attribute>
-										<layout class="QVBoxLayout" name="verticalLayout_8">
-											<item>
-												<widget class="QLabel" name="label_workflow_configuration">
-													<property name="text">
-														<string>Configure your workflow.</string>
-													</property>
-												</widget>
-											</item>
-											<item>
-												<widget class="QCheckBox" name="workflow_enabled">
-													<property name="toolTip">
-														<string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When
-															enabled, the workflow sets the album’s shelf automatically
-															by the transition configuration.&lt;/p&gt;&lt;p&gt;Manual
-															changes through the album's context menu override the
-															defined
-															transition. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
-														</string>
-													</property>
-													<property name="text">
-														<string>Use workflow transitions</string>
-													</property>
-												</widget>
-											</item>
-											<item>
-												<widget class="QWidget" name="container_workflow_configuration"
-														native="true">
-													<layout class="QVBoxLayout" name="verticalLayout_9">
-														<property name="leftMargin">
-															<number>0</number>
-														</property>
-														<property name="topMargin">
-															<number>0</number>
-														</property>
-														<property name="rightMargin">
-															<number>0</number>
-														</property>
-														<property name="bottomMargin">
-															<number>0</number>
-														</property>
-														<item>
-															<widget class="QWidget" name="widget_3" native="true">
-																<layout class="QVBoxLayout" name="verticalLayout_10">
-																	<property name="spacing">
-																		<number>0</number>
-																	</property>
-																	<property name="leftMargin">
-																		<number>0</number>
-																	</property>
-																	<property name="topMargin">
-																		<number>0</number>
-																	</property>
-																	<property name="rightMargin">
-																		<number>0</number>
-																	</property>
-																	<property name="bottomMargin">
-																		<number>0</number>
-																	</property>
-																	<item>
-																		<widget class="MaxItemsDropListWidget"
-																				name="shelves_for_stages">
-																			<property name="dragDropMode">
-																				<enum>QAbstractItemView::DragDrop</enum>
-																			</property>
-																			<property name="defaultDropAction">
-																				<enum>Qt::MoveAction</enum>
-																			</property>
-																			<property name="selectionMode">
-																				<enum>
-																					QAbstractItemView::MultiSelection
-																				</enum>
-																			</property>
-																			<item>
-																				<property name="text">
-																					<string>New Item</string>
-																				</property>
-																			</item>
-																			<item>
-																				<property name="text">
-																					<string>New Item</string>
-																				</property>
-																			</item>
-																			<item>
-																				<property name="text">
-																					<string>New Item</string>
-																				</property>
-																			</item>
-																			<item>
-																				<property name="text">
-																					<string>New Item</string>
-																				</property>
-																			</item>
-																		</widget>
-																	</item>
-																	<item>
-																		<widget class="QWidget" name="widget_6"
-																				native="true">
-																			<layout class="QHBoxLayout"
-																					name="horizontalLayout_6">
-																				<property name="leftMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="rightMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="bottomMargin">
-																					<number>0</number>
-																				</property>
-																				<item>
-																					<layout class="QHBoxLayout"
-																							name="horizontalLayout_8">
-																						<property name="leftMargin">
-																							<number>0</number>
-																						</property>
-																						<property name="topMargin">
-																							<number>0</number>
-																						</property>
-																						<property name="rightMargin">
-																							<number>0</number>
-																						</property>
-																						<property name="bottomMargin">
-																							<number>0</number>
-																						</property>
-																						<item>
-																							<spacer name="horizontalSpacer">
-																								<property
-																										name="orientation">
-																									<enum>
-																										Qt::Horizontal
-																									</enum>
-																								</property>
-																								<property
-																										name="sizeHint"
-																										stdset="0">
-																									<size>
-																										<width>40
-																										</width>
-																										<height>20
-																										</height>
-																									</size>
-																								</property>
-																							</spacer>
-																						</item>
-																						<item>
-																							<widget class="QToolButton"
-																									name="button_stage_1_to_all"/>
-																						</item>
-																						<item>
-																							<widget class="QToolButton"
-																									name="button_all_to_stage_1"/>
-																						</item>
-																						<item>
-																							<spacer name="horizontalSpacer_2">
-																								<property
-																										name="orientation">
-																									<enum>
-																										Qt::Horizontal
-																									</enum>
-																								</property>
-																								<property
-																										name="sizeHint"
-																										stdset="0">
-																									<size>
-																										<width>40
-																										</width>
-																										<height>20
-																										</height>
-																									</size>
-																								</property>
-																							</spacer>
-																						</item>
-																					</layout>
-																				</item>
-																				<item>
-																					<layout class="QHBoxLayout"
-																							name="horizontalLayout_7">
-																						<property name="spacing">
-																							<number>0</number>
-																						</property>
-																						<property name="leftMargin">
-																							<number>0</number>
-																						</property>
-																						<property name="topMargin">
-																							<number>0</number>
-																						</property>
-																						<property name="rightMargin">
-																							<number>0</number>
-																						</property>
-																						<property name="bottomMargin">
-																							<number>0</number>
-																						</property>
-																						<item>
-																							<spacer name="horizontalSpacer_3">
-																								<property
-																										name="orientation">
-																									<enum>
-																										Qt::Horizontal
-																									</enum>
-																								</property>
-																								<property
-																										name="sizeHint"
-																										stdset="0">
-																									<size>
-																										<width>40
-																										</width>
-																										<height>20
-																										</height>
-																									</size>
-																								</property>
-																							</spacer>
-																						</item>
-																						<item>
-																							<widget class="QToolButton"
-																									name="button_stage_2_to_all"/>
-																						</item>
-																						<item>
-																							<widget class="QToolButton"
-																									name="button_all_to_stage_2"/>
-																						</item>
-																						<item>
-																							<spacer name="horizontalSpacer_4">
-																								<property
-																										name="orientation">
-																									<enum>
-																										Qt::Horizontal
-																									</enum>
-																								</property>
-																								<property
-																										name="sizeHint"
-																										stdset="0">
-																									<size>
-																										<width>40
-																										</width>
-																										<height>20
-																										</height>
-																									</size>
-																								</property>
-																							</spacer>
-																						</item>
-																					</layout>
-																				</item>
-																			</layout>
-																		</widget>
-																	</item>
-																</layout>
-															</widget>
-														</item>
-														<item>
-															<widget class="QWidget" name="workflow_transitions"
-																	native="true">
-																<property name="enabled">
-																	<bool>true</bool>
-																</property>
-																<layout class="QHBoxLayout" name="horizontalLayout_2">
-																	<property name="leftMargin">
-																		<number>0</number>
-																	</property>
-																	<property name="topMargin">
-																		<number>0</number>
-																	</property>
-																	<property name="rightMargin">
-																		<number>0</number>
-																	</property>
-																	<property name="bottomMargin">
-																		<number>0</number>
-																	</property>
-																	<item>
-																		<widget class="QWidget"
-																				name="transition_stage_1" native="true">
-																			<layout class="QVBoxLayout"
-																					name="verticalLayout_5">
-																				<property name="leftMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="topMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="rightMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="bottomMargin">
-																					<number>0</number>
-																				</property>
-																				<item>
-																					<widget class="QWidget"
-																							name="widget_4"
-																							native="true">
-																						<property name="minimumSize">
-																							<size>
-																								<width>0</width>
-																								<height>23</height>
-																							</size>
-																						</property>
-																						<layout class="QHBoxLayout"
-																								name="horizontalLayout_4">
-																							<property name="leftMargin">
-																								<number>0</number>
-																							</property>
-																							<property name="topMargin">
-																								<number>0</number>
-																							</property>
-																							<property
-																									name="rightMargin">
-																								<number>0</number>
-																							</property>
-																							<property
-																									name="bottomMargin">
-																								<number>0</number>
-																							</property>
-																							<item>
-																								<widget class="QCheckBox"
-																										name="stage_1_includes_non_shelves">
-																									<property
-																											name="text">
-																										<string>Include
-																											non-shelves
-																										</string>
-																									</property>
-																								</widget>
-																							</item>
-																							<item>
-																								<widget class="QLabel"
-																										name="label_workflow_stage_1">
-																									<property
-																											name="sizePolicy">
-																										<sizepolicy
-																												hsizetype="Preferred"
-																												vsizetype="Preferred">
-																											<horstretch>
-																												0
-																											</horstretch>
-																											<verstretch>
-																												0
-																											</verstretch>
-																										</sizepolicy>
-																									</property>
-																									<property
-																											name="text">
-																										<string>from
-																											shelf or
-																											shelves ⇒
-																										</string>
-																									</property>
-																								</widget>
-																							</item>
-																						</layout>
-																					</widget>
-																				</item>
-																				<item>
-																					<widget class="MaxItemsDropListWidget"
-																							name="workflow_stage_1">
-																						<property name="dragDropMode">
-																							<enum>
-																								QAbstractItemView::DragDrop
-																							</enum>
-																						</property>
-																						<property
-																								name="defaultDropAction">
-																							<enum>Qt::MoveAction</enum>
-																						</property>
-																						<property name="selectionMode">
-																							<enum>
-																								QAbstractItemView::MultiSelection
-																							</enum>
-																						</property>
-																					</widget>
-																				</item>
-																			</layout>
-																		</widget>
-																	</item>
-																	<item>
-																		<widget class="QWidget"
-																				name="buttons_between_stages"
-																				native="true">
-																			<layout class="QVBoxLayout"
-																					name="verticalLayout_2">
-																				<property name="leftMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="topMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="rightMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="bottomMargin">
-																					<number>0</number>
-																				</property>
-																				<item>
-																					<spacer name="verticalSpacer">
-																						<property name="orientation">
-																							<enum>Qt::Vertical</enum>
-																						</property>
-																						<property name="sizeHint"
-																								  stdset="0">
-																							<size>
-																								<width>20</width>
-																								<height>40</height>
-																							</size>
-																						</property>
-																					</spacer>
-																				</item>
-																				<item>
-																					<widget class="QToolButton"
-																							name="button_stage_1_to_stage_2"/>
-																				</item>
-																				<item>
-																					<widget class="QToolButton"
-																							name="button_stage_2_to_stage_1"/>
-																				</item>
-																				<item>
-																					<spacer name="verticalSpacer_3">
-																						<property name="orientation">
-																							<enum>Qt::Vertical</enum>
-																						</property>
-																						<property name="sizeHint"
-																								  stdset="0">
-																							<size>
-																								<width>20</width>
-																								<height>40</height>
-																							</size>
-																						</property>
-																					</spacer>
-																				</item>
-																			</layout>
-																		</widget>
-																	</item>
-																	<item>
-																		<widget class="QWidget"
-																				name="transition_stage_2" native="true">
-																			<layout class="QVBoxLayout"
-																					name="verticalLayout_7">
-																				<property name="leftMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="topMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="rightMargin">
-																					<number>0</number>
-																				</property>
-																				<property name="bottomMargin">
-																					<number>0</number>
-																				</property>
-																				<item>
-																					<widget class="QWidget"
-																							name="widget_5"
-																							native="true">
-																						<layout class="QHBoxLayout"
-																								name="horizontalLayout_5">
-																							<property name="leftMargin">
-																								<number>0</number>
-																							</property>
-																							<property name="topMargin">
-																								<number>0</number>
-																							</property>
-																							<property
-																									name="rightMargin">
-																								<number>0</number>
-																							</property>
-																							<property
-																									name="bottomMargin">
-																								<number>0</number>
-																							</property>
-																							<item>
-																								<widget class="QLabel"
-																										name="label_workflow_stage_2">
-																									<property
-																											name="text">
-																										<string>to
-																											shelf
-																										</string>
-																									</property>
-																								</widget>
-																							</item>
-																						</layout>
-																					</widget>
-																				</item>
-																				<item>
-																					<widget class="MaxItemsDropListWidget"
-																							name="workflow_stage_2">
-																						<property name="dragDropMode">
-																							<enum>
-																								QAbstractItemView::DragDrop
-																							</enum>
-																						</property>
-																						<property
-																								name="defaultDropAction">
-																							<enum>Qt::MoveAction</enum>
-																						</property>
-																						<property name="selectionMode">
-																							<enum>
-																								QAbstractItemView::MultiSelection
-																							</enum>
-																						</property>
-																					</widget>
-																				</item>
-																			</layout>
-																		</widget>
-																	</item>
-																</layout>
-															</widget>
-														</item>
-													</layout>
-												</widget>
-											</item>
-										</layout>
-									</widget>
-									<widget class="QWidget" name="tab_script_snippet">
-										<attribute name="title">
-											<string>Script Snippet</string>
-										</attribute>
-										<layout class="QVBoxLayout" name="verticalLayout_4">
-											<item alignment="Qt::AlignTop">
-												<widget class="QLabel" name="l_script_info">
-													<property name="text">
-														<string>Use the following code in your file naming script to use
-															the shelves.
-														</string>
-													</property>
-													<property name="textFormat">
-														<enum>Qt::MarkdownText</enum>
-													</property>
-												</widget>
-											</item>
-											<item>
-												<widget class="QPlainTextEdit" name="naming_script_code">
-													<property name="enabled">
-														<bool>true</bool>
-													</property>
-													<property name="sizePolicy">
-														<sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-															<horstretch>0</horstretch>
-															<verstretch>0</verstretch>
-														</sizepolicy>
-													</property>
-													<property name="minimumSize">
-														<size>
-															<width>0</width>
-															<height>80</height>
-														</size>
-													</property>
-													<property name="readOnly">
-														<bool>true</bool>
-													</property>
-												</widget>
-											</item>
-										</layout>
-									</widget>
-								</widget>
-							</item>
-						</layout>
-					</widget>
-				</widget>
-			</item>
-		</layout>
-	</widget>
-	<customwidgets>
-		<customwidget>
-			<class>MaxItemsDropListWidget</class>
-			<extends>QListWidget</extends>
-			<header>widgets</header>
-		</customwidget>
-	</customwidgets>
-	<resources/>
-	<connections>
-		<connection>
-			<sender>workflow_enabled</sender>
-			<signal>clicked(bool)</signal>
-			<receiver>container_workflow_configuration</receiver>
-			<slot>setEnabled(bool)</slot>
-			<hints>
-				<hint type="sourcelabel">
-					<x>455</x>
-					<y>95</y>
-				</hint>
-				<hint type="destinationlabel">
-					<x>455</x>
-					<y>349</y>
-				</hint>
-			</hints>
-		</connection>
-	</connections>
+ <class>Shelves</class>
+ <widget class="QWidget" name="Shelves">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>926</width>
+    <height>617</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Shelves Configuration</string>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QTabWidget" name="plugin_configuration">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
+         <property name="tabsClosable">
+          <bool>false</bool>
+         </property>
+         <widget class="QWidget" name="tab_shelf_management">
+          <attribute name="title">
+           <string>Shelf Management</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item alignment="Qt::AlignTop">
+            <widget class="QLabel" name="shelves_description">
+             <property name="text">
+              <string>Manage your virtual shelves.</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="widget" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QListWidget" name="shelf_management_shelves">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="sortingEnabled">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QWidget" name="widget_2" native="true">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_6">
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <spacer name="verticalSpacer_2">
+                   <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>20</width>
+                     <height>40</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="add_shelf_button">
+                   <property name="text">
+                    <string>Add Shelf...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="scan_for_shelves_button">
+                   <property name="toolTip">
+                    <string>Automatically detect shelves
+                                                                                    from your music library directory
+                                                                                </string>
+                   </property>
+                   <property name="text">
+                    <string>Scan Music Directory</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="remove_shelf_button">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="text">
+                    <string>Remove Selected</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="remove_unknown_shelves_button">
+                   <property name="toolTip">
+                    <string>Remove virtual shelves that have no equivalent in the music directory.</string>
+                   </property>
+                   <property name="text">
+                    <string>Remove Unknown</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="tab_shelf_workflow_configuration">
+          <attribute name="title">
+           <string>Workflow Configuration</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_8">
+           <item>
+            <widget class="QLabel" name="label_workflow_configuration">
+             <property name="text">
+              <string>Configure your workflow.</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="workflow_enabled">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When
+                                                            enabled, the workflow sets the album’s shelf automatically
+                                                            by the transition configuration.&lt;/p&gt;&lt;p&gt;Manual
+                                                            changes through the album's context menu override the
+                                                            defined
+                                                            transition. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+                                                        </string>
+             </property>
+             <property name="text">
+              <string>Use workflow transitions</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="container_workflow_configuration" native="true">
+             <layout class="QVBoxLayout" name="verticalLayout_9">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QWidget" name="widget_3" native="true">
+                <layout class="QVBoxLayout" name="verticalLayout_10">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="MaxItemsDropListWidget" name="shelves_for_stages">
+                   <property name="dragDropMode">
+                    <enum>QAbstractItemView::DragDrop</enum>
+                   </property>
+                   <property name="defaultDropAction">
+                    <enum>Qt::MoveAction</enum>
+                   </property>
+                   <property name="selectionMode">
+                    <enum>QAbstractItemView::MultiSelection</enum>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>New Item</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>New Item</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>New Item</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>New Item</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QWidget" name="widget_6" native="true">
+                   <layout class="QHBoxLayout" name="horizontalLayout_6">
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_8">
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <spacer name="horizontalSpacer">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
+                       <widget class="QToolButton" name="button_stage_1_to_all"/>
+                      </item>
+                      <item>
+                       <widget class="QToolButton" name="button_all_to_stage_1"/>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer_2">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_7">
+                      <property name="spacing">
+                       <number>0</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <spacer name="horizontalSpacer_3">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
+                       <widget class="QToolButton" name="button_stage_2_to_all"/>
+                      </item>
+                      <item>
+                       <widget class="QToolButton" name="button_all_to_stage_2"/>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer_4">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                     </layout>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QWidget" name="workflow_transitions" native="true">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <layout class="QHBoxLayout" name="horizontalLayout_2">
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QWidget" name="transition_stage_1" native="true">
+                   <layout class="QVBoxLayout" name="verticalLayout_5">
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <widget class="QWidget" name="widget_4" native="true">
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>23</height>
+                       </size>
+                      </property>
+                      <layout class="QHBoxLayout" name="horizontalLayout_4">
+                       <property name="leftMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>0</number>
+                       </property>
+                       <item>
+                        <widget class="QCheckBox" name="stage_1_includes_non_shelves">
+                         <property name="text">
+                          <string>Include non-shelves</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QLabel" name="label_workflow_stage_1">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="text">
+                          <string>from shelf or shelves ⇒</string>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="MaxItemsDropListWidget" name="workflow_stage_1">
+                      <property name="dragDropMode">
+                       <enum>QAbstractItemView::DragDrop</enum>
+                      </property>
+                      <property name="defaultDropAction">
+                       <enum>Qt::MoveAction</enum>
+                      </property>
+                      <property name="selectionMode">
+                       <enum>QAbstractItemView::MultiSelection</enum>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QWidget" name="buttons_between_stages" native="true">
+                   <layout class="QVBoxLayout" name="verticalLayout_2">
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <spacer name="verticalSpacer">
+                      <property name="orientation">
+                       <enum>Qt::Vertical</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>20</width>
+                        <height>40</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                    <item>
+                     <widget class="QToolButton" name="button_stage_1_to_stage_2"/>
+                    </item>
+                    <item>
+                     <widget class="QToolButton" name="button_stage_2_to_stage_1"/>
+                    </item>
+                    <item>
+                     <spacer name="verticalSpacer_3">
+                      <property name="orientation">
+                       <enum>Qt::Vertical</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>20</width>
+                        <height>40</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QWidget" name="transition_stage_2" native="true">
+                   <layout class="QVBoxLayout" name="verticalLayout_7">
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <widget class="QWidget" name="widget_5" native="true">
+                      <layout class="QHBoxLayout" name="horizontalLayout_5">
+                       <property name="leftMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>0</number>
+                       </property>
+                       <item>
+                        <widget class="QLabel" name="label_workflow_stage_2">
+                         <property name="text">
+                          <string>to shelf</string>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="MaxItemsDropListWidget" name="workflow_stage_2">
+                      <property name="dragDropMode">
+                       <enum>QAbstractItemView::DragDrop</enum>
+                      </property>
+                      <property name="defaultDropAction">
+                       <enum>Qt::MoveAction</enum>
+                      </property>
+                      <property name="selectionMode">
+                       <enum>QAbstractItemView::MultiSelection</enum>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="tab_script_snippet">
+          <attribute name="title">
+           <string>Script Snippet</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item alignment="Qt::AlignTop">
+            <widget class="QLabel" name="l_script_info">
+             <property name="text">
+              <string>Use the following code in your file naming script to use the shelves.</string>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::MarkdownText</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPlainTextEdit" name="naming_script_code">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>80</height>
+              </size>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>MaxItemsDropListWidget</class>
+   <extends>QListWidget</extends>
+   <header>widgets</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>workflow_enabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>container_workflow_configuration</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>455</x>
+     <y>95</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>455</x>
+     <y>349</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

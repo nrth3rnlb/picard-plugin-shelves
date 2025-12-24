@@ -29,7 +29,7 @@ class ProcessorsTest(unittest.TestCase):
                 ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
                 ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
                 ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-                "move_files_to": "/music"
+                ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
             }
         }
 

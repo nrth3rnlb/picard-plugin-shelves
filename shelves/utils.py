@@ -69,11 +69,9 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
         tag = tag_value.strip()
         if not tag:
             return None
-        suffix = ShelfConstants.MANUAL_SHELF_SUFFIX
-        if suffix and suffix in tag:
-            # Only strip the trailing occurrence to avoid accidental mid-string matches
-            if tag.endswith(suffix):
-                return tag[: -len(suffix)].strip() or None
+
+        if tag.endswith(ShelfConstants.MANUAL_SHELF_SUFFIX):
+            return tag[: -len(ShelfConstants.MANUAL_SHELF_SUFFIX)].strip() or None
 
         return tag
 
@@ -84,18 +82,12 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
         """
         Extract the shelf name from a file path.
 
-        Args:
-            path: The file path to analyze.
-            known_shelves: A list of known shelf names.
-
-        Returns:
-            A tuple containing:
-            - The determined shelf name (e.g., "Soundtracks" or "Standard").
-            - A boolean indicating if the shelf was explicitly found from the path (`True`)
-              or if it's a fallback value (`False`).
+        :param path:
+        :param known_shelves:
+        :return:
         """
         try:
-            base_path_str = config.setting["move_files_to"]  # type: ignore[index]
+            base_path_str = config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]  # type: ignore[index]
             base_path = Path(base_path_str).resolve()
             file_path = Path(path).resolve()
 
@@ -115,7 +107,7 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
             if is_likely:
                 log.debug("Confirmed shelf '%s' from path.", potential_shelf)
                 return potential_shelf, True
-            
+
             log.warning(
                 "Folder '%s' is not a likely shelf (%s). "
                 "If this is a shelf, add it in settings.",
@@ -130,6 +122,12 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
 
     @staticmethod
     def validate_shelf_name(name: str) -> Tuple[bool, Optional[str]]:
+        """
+        Validate a shelf name.
+
+        :param name:
+        :return:
+        """
         if not isinstance(name, str) or not name.strip():
             return False, "Shelf name cannot be empty"
 
@@ -160,10 +158,10 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
     @staticmethod
     def get_existing_dirs() -> list[str]:
         """
-        Load existing directories from the music directory.
-        Returns: List of directory names
+
+        :return:
         """
-        music_dir_str = config.setting["move_files_to"]
+        music_dir_str = config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]
         music_dir = Path(music_dir_str)
 
         shelves_found = [entry.name for entry in music_dir.iterdir() if entry.is_dir()]
@@ -172,9 +170,10 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
     @staticmethod
     def add_known_shelf(shelf_name: str) -> None:
         """
-        Add a shelf name to the list of known shelves.
-        Args:
-            shelf_name: Name of the shelf to add
+        Add a known shelf to the configuration.
+
+        :param shelf_name:
+        :return:
         """
         if not shelf_name or not shelf_name.strip():
             return

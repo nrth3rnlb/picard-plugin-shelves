@@ -9,15 +9,12 @@ import sys
 from typing import Optional, Set
 
 from PyQt5 import (
-    QtCore,
-    QtGui,
-    QtWidgets,
-    uic,  # type: ignore # uic has no type stubs
+    QtCore, QtGui, QtWidgets, uic,  # type: ignore # uic has no type stubs
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QAbstractItemView, QListWidget
-from picard import log, config
-from picard.config import BoolOption, IntOption, ListOption, TextOption, Option
+from picard import config, log
+from picard.config import BoolOption, IntOption, ListOption, Option, TextOption
 from picard.ui.options import OptionsPage as PicardOptions
 
 from .widgets import MaxItemsDropListWidget
@@ -105,10 +102,10 @@ class OptionsPage(PicardOptions):
         self.shelf_management_shelves.setSelectionMode(
             QAbstractItemView.ExtendedSelection
         )
-        self.add_shelf_button.clicked.connect(self.add_shelf)
-        self.remove_shelf_button.clicked.connect(self.remove_shelf)
-        self.remove_unknown_shelves_button.clicked.connect(self._rebuild_shelf_list)
-        self.scan_for_shelves_button.clicked.connect(self._populate_shelf_list)
+        self.add_shelf_button.clicked.connect(self._add_shelf)
+        self.remove_shelf_button.clicked.connect(self._remove_shelf)
+        self.remove_unknown_shelves_button.clicked.connect(self._remove_unknown_shelves)
+        self.scan_for_shelves_button.clicked.connect(self._scan_for_shelves)
         self.shelf_management_shelves.itemSelectionChanged.connect(
             self._on_shelf_list_selection_changed
         )
@@ -254,7 +251,7 @@ class OptionsPage(PicardOptions):
                 selected_shelves_stage_2.append(element.text())
         return selected_shelves_stage_2
 
-    def add_shelf(self) -> None:
+    def _add_shelf(self) -> None:
         """Add a new shelf."""
         shelf_name, ok = QtWidgets.QInputDialog.getText(
             self, "Add Shelf", "Enter shelf name:"
@@ -282,7 +279,7 @@ class OptionsPage(PicardOptions):
         self.shelf_management_shelves.sortItems()
         self._rebuild_shelves_for_stages()
 
-    def remove_shelf(self) -> None:
+    def _remove_shelf(self) -> None:
         """Remove the selected shelves."""
         selected_items = self.shelf_management_shelves.selectedItems()
         if not selected_items:
@@ -327,9 +324,10 @@ class OptionsPage(PicardOptions):
 
         self._rebuild_shelves_for_stages()
 
-    def _rebuild_shelf_list(self) -> None:
+    def _remove_unknown_shelves(self) -> None:
         """Remove shelves that no longer exist in the music directory."""
         existing_shelves = ShelfUtils.get_existing_dirs()
+
         items_to_remove = []
 
         # Identify shelves to remove
@@ -355,7 +353,7 @@ class OptionsPage(PicardOptions):
 
         self._rebuild_shelves_for_stages()
 
-    def _populate_shelf_list(self) -> None:
+    def _scan_for_shelves(self) -> None:
         """Scan Picard's target directory for shelves."""
         try:
             # Load existing directories
@@ -368,7 +366,7 @@ class OptionsPage(PicardOptions):
                 )
                 log.debug(
                     "No shelves found during scan in %s",
-                    config.setting["move_files_to"],  # type: ignore[index]
+                    config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY],  # type: ignore[index]
                 )
                 return
 
@@ -445,7 +443,7 @@ class OptionsPage(PicardOptions):
         # Automatically scan for shelves if the list is empty
         if self.shelf_management_shelves.count() == 0:
             log.debug("Shelf list is empty, auto-scanning for shelves.")
-            self._populate_shelf_list()
+            self._scan_for_shelves()
 
     def save(self) -> None:
         """Save shelves list to config."""

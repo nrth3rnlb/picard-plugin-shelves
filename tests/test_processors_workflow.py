@@ -1,21 +1,24 @@
+"""
+Tests for the processors.py module.
+"""
+
 import unittest
 from unittest.mock import MagicMock, patch
 
+from shelves import ShelfProcessors
 from shelves.constants import ShelfConstants
-from shelves.processors import _apply_workflow_transition
 
 
 class AttrDict(dict):
     """A dictionary that allows attribute-style access."""
 
     def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.__dict__ = self
 
 
 class WorkflowTest(unittest.TestCase):
     """Tests for the workflow transition logic."""
-
 
     def setUp(self):
         """Set up the test environment for workflow."""
@@ -24,59 +27,81 @@ class WorkflowTest(unittest.TestCase):
             ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
             ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
             ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: False,
-            "move_files_to": "/music"
+            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
         }
         self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
 
     def test_empty_shelf_is_not_transitioned(self):
         """Test that an empty shelf value is never transitioned."""
-        self.assertEqual(_apply_workflow_transition(""), "")
+        self.assertEqual(ShelfProcessors._apply_workflow_transition(""), "")
 
-    @patch('shelves.utils.ShelfUtils.get_configured_shelves')
-    @patch('shelves.processors.config', new_callable=MagicMock)
-    def test_disabled_workflow_returns_same_shelf(self, mock_config, mock_get_configured_shelves):
+    @patch("shelves.utils.ShelfUtils.get_configured_shelves")
+    @patch("shelves.processors.config", new_callable=MagicMock)
+    def test_disabled_workflow_returns_same_shelf(
+        self, mock_config, mock_get_configured_shelves
+    ):
         """Test that a disabled workflow never transitions the shelf."""
         mock_config.setting = self.config_setting
         mock_config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = False
         mock_get_configured_shelves.return_value = self.known_shelves
 
-        self.assertEqual(_apply_workflow_transition("Incoming"), "Incoming")
+        self.assertEqual(
+            ShelfProcessors._apply_workflow_transition("Incoming"), "Incoming"
+        )
 
-    @patch('shelves.processors.config', new_callable=MagicMock)
+    @patch("shelves.processors.config", new_callable=MagicMock)
     def test_no_workflow_keys_leaves_shelf(self, mock_config):
         """Test that missing config keys prevent transition."""
         mock_config.setting = {}
-        self.assertEqual(_apply_workflow_transition("Incoming"), "Incoming")
+        self.assertEqual(
+            ShelfProcessors._apply_workflow_transition("Incoming"), "Incoming"
+        )
 
-    @patch('shelves.utils.ShelfUtils.get_configured_shelves')
-    @patch('shelves.processors.config', new_callable=MagicMock)
-    def test_stage1_match_transitions(self, mock_config, mock_get_configured_shelves, ):
+    @patch("shelves.utils.ShelfUtils.get_configured_shelves")
+    @patch("shelves.processors.config", new_callable=MagicMock)
+    def test_stage1_match_transitions(
+        self,
+        mock_config,
+        mock_get_configured_shelves,
+    ):
         """Test that a matching shelf in stage 1 is correctly transitioned."""
         mock_config.setting = self.config_setting
         mock_get_configured_shelves.return_value = self.known_shelves
-        self.assertEqual(_apply_workflow_transition("Incoming"), "Standard")
+        self.assertEqual(
+            ShelfProcessors._apply_workflow_transition("Incoming"), "Standard"
+        )
 
-    @patch('shelves.processors.config', new_callable=MagicMock)
+    @patch("shelves.processors.config", new_callable=MagicMock)
     def test_no_match_in_stage1_leaves_shelf(self, mock_config):
         """Test that a shelf not in stage 1 is not transitioned."""
         mock_config.setting = self.config_setting
-        self.assertEqual(_apply_workflow_transition("other_shelf"), "other_shelf")
+        self.assertEqual(
+            ShelfProcessors._apply_workflow_transition("other_shelf"), "other_shelf"
+        )
 
-    @patch('shelves.processors.config', new_callable=MagicMock)
+    @patch("shelves.processors.config", new_callable=MagicMock)
     def test_wildcard_in_stage1_transitions_any_shelf(self, mock_config):
         """Test that the wildcard in stage 1 transitions any shelf."""
         mock_config.setting = self.config_setting
-        self.config_setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = True
-        self.assertEqual(_apply_workflow_transition("any_shelf"), "Standard")
-        self.assertEqual(_apply_workflow_transition("another_shelf"), "Standard")
+        self.config_setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (
+            True
+        )
+        self.assertEqual(
+            ShelfProcessors._apply_workflow_transition("any_shelf"), "Standard"
+        )
+        self.assertEqual(
+            ShelfProcessors._apply_workflow_transition("another_shelf"), "Standard"
+        )
 
-    @patch('shelves.processors.config', new_callable=MagicMock)
+    @patch("shelves.processors.config", new_callable=MagicMock)
     def test_transition_to_same_shelf_does_nothing(self, mock_config):
         """Test that transitioning to the same shelf does not change the value."""
         mock_config.setting = self.config_setting
-        self.assertEqual(_apply_workflow_transition("Standard"), "Standard")
+        self.assertEqual(
+            ShelfProcessors._apply_workflow_transition("Standard"), "Standard"
+        )
 
-    @patch('shelves.processors.config', new_callable=MagicMock)
+    @patch("shelves.processors.config", new_callable=MagicMock)
     def test_missing_stage_keys_with_enabled_true_leaves_shelf(self, mock_config):
         """Test that missing stage keys with workflow enabled leaves the shelf unchanged."""
         mock_config.setting = {
@@ -84,7 +109,9 @@ class WorkflowTest(unittest.TestCase):
             ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
             # stage 2 missing
         }
-        self.assertEqual(_apply_workflow_transition("Incoming"), "Incoming")
+        self.assertEqual(
+            ShelfProcessors._apply_workflow_transition("Incoming"), "Incoming"
+        )
 
 
 if __name__ == "__main__":

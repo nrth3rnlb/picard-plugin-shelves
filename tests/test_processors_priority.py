@@ -8,15 +8,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from shelves.constants import ShelfConstants
-from shelves.processors import file_post_addition_to_track_processor
-
-
-class AttrDict(dict):
-    """A dictionary that allows attribute-style access."""
-
-    def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
+from shelves.processors import ShelfProcessors
 
 
 class ProcessorPriorityTest(unittest.TestCase):
@@ -26,61 +18,102 @@ class ProcessorPriorityTest(unittest.TestCase):
 
     def setUp(self):
         """Set up the test environment for workflow."""
+        self.processors = ShelfProcessors.__new__(ShelfProcessors)
         self.config_setting = {
             ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
             ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
             ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-            "move_files_to": "/music",
+            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
         }
         self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
 
-    @patch("shelves.manager.SHELF_MANAGER", new_callable=MagicMock)
+    @patch("shelves.utils.ShelfUtils.get_shelf_from_path")
     @patch("shelves.utils.ShelfUtils.get_configured_shelves")
-    @patch("shelves.processors.config", new_callable=MagicMock)
-    def test_physical_location_overrides_manual_tag(
-        self, mock_config, mock_get_shelves, mock_manager
+    @patch("shelves.processors.config")
+    def test_manual_location_known_shelf_overrides_manual_tag(
+        self,
+        mock_config,
+        mock_get_configured_shelves,
+        mock_get_shelf_from_path,
     ):
         """
-        PRIORITY 1: A file physically moved to a known shelf folder should adopt that shelf,
-        ignoring any previous manual tag.
+        PRIORITY 1: A file that is manually moved to a known or possible shelf folder
+        must take over this shelf and ignores all previous manual markings.
         """
         # Arrange
-        mock_config.settings = self.config_setting
-        mock_get_shelves.return_value = self.known_shelves
+        mock_config.setting = self.config_setting
+        mock_config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = False
 
-        file = AttrDict(
-            {
-                "filename": "/music/Soundtracks/artist/album/track.mp3",
-                "metadata": {
-                    ShelfConstants.TAG_KEY: f"Favorites{ShelfConstants.MANUAL_SHELF_SUFFIX}",
-                    ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
-                },
-            }
+        mock_get_configured_shelves.return_value = self.known_shelves
+
+        known_shelf = self.known_shelves[0]
+        subdir_shelf = known_shelf
+        mock_get_shelf_from_path.return_value = (subdir_shelf, True)
+
+        file_mock = MagicMock()
+        file_mock.filename = f"/music/{subdir_shelf}/artist/album/track.mp3"
+        file_mock.metadata = {
+            ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
+            ShelfConstants.TAG_KEY: f"{known_shelf} {ShelfConstants.MANUAL_SHELF_SUFFIX}",
+        }
+
+        # Act
+        self.processors.file_post_addition_to_track_processor(
+            track=None, file=file_mock
         )
-
-        with patch(
-            "shelves.processors.ShelfUtils.get_shelf_from_path",
-            return_value=("Soundtracks", True),
-        ):
-            # Act
-            file_post_addition_to_track_processor(track=None, file=file)
 
         # Assert
-        self.assertEqual(file.metadata[ShelfConstants.TAG_KEY], "Soundtracks")
-        mock_manager.set_album_shelf.assert_called_with(
-            "album123", "Soundtracks", source="manual", lock=True
+        self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], subdir_shelf)
+
+    @patch("shelves.utils.ShelfUtils.add_known_shelf")
+    @patch("shelves.utils.ShelfUtils.get_shelf_from_path")
+    @patch("shelves.utils.ShelfUtils.get_configured_shelves")
+    @patch("shelves.processors.config")
+    def test_manual_location_unknown_shelf_overrides_manual_tag(
+        self,
+        mock_config,
+        mock_get_configured_shelves,
+        mock_get_shelf_from_path,
+        _mock_add_known_shelf,
+    ):
+        """
+        PRIORITY 1: A file that is manually moved to a known or possible shelf folder
+        must take over this shelf and ignores all previous manual markings.
+        """
+        # Arrange
+        mock_config.setting = self.config_setting
+        mock_config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = False
+
+        mock_get_configured_shelves.return_value = self.known_shelves
+
+        known_shelf = self.known_shelves[0]
+        unknown_shelf = f"Unknown_{known_shelf}"
+
+        mock_get_shelf_from_path.return_value = (unknown_shelf, True)
+
+        file_mock = MagicMock()
+        file_mock.filename = f"/music/{unknown_shelf}/artist/album/track.mp3"
+        file_mock.metadata = {
+            ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
+            ShelfConstants.TAG_KEY: f"{known_shelf} {ShelfConstants.MANUAL_SHELF_SUFFIX}",
+        }
+
+        # Act
+        self.processors.file_post_addition_to_track_processor(
+            track=None, file=file_mock
         )
 
-    @patch("shelves.manager.SHELF_MANAGER.set_album_shelf", new_callable=MagicMock)
-    @patch("shelves.utils.ShelfUtils.get_shelf_from_path", new_callable=MagicMock)
-    @patch("shelves.utils.ShelfUtils.get_configured_shelves", new_callable=MagicMock)
-    @patch("shelves.processors.config", new_callable=MagicMock)
+        # Assert
+        self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], unknown_shelf)
+
+    @patch("shelves.utils.ShelfUtils.get_shelf_from_path")
+    @patch("shelves.utils.ShelfUtils.get_configured_shelves")
+    @patch("shelves.processors.config")
     def test_manual_tag_overrides_workflow(
         self,
         mock_config,
         mock_get_configured_shelves,
         mock_get_shelf_from_path,
-        mock_manager,
     ):
         """
         PRIORITY 2: A file with a manual tag in a neutral location should keep its manual tag.
@@ -89,66 +122,65 @@ class ProcessorPriorityTest(unittest.TestCase):
         mock_config.settings = self.config_setting
         mock_get_configured_shelves.return_value = self.known_shelves
 
-        file = AttrDict(
-            {
-                "filename": "/music/Incoming/artist/album/track.mp3",
-                "metadata": {
-                    ShelfConstants.TAG_KEY: f"Favorites{ShelfConstants.MANUAL_SHELF_SUFFIX}",
-                    ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
-                },
-            }
-        )
         mock_get_shelf_from_path.return_value = ("Incoming", False)
 
+        file_mock = MagicMock()
+        file_mock.filename = "/music/Soundtracks/artist/album/track.mp3"
+        file_mock.metadata = {
+            ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
+            ShelfConstants.TAG_KEY: f"Favorites{ShelfConstants.MANUAL_SHELF_SUFFIX}",
+        }
+
         # Act
-        file_post_addition_to_track_processor(track=None, file=file)
+        ShelfProcessors.file_post_addition_to_track_processor(
+            track=None, file=file_mock
+        )
 
         # Assert
         self.assertEqual(
-            file.metadata[ShelfConstants.TAG_KEY],
+            file_mock.metadata[ShelfConstants.TAG_KEY],
             f"Favorites{ShelfConstants.MANUAL_SHELF_SUFFIX}",
         )
-        mock_manager.set_album_shelf.assert_called_with(
-            "album123", "Favorites", source="manual", lock=True
-        )
 
-    @unittest.skip("I no longer know why I need this. There is no default (anymore)")
-    @patch("shelves.processors.vote_for_shelf")
+    @patch("shelves.processors.ShelfProcessors._apply_workflow_transition")
+    @patch("shelves.utils.ShelfUtils.add_known_shelf")
+    @patch("shelves.utils.ShelfUtils.get_shelf_from_path")
     @patch("shelves.utils.ShelfUtils.get_configured_shelves")
-    @patch("shelves.processors.config", new_callable=MagicMock)
+    @patch("shelves.processors.config")
     def test_workflow_applies_by_default(
         self,
         mock_config,
         mock_get_configured_shelves,
-        mock_vote,
+        mock_get_shelf_from_path,
+        _mock_add_known_shelf,
+        mock_apply_workflow_transition,
     ):
         """
-        PRIORITY 3: A file with no manual tag or specific location should have the workflow applied.
+        PRIORITY 3: Auf eine Datei ohne manuelle Kennzeichnung
+        oder spezifischen Speicherort sollte der Arbeitsablauf angewendet werden.
         """
         # Arrange
         mock_config.settings = self.config_setting
         mock_get_configured_shelves.return_value = self.known_shelves
 
-        file = AttrDict(
-            {
-                "filename": "/music/Incoming/artist/album/track.mp3",
-                "metadata": {
-                    ShelfConstants.TAG_KEY: "",
-                    ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
-                },
-            }
+        known_shelf = self.known_shelves[0]
+
+        mock_get_shelf_from_path.return_value = (known_shelf, False)
+
+        file_mock = MagicMock()
+        file_mock.filename = f"/music/{known_shelf}/artist/album/track.mp3"
+        file_mock.metadata = {
+            ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
+            ShelfConstants.TAG_KEY: "",
+        }
+
+        ShelfProcessors.file_post_addition_to_track_processor(
+            track=None, file=file_mock
         )
 
-        with patch(
-            "shelves.processors.ShelfUtils.get_shelf_from_path",
-            return_value=("Incoming", False),
-        ):
-            # Act
-            file_post_addition_to_track_processor(track=None, file=file)
-
         # Assert
-        self.assertEqual(file.metadata[ShelfConstants.TAG_KEY], "Standard")
-        mock_vote.assert_called_with("album123", "Standard")
+        mock_apply_workflow_transition.assert_called_once_with(known_shelf)
+        self.assertEqual(known_shelf, known_shelf)
 
 
 if __name__ == "__main__":

@@ -50,7 +50,7 @@ class ShelfManager:
 
     @classmethod
     def vote_for_shelf(
-        cls, album_id: str, shelf: str, weight: float, reason: str
+        cls, album_id: str, shelf: str, weight: float = 0.0, reason: str = None
     ) -> None:
         """
 
@@ -285,7 +285,6 @@ class ShelfManager:
         # pylint: disable=protected-access
         state = cls._instance._state.setdefault(album_id, {})
         state["shelf_locked"] = False
-        print(f'shelf_source: {state.get("shelf_source")}')
         if state.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL:
             state["shelf_source"] = ShelfConstants.SHELF_SOURCE_VOTES
 

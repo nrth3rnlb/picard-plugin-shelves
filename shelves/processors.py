@@ -17,6 +17,9 @@ from .utils import ShelfUtils
 
 
 class ShelfProcessors:
+    """
+    File processors for loading and saving shelf information.
+    """
 
     @staticmethod
     def _set_metadata(obj: Any, key: str, value: Any, label: str) -> None:
@@ -71,14 +74,14 @@ class ShelfProcessors:
                 "Workflow configuration key not found (%s), skipping transition.",
                 e,
             )
-        except Exception as e:
+        except (AttributeError, ValueError) as e:
             log.debug("Failed to evaluate workflow transition: %s", e)
             log.debug("Traceback: %s", traceback.format_exc())
 
         return shelf
 
     @staticmethod
-    def file_post_removal_from_track_processor(track: Any, file: Any) -> None:
+    def file_post_removal_from_track_processor(_track: Any, file: Any) -> None:
         """
         Process a file after it has been removed from a track.
         """
@@ -90,9 +93,8 @@ class ShelfProcessors:
         if album_id:
             ShelfManager.clear_album(album_id)
 
-    def file_post_addition_to_track_processor(
-        self, track: Optional[Any], file: Any
-    ) -> None:
+    @staticmethod
+    def file_post_addition_to_track_processor(track: Optional[Any], file: Any) -> None:
         """
         Process a file after it has been added to a track, with a destroy priority model.
         """
@@ -109,10 +111,11 @@ class ShelfProcessors:
             shelf_from_path, was_explicitly_found = ShelfUtils.get_shelf_from_path(
                 path=file.filename, known_shelves=known_shelves
             )
-            existing_tag = file_meta.get(ShelfConstants.TAG_KEY, "")
-            is_manual_in_tag = (
-                isinstance(existing_tag, str)
-                and ShelfConstants.MANUAL_SHELF_SUFFIX in existing_tag
+
+            shelf_from_tag = file_meta.get(ShelfConstants.TAG_KEY, "")
+            is_manual_shelf = (
+                isinstance(shelf_from_tag, str)
+                and ShelfConstants.MANUAL_SHELF_SUFFIX in shelf_from_tag
             )
 
             # PRIORITY 1: Physical location
@@ -125,9 +128,9 @@ class ShelfProcessors:
                 )
 
             # PRIORITY 2: Persistent manual tag
-            elif is_manual_in_tag:
-                shelf_name = ShelfUtils.get_shelf_name_from_tag(existing_tag)
-                shelf_tag = existing_tag
+            elif is_manual_shelf:
+                shelf_name = ShelfUtils.get_shelf_name_from_tag(shelf_from_tag)
+                shelf_tag = shelf_from_tag
                 log.debug(
                     "Priority 2: Persisted manual tag '%s' wins.",
                     shelf_tag,
@@ -135,7 +138,7 @@ class ShelfProcessors:
 
             # PRIORITY 3: Standard logic
             else:
-                shelf_name = self._apply_workflow_transition(shelf_from_path)
+                shelf_name = ShelfProcessors._apply_workflow_transition(shelf_from_path)
                 shelf_tag = shelf_name
                 log.debug(
                     "Priority 3: Default logic. Path shelf '%s', final shelf '%s'.",
@@ -145,9 +148,11 @@ class ShelfProcessors:
 
             # Set metadata and update manager _state
             if shelf_name:
-                self._set_metadata(file, ShelfConstants.TAG_KEY, shelf_tag, "file")
+                ShelfProcessors._set_metadata(
+                    file, ShelfConstants.TAG_KEY, shelf_tag, "file"
+                )
                 if track:
-                    self._set_metadata(
+                    ShelfProcessors._set_metadata(
                         track, ShelfConstants.TAG_KEY, shelf_tag, "track"
                     )
 
@@ -156,19 +161,21 @@ class ShelfProcessors:
                 album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
                 if album_id:
                     # If the decision was based on a physical or persisted manual tag, _lock it in.
-                    if was_explicitly_found or is_manual_in_tag:
-                        ShelfManager.set_album_shelf(
+                    if was_explicitly_found or is_manual_shelf:
+                        ShelfManager().set_album_shelf(
                             album_id=album_id,
                             shelf=shelf_name,
-                            source=ShelfConstants.SHELF_SOURCE_MANUAL,
                             lock=True,
                         )
                     else:
-                        ShelfManager.vote_for_shelf(album_id=album_id, shelf=shelf_name)
+                        ShelfManager().vote_for_shelf(
+                            album_id=album_id,
+                            shelf=shelf_name,
+                        )
 
                 log.debug("Final shelf for %s is '%s'", file.filename, shelf_name)
 
-        except Exception as e:
+        except (KeyError, AttributeError, ValueError) as e:
             log.error("Error in file processor: %s", e)
             log.error("Traceback: %s", traceback.format_exc())
 
@@ -186,11 +193,12 @@ class ShelfProcessors:
             log.error("Error in file processor: %s", e)
             log.error("Traceback: %s", traceback.format_exc())
 
-    def file_post_load_processor(self, file: Any) -> None:
+    @staticmethod
+    def file_post_load_processor(file: Any) -> None:
         """
         Process a file after Picard has scanned it.
         """
-        self.file_post_addition_to_track_processor(file=file, track=None)
+        ShelfProcessors.file_post_addition_to_track_processor(file=file, track=None)
 
     @staticmethod
     def set_shelf_in_metadata(
