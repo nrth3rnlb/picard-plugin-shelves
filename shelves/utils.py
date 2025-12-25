@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Utility functions for managing shelves.
+Utility functions for managing shelf_names.
 """
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from picard import config, log
+from picard import log
 
 from .constants import ShelfConstants
 from .manager import ShelfManager
@@ -20,40 +20,29 @@ class ShelfUtils:
     Utility functions for shelf management.
     """
 
-    @staticmethod
-    def get_configured_shelves() -> List[str]:
-        """
-        Get the list of known shelves from the configuration.
+    @property
+    def rename_snippet(self) -> str:
+        """Get the renaming script snippet."""
+        return ShelfConstants.RENAME_SNIPPET
 
+    @staticmethod
+    def validate_shelf_names(shelf_names: set[str]) -> set[str]:
+        """
+        Checks a list of shelf names and returns a list of valid names.
+        :param shelf_names:
         :return:
         """
-        shelves = config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]
-
-        log.debug("Known shelves from config: %s", shelves)
+        log.debug("Known shelf_names from config: %s", shelf_names)
         # Validate each shelf name
-        valid_shelves = []
-        for shelf in shelves:
-            if not isinstance(shelf, str):
-                log.warning("Ignoring non-string shelf: %s", repr(shelf))
-                continue
-
-            is_valid, message = ShelfUtils.validate_shelf_name(shelf)
+        valid_shelves: set[str] = set()
+        for shelf_name in shelf_names:
+            is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
             if is_valid or not message:  # Allow warnings
-                valid_shelves.append(shelf)
+                valid_shelves.add(shelf_name)
             else:
-                log.warning("Ignoring invalid shelf '%s': %s", shelf, message)
-        log.debug("Known shelves: %s", valid_shelves)
-        return sorted(list(set(valid_shelves)))
+                log.warning("Ignoring invalid shelf '%s': %s", shelf_name, message)
 
-    @staticmethod
-    def get_rename_snippet() -> str:
-        """Get the renaming script snippet."""
-        # noinspection SpellCheckingInspection
-        return """$set(_shelffolder,$shelf())
-$set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
-
-%_shelffolder%
-$if2(%albumartist%,%artist%)/%album%/%title%"""
+        return valid_shelves
 
     @staticmethod
     def get_shelf_name_from_tag(tag_value: Optional[str]) -> Optional[str]:
@@ -77,8 +66,7 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
 
     @staticmethod
     def get_shelf_from_path(
-        path: str, known_shelves: List[str]
-    ) -> Tuple[Optional[str], bool]:
+            path: str, known_shelves: List[str], ) -> Tuple[Optional[str], bool]:
         """
         Extract the shelf name from a file path.
 
@@ -102,18 +90,14 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
 
             potential_shelf = relative_parts[0]
             is_likely, reason = ShelfManager.is_likely_shelf_name(
-                potential_shelf, known_shelves
-            )
+                potential_shelf, known_shelves, )
             if is_likely:
                 log.debug("Confirmed shelf '%s' from path.", potential_shelf)
                 return potential_shelf, True
 
             log.warning(
                 "Folder '%s' is not a likely shelf (%s). "
-                "If this is a shelf, add it in settings.",
-                potential_shelf,
-                reason,
-            )
+                "If this is a shelf, add it in settings.", potential_shelf, reason, )
             return None, False
 
         except (KeyError, ValueError, OSError) as e:
@@ -156,15 +140,15 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
         return True, None
 
     @staticmethod
-    def get_existing_dirs() -> list[str]:
+    def get_shelf_dirs() -> set[str]:
         """
 
         :return:
         """
-        music_dir_str = config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]
+        music_dir_str = config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]  # type: ignore[index]
         music_dir = Path(music_dir_str)
 
-        shelves_found = [entry.name for entry in music_dir.iterdir() if entry.is_dir()]
+        shelves_found = {entry.name for entry in music_dir.iterdir() if entry.is_dir()}
         return shelves_found
 
     @staticmethod
@@ -178,8 +162,8 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
         if not shelf_name or not shelf_name.strip():
             return
 
-        shelves = ShelfUtils.get_configured_shelves()
+        shelves = ShelfUtils.validate_shelf_names()
         if shelf_name not in shelves:
             shelves.append(shelf_name)
             config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = sorted(shelves)  # type: ignore[index]
-            log.debug("Added shelf '%s' to known shelves", shelf_name)
+            log.debug("Added shelf '%s' to known shelf_names", shelf_name)

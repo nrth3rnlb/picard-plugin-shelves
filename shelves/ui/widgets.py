@@ -43,11 +43,7 @@ class MaxItemsDropListWidget(QtWidgets.QListWidget):
             return
 
         log.debug(
-            "already available: %s, to add: %s, maximum: %s",
-            self.count(),
-            len(selected_items),
-            self._max_item_count,
-        )
+            "already available: %s, to add: %s, maximum: %s", self.count(), len(selected_items), self._max_item_count, )
         if self.count() + len(selected_items) > self._max_item_count:
             event.ignore()
             return
@@ -62,6 +58,4 @@ class MaxItemsDropListWidget(QtWidgets.QListWidget):
     def _update_drop_acceptance(self) -> None:
         # 0 means "unlimited"
         self.setAcceptDrops(
-            self._max_item_count <= self.UNLIMITED
-            or self.count() <= self._max_item_count
-        )
+            self._max_item_count <= self.UNLIMITED or self.count() <= self._max_item_count, )

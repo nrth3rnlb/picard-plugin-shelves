@@ -50,8 +50,7 @@ class ShelfManager:
 
     @classmethod
     def vote_for_shelf(
-        cls, album_id: str, shelf: str, weight: float = 0.0, reason: str = None
-    ) -> None:
+            cls, album_id: str, shelf: str, weight: float = 0.0, reason: str = None, ) -> None:
         """
 
         :param album_id:
@@ -84,16 +83,12 @@ class ShelfManager:
 
         # Weighted for the real decision
         cls._instance._votes.setdefault(album_id, []).append(
-            (shelf, float(weight), str(reason or ""))
-        )
+            (shelf, float(weight), str(reason or "")), )
 
         if log_data:
             log.warning(
-                "Album %s has files from different shelves. Votes: %s. Use: '%s'",
-                log_data[0],
-                log_data[1],
-                log_data[2],
-            )
+                "Album %s has files from different shelf_names. Votes: %s. Use: '%s'", log_data[0], log_data[1],
+                log_data[2], )
 
     # def vote_for_shelf(cls, album_id: str, shelf_name: str) -> None:
     #     if not shelf_name or not shelf_name.strip():
@@ -111,7 +106,7 @@ class ShelfManager:
     #     if len(cls._shelf_votes[album_id]) > 1:
     #         all_votes = cls._shelf_votes[album_id].most_common()
     #         log.warning(
-    #             "%s: Album %s has files from different shelves. Votes: %s. Using: '%s'",
+    #             "%s: Album %s has files from different shelf_names. Votes: %s. Using: '%s'",
     #             cls.plugin_name,
     #             album_id,
     #             dict(all_votes),
@@ -133,10 +128,7 @@ class ShelfManager:
     def _get_manual_override(cls, album_id: str) -> Optional[str]:
         # pylint: disable=protected-access
         st = cls._instance._state.get(album_id, {})
-        if (
-            st.get("shelf_locked")
-            or st.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL
-        ):
+        if (st.get("shelf_locked") or st.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL):
             return st.get("shelf")
         return None
 
@@ -176,9 +168,7 @@ class ShelfManager:
             shelf_name = cls._instance._shelves_by_album.get(album_id)
             if shelf_name is None:
                 log.warning(
-                    "Shelf for album %s could not be determined with certainty.",
-                    album_id,
-                )
+                    "Shelf for album %s could not be determined with certainty.", album_id, )
             return shelf_name, ShelfConstants.SHELF_SOURCE_FALLBACK
 
     @classmethod
@@ -194,8 +184,7 @@ class ShelfManager:
 
     @staticmethod
     def is_likely_shelf_name(
-        name: str, known_shelves: List[str]
-    ) -> Tuple[bool, Optional[str]]:
+            name: str, known_shelves: List[str], ) -> Tuple[bool, Optional[str]]:
         """
 
         :param name:
@@ -214,8 +203,7 @@ class ShelfManager:
         # Contains ` - ` (typical for "Artist - Album")
         if " - " in name:
             suspicious_reasons.append(
-                "contains ' - ' (typical for 'Artist - Album' format)"
-            )
+                "contains ' - ' (typical for 'Artist - Album' format)", )
 
         # Too long
         if len(name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
@@ -237,12 +225,11 @@ class ShelfManager:
 
     @classmethod
     def set_album_shelf(
-        cls,
-        album_id: str,
-        shelf: str,
-        source: str = ShelfConstants.SHELF_SOURCE_MANUAL,
-        lock: Optional[bool] = None,
-    ) -> Optional[str]:
+            cls,
+            album_id: str,
+            shelf: str,
+            source: str = ShelfConstants.SHELF_SOURCE_MANUAL,
+            lock: Optional[bool] = None, ) -> Optional[str]:
         """
 
         :param album_id:
@@ -267,11 +254,7 @@ class ShelfManager:
         if source == ShelfConstants.SHELF_SOURCE_MANUAL:
             # Register dominant decision (∞ weight)
             cls.vote_for_shelf(
-                album_id=album_id,
-                shelf=shelf,
-                weight=float("inf"),
-                reason="manual override",
-            )
+                album_id=album_id, shelf=shelf, weight=float("inf"), reason="manual override", )
 
         return shelf
 

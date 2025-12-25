@@ -11,8 +11,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from picard.file import (
-    register_file_post_addition_to_track_processor,
-    register_file_post_load_processor,
+    register_file_post_addition_to_track_processor, register_file_post_load_processor,
     register_file_post_removal_from_track_processor,
 )
 from picard.metadata import register_track_metadata_processor
@@ -21,8 +20,7 @@ from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
 from .actions import (
-    DetermineShelfAction as _DetermineShelfActionBase,
-    ResetShelfAction as _ResetShelfActionBase,
+    DetermineShelfAction as _DetermineShelfActionBase, ResetShelfAction as _ResetShelfActionBase,
     SetShelfAction as _SetShelfActionBase,
 )
 from .processors import ShelfProcessors
@@ -33,9 +31,11 @@ from .ui.options import OptionsPage as _ShelvesOptionsPageBase
 PLUGIN_NAME = "Shelves"
 PLUGIN_AUTHOR = "nrth3rnlb"
 PLUGIN_DESCRIPTION = """
-The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing you to organise your music files by top-level folders (shelves) in your music library.
+The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing you to organise your music files 
+by top-level folders (shelves) in your music library.
 
-Think of your music library as a physical library with different shelves — one for your standard collection, one for incoming/unprocessed music, one for Christmas music, etc.
+Think of your music library as a physical library with different shelves — one for your standard collection, 
+one for incoming/unprocessed music, one for Christmas music, etc.
 
 ## Features
 
@@ -56,33 +56,29 @@ PLUGIN_LICENSE_URL = "https://www.gnu.org/licenses/gpl-2.0.html"
 class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the OptionsPage to ensure proper plugin registration."""
 
-    # def __init__(self, parent=None) -> None:
-    #     """Initialize with the global shelf_manager _instance."""
-    #     # super().__init__(parent)
+    # def __init__(self, parent=None) -> None:  #     """Initialize with the global shelf_manager _instance."""  #
+    # super().__init__(parent)
 
 
 class SetShelfAction(_SetShelfActionBase):
     """Wrapper class for SetShelfAction to ensure proper plugin registration."""
 
-    # def __init__(self) -> None:
-    #     """Initialize with the global shelf_manager _instance."""
-    #     super().__init__()
+    # def __init__(self) -> None:  #     """Initialize with the global shelf_manager _instance."""  #     super(
+    # ).__init__()
 
 
 class DetermineShelfAction(_DetermineShelfActionBase):
     """Wrapper class for DetermineShelfAction to ensure proper plugin registration."""
 
-    # def __init__(self) -> None:
-    #     """Initialize with the global shelf_manager _instance."""
-    #     super().__init__()
+    # def __init__(self) -> None:  #     """Initialize with the global shelf_manager _instance."""  #     super(
+    # ).__init__()
 
 
 class ResetShelfAction(_ResetShelfActionBase):
     """Wrapper class for ResetShelfAction to ensure proper plugin registration."""
 
-    # def __init__(self) -> None:
-    #     """Initialize with the global shelf_manager _instance."""
-    #     super().__init__()
+    # def __init__(self) -> None:  #     """Initialize with the global shelf_manager _instance."""  #     super(
+    # ).__init__()
 
 
 shelf_processors = ShelfProcessors()
@@ -111,8 +107,7 @@ def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
 
 
 def _set_shelf_in_metadata_wrapper(
-    album: Any, metadata: Dict[str, Any], track: Any, release: Any
-) -> None:
+        album: Any, metadata: Dict[str, Any], track: Any, release: Any, ) -> None:
     """Wrapper for set_shelf_in_metadata."""
     shelf_processors.set_shelf_in_metadata(album, metadata, track, release)
 

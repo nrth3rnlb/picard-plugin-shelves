@@ -5,7 +5,7 @@ Tests for the utility functions.
 """
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from shelves.constants import ShelfConstants
 from shelves.manager import ShelfManager
@@ -33,21 +33,19 @@ class UtilsTest(unittest.TestCase):
         }
 
     @patch("shelves.utils.ShelfUtils.validate_shelf_name", new_callable=MagicMock)
-    @patch("shelves.utils.config", new_callable=MagicMock)
-    def test_get_configured_shelves_filters_and_sorts(self, mock_config, mock_validate):
+    def test_get_configured_shelves_filters_and_sorts(self, mock_validate):
         # Arrange: config contains duplicates, a non-string and one invalid entry
-        mock_config.setting = {
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: [
-                "beta",
-                "alpha",
-                "alpha",
-                42,
-                "gamma",
-            ]
+        shelf_names = {
+            "beta",
+            "alpha",
+            "alpha",
+            42,
+            "gamma",
         }
 
         # validate_shelf_name: accept "alpha" and "beta", reject "gamma"
         def validate_side_effect(name):
+            """Mock validate_shelf_name"""
             if name in ("alpha", "beta"):
                 return True, None
             return False, "invalid"
@@ -55,10 +53,10 @@ class UtilsTest(unittest.TestCase):
         mock_validate.side_effect = validate_side_effect
 
         # Act
-        result = ShelfUtils.get_configured_shelves()
+        result = ShelfUtils.validate_shelf_names(shelf_names)
 
         # Assert: duplicates removed, sorted, non-strings ignored, invalid excluded
-        self.assertEqual(result, ["alpha", "beta"])
+        self.assertSetEqual(result, {"alpha", "beta"})
 
 
 class UtilsValidationTest(unittest.TestCase):

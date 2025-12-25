@@ -12,7 +12,7 @@ from shelves.constants import ShelfConstants
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.__dict__ = self
 
 
@@ -64,7 +64,7 @@ class SetShelfActionTest(unittest.TestCase):
         self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
 
     @patch("shelves.utils.ShelfUtils.validate_shelf_name", new_callable=MagicMock)
-    @patch("shelves.utils.ShelfUtils.get_configured_shelves", new_callable=MagicMock)
+    @patch("shelves.utils.ShelfUtils.validate_shelf_names", new_callable=MagicMock)
     @patch("shelves.actions.SetShelfDialog", new_callable=MagicMock)
     @patch("shelves.processors.config", new_callable=MagicMock)
     def test_callback(
@@ -107,7 +107,7 @@ class SetShelfDialogTest(unittest.TestCase):
             ),
         }
 
-    @patch("shelves.utils.ShelfUtils.get_configured_shelves", new_callable=MagicMock)
+    @patch("shelves.utils.ShelfUtils.validate_shelf_names", new_callable=MagicMock)
     @patch("shelves.processors.config", new_callable=MagicMock)
     def test_ask_for_shelf_name(self, mock_config, mock_get_configured_shelves):
         """Test the ask_for_shelf_name method"""
@@ -143,7 +143,7 @@ class DetermineShelfActionTest(unittest.TestCase):
         self.actions = DetermineShelfAction.__new__(DetermineShelfAction)
         self.actions.tagger = MagicMock()
 
-    @patch("shelves.utils.ShelfUtils.get_configured_shelves", new_callable=MagicMock)
+    @patch("shelves.utils.ShelfUtils.validate_shelf_names", new_callable=MagicMock)
     @patch("shelves.utils.ShelfUtils.get_shelf_from_path", new_callable=MagicMock)
     @patch("shelves.utils.ShelfUtils.add_known_shelf", new_callable=MagicMock)
     def test_callback(
@@ -174,7 +174,7 @@ class DetermineShelfActionTest(unittest.TestCase):
         self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "Standard")
         mock_add_known_shelf.assert_called_once_with("Standard")
 
-    @patch("shelves.utils.ShelfUtils.get_configured_shelves", new_callable=MagicMock)
+    @patch("shelves.utils.ShelfUtils.validate_shelf_names", new_callable=MagicMock)
     @patch("shelves.utils.ShelfUtils.get_shelf_from_path", new_callable=MagicMock)
     @patch("shelves.utils.ShelfUtils.add_known_shelf", new_callable=MagicMock)
     def test_determine_shelf_recursive(

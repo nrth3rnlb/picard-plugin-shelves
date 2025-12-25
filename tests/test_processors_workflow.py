@@ -35,7 +35,7 @@ class WorkflowTest(unittest.TestCase):
         """Test that an empty shelf value is never transitioned."""
         self.assertEqual(ShelfProcessors._apply_workflow_transition(""), "")
 
-    @patch("shelves.utils.ShelfUtils.get_configured_shelves")
+    @patch("shelves.utils.ShelfUtils.validate_shelf_names")
     @patch("shelves.processors.config", new_callable=MagicMock)
     def test_disabled_workflow_returns_same_shelf(
         self, mock_config, mock_get_configured_shelves
@@ -57,7 +57,7 @@ class WorkflowTest(unittest.TestCase):
             ShelfProcessors._apply_workflow_transition("Incoming"), "Incoming"
         )
 
-    @patch("shelves.utils.ShelfUtils.get_configured_shelves")
+    @patch("shelves.utils.ShelfUtils.validate_shelf_names")
     @patch("shelves.processors.config", new_callable=MagicMock)
     def test_stage1_match_transitions(
         self,

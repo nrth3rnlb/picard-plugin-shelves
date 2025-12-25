@@ -31,7 +31,7 @@ class SetShelfAction(BaseAction):
     def callback(self, objs: List[Any]) -> None:
         log.debug("SetShelfAction called with %d objects", len(objs))
 
-        known_shelves = ShelfUtils.get_configured_shelves()
+        known_shelves = ShelfUtils.validate_shelf_names()
 
         dialog = SetShelfDialog()
         shelf_name = dialog.ask_for_shelf_name(known_shelves)
@@ -41,10 +41,7 @@ class SetShelfAction(BaseAction):
         is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
         if not is_valid:
             QtWidgets.QMessageBox.warning(
-                self.tagger.window,
-                "Invalid Shelf Name",
-                f"Cannot use this shelf name: {message}",
-            )
+                self.tagger.window, "Invalid Shelf Name", f"Cannot use this shelf name: {message}", )
             return
 
         manual_shelf_tag = f"{shelf_name}{ShelfConstants.MANUAL_SHELF_SUFFIX}"
@@ -53,10 +50,7 @@ class SetShelfAction(BaseAction):
 
         ShelfUtils.add_known_shelf(shelf_name)
         log.info(
-            "Manually set shelf to '%s' for %d object(s)",
-            shelf_name,
-            len(objs),
-        )
+            "Manually set shelf to '%s' for %d object(s)", shelf_name, len(objs), )
 
     @staticmethod
     def _set_shelf_recursive(obj: Any, shelf_name: str, shelf_tag: str) -> None:
@@ -64,18 +58,11 @@ class SetShelfAction(BaseAction):
             album_id = obj.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
             if album_id:
                 ShelfManager.set_album_shelf(
-                    album_id,
-                    shelf_name,
-                    source=ShelfConstants.SHELF_SOURCE_MANUAL,
-                    lock=True,
-                )
+                    album_id, shelf_name, source=ShelfConstants.SHELF_SOURCE_MANUAL, lock=True, )
 
             obj.metadata[ShelfConstants.TAG_KEY] = shelf_tag
             log.debug(
-                "Set shelf tag '%s' on %s",
-                shelf_tag,
-                type(obj).__name__,
-            )
+                "Set shelf tag '%s' on %s", shelf_tag, type(obj).__name__, )
 
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
@@ -103,17 +90,11 @@ class ResetShelfAction(BaseAction):
                     # Clear tag in metadata
                     if ShelfConstants.TAG_KEY in metadata:
                         shelf_value = metadata.get(ShelfConstants.TAG_KEY, "")
-                        if (
-                            isinstance(shelf_value, str)
-                            and ShelfConstants.MANUAL_SHELF_SUFFIX in shelf_value
-                        ):
+                        if (isinstance(shelf_value, str) and ShelfConstants.MANUAL_SHELF_SUFFIX in shelf_value):
                             metadata[ShelfConstants.TAG_KEY] = shelf_value.replace(
-                                ShelfConstants.MANUAL_SHELF_SUFFIX, ""
-                            )
+                                ShelfConstants.MANUAL_SHELF_SUFFIX, "", )
                             log.debug(
-                                "Cleared manual flag for file %s",
-                                file.filename,
-                            )
+                                "Cleared manual flag for file %s", file.filename, )
 
         # # Re-run the determination logic
         # determine_action = DetermineShelfAction()
@@ -133,11 +114,9 @@ class SetShelfDialog(QDialog):
         uic.loadUi(ui_file, self)
 
         self.validation_label: Optional[QtWidgets.QLabel] = self.findChild(
-            QtWidgets.QLabel, LABEL_VALIDATION_NAME
-        )
+            QtWidgets.QLabel, LABEL_VALIDATION_NAME, )
         self.shelf_combo: Optional[QtWidgets.QComboBox] = self.findChild(
-            QtWidgets.QComboBox, COMBO_SHELF_NAME
-        )
+            QtWidgets.QComboBox, COMBO_SHELF_NAME, )
 
         if self.shelf_combo is not None:
             self.shelf_combo.currentTextChanged.connect(self._on_text_changed)
@@ -167,10 +146,7 @@ class SetShelfDialog(QDialog):
             if msg:
                 self.validation_label.setText(msg)
                 self.validation_label.setStyleSheet(
-                    "QLabel { color: red; }"
-                    if not valid
-                    else "QLabel { color: orange; }"
-                )
+                    "QLabel { color: red; }" if not valid else "QLabel { color: orange; }", )
             else:
                 self.validation_label.setText("")
 
@@ -187,23 +163,17 @@ class DetermineShelfAction(BaseAction):
             self._determine_shelf_recursive(obj)
 
         log.info(
-            "Determined shelf for %d object(s)",
-            len(objs),
-        )
+            "Determined shelf for %d object(s)", len(objs), )
 
     @staticmethod
     def _determine_shelf_recursive(obj: Any) -> None:
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
-                known_shelves = ShelfUtils.get_configured_shelves()
+                known_shelves = ShelfUtils.validate_shelf_names()
                 shelf_name, _ = ShelfUtils.get_shelf_from_path(
-                    path=file.filename, known_shelves=known_shelves
-                )
+                    path=file.filename, known_shelves=known_shelves, )
                 if shelf_name is not None:
                     file.metadata[ShelfConstants.TAG_KEY] = shelf_name
                     log.debug(
-                        "Determined shelf '%s' for file: %s",
-                        shelf_name,
-                        file.filename,
-                    )
+                        "Determined shelf '%s' for file: %s", shelf_name, file.filename, )
                     ShelfUtils.add_known_shelf(shelf_name)
