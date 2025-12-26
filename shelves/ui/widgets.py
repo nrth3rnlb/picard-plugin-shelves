@@ -1,7 +1,7 @@
 from typing import Optional
 
-from PyQt5 import QtCore, QtGui, QtWidgets
 from picard import log
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class MaxItemsDropListWidget(QtWidgets.QListWidget):
@@ -16,9 +16,21 @@ class MaxItemsDropListWidget(QtWidgets.QListWidget):
         self._update_drop_acceptance()
 
     def maximumItemCount(self) -> int:
+        """
+
+        :return:
+        :rtype:
+        """
         return self._max_item_count
 
     def setMaximumItemCount(self, count: int = UNLIMITED) -> None:
+        """
+
+        :param count:
+        :type count:
+        :return:
+        :rtype:
+        """
         normalized = max(0, int(count))
         if normalized == self._max_item_count:
             return
@@ -27,6 +39,13 @@ class MaxItemsDropListWidget(QtWidgets.QListWidget):
         self._update_drop_acceptance()
 
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
+        """
+
+        :param event:
+        :type event:
+        :return:
+        :rtype:
+        """
         if self._max_item_count <= self.UNLIMITED:
             super().dropEvent(event)
             return
@@ -43,7 +62,11 @@ class MaxItemsDropListWidget(QtWidgets.QListWidget):
             return
 
         log.debug(
-            "already available: %s, to add: %s, maximum: %s", self.count(), len(selected_items), self._max_item_count, )
+            "already available: %s, to add: %s, maximum: %s",
+            self.count(),
+            len(selected_items),
+            self._max_item_count,
+        )
         if self.count() + len(selected_items) > self._max_item_count:
             event.ignore()
             return
@@ -58,4 +81,6 @@ class MaxItemsDropListWidget(QtWidgets.QListWidget):
     def _update_drop_acceptance(self) -> None:
         # 0 means "unlimited"
         self.setAcceptDrops(
-            self._max_item_count <= self.UNLIMITED or self.count() <= self._max_item_count, )
+            self._max_item_count <= self.UNLIMITED
+            or self.count() <= self._max_item_count,
+        )

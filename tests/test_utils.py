@@ -16,7 +16,7 @@ class AttrDict(dict):
     """A dictionary that allows attribute-style access."""
 
     def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.__dict__ = self
 
 
@@ -65,7 +65,7 @@ class UtilsValidationTest(unittest.TestCase):
     """
 
     def test_validate_shelf_name_valid(self):
-        """Test valid shelf names."""
+        """Test valid shelf_name names."""
         is_valid, message = ShelfUtils.validate_shelf_name("Soundtracks")
         self.assertTrue(is_valid)
         self.assertIsNone(message)
@@ -135,7 +135,7 @@ class UtilsLikelyShelfTest(unittest.TestCase):
         self.known_shelves = ["Soundtracks", "Favorites"]
 
     def test_is_likely_known_shelf(self):
-        """A known shelf is always likely."""
+        """A known shelf_name is always likely."""
         is_likely, reason = ShelfManager.is_likely_shelf_name(
             "Soundtracks", self.known_shelves
         )

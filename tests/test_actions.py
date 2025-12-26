@@ -127,9 +127,7 @@ class SetShelfDialogTest(unittest.TestCase):
         self.dialog.validation_label = MagicMock()  # Mock the validation label
 
         # Act
-        result = self.dialog.ask_for_shelf_name(
-            known_shelves=self.config_setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]
-        )
+        result = self.dialog.ask_for_shelf_name()
 
         # Assert
         self.assertEqual(result, "NewShelf")
@@ -144,11 +142,9 @@ class DetermineShelfActionTest(unittest.TestCase):
         self.actions.tagger = MagicMock()
 
     @patch("shelves.utils.ShelfUtils.validate_shelf_names", new_callable=MagicMock)
-    @patch("shelves.utils.ShelfUtils.get_shelf_from_path", new_callable=MagicMock)
-    @patch("shelves.utils.ShelfUtils.add_known_shelf", new_callable=MagicMock)
+    @patch("shelves.utils.ShelfUtils.get_shelf_name_from_path", new_callable=MagicMock)
     def test_callback(
         self,
-        mock_add_known_shelf,
         mock_get_shelf_from_path,
         mock_get_configured_shelves,
     ):
@@ -172,14 +168,11 @@ class DetermineShelfActionTest(unittest.TestCase):
             path="test.mp3", known_shelves=["Incoming", "Standard"]
         )
         self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "Standard")
-        mock_add_known_shelf.assert_called_once_with("Standard")
 
     @patch("shelves.utils.ShelfUtils.validate_shelf_names", new_callable=MagicMock)
-    @patch("shelves.utils.ShelfUtils.get_shelf_from_path", new_callable=MagicMock)
-    @patch("shelves.utils.ShelfUtils.add_known_shelf", new_callable=MagicMock)
+    @patch("shelves.utils.ShelfUtils.get_shelf_name_from_path", new_callable=MagicMock)
     def test_determine_shelf_recursive(
         self,
-        mock_add_known_shelf,
         mock_get_shelf_from_path,
         mock_get_configured_shelves,
     ):
@@ -203,4 +196,3 @@ class DetermineShelfActionTest(unittest.TestCase):
             path="another_test.mp3", known_shelves=["Incoming", "Standard"]
         )
         self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "Incoming")
-        mock_add_known_shelf.assert_called_once_with("Incoming")

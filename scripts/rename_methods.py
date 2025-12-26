@@ -43,10 +43,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--root",
         default=".",
-        help="Root path to search (default: .). Set to your package dir to avoid scanning `scripts/`",
+        help="Root file_path_str to search (default: .). Set to your package dir to avoid scanning `scripts/`",
     )
     args = parser.parse_args()
 
     # Erst Vorschau: python `scripts/rename_methods.py`
-    # Zum Anwenden: python `scripts/rename_methods.py` --apply --root path/to/your/module
+    # Zum Anwenden: python `scripts/rename_methods.py` --apply --root file_path_str/to/your/module
     run(dry_run=not args.apply, root=args.root)

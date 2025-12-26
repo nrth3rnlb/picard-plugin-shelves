@@ -13,7 +13,7 @@ class ShelfConstants:
     # noinspection SpellCheckingInspection
     MUSICBRAINZ_ALBUMID = "musicbrainz_albumid"
     # noinspection SpellCheckingInspection
-    TAG_KEY = "shelf"
+    TAG_KEY = "shelf_name"
 
     # Validation limits
     # TODO Make configurable
@@ -37,11 +37,11 @@ class ShelfConstants:
     SHELF_SOURCE_MANUAL = "manual"
     MANUAL_SHELF_SUFFIX = f"; {SHELF_SOURCE_MANUAL}"
     # Value determined by voting is used
-    SHELF_SOURCE_VOTES = "_votes"
+    SHELF_SOURCE_VOTES = "_shelf_votes"
     # If nothing else works, use the value in TAG_KEY
     SHELF_SOURCE_FALLBACK = "fallback"
 
-    RENAME_SNIPPET = """$set(_shelffolder,$shelf())
+    RENAME_SNIPPET = """$set(_shelffolder,$shelf_name())
 $set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
 
 %_shelffolder%
@@ -49,5 +49,7 @@ $if2(%albumartist%,%artist%)/%album%/%title%"""
 
 
 # Default configuration values
-DEFAULT_SHELVES = {ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: "",
-    ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: "", }
+DEFAULT_SHELVES = {
+    ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: "",
+    ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: "",
+}

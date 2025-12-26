@@ -27,7 +27,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         }
         self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
 
-    @patch("shelves.utils.ShelfUtils.get_shelf_from_path")
+    @patch("shelves.utils.ShelfUtils.get_shelf_name_from_path")
     @patch("shelves.utils.ShelfUtils.validate_shelf_names")
     @patch("shelves.processors.config")
     def test_manual_location_known_shelf_overrides_manual_tag(
@@ -37,8 +37,8 @@ class ProcessorPriorityTest(unittest.TestCase):
         mock_get_shelf_from_path,
     ):
         """
-        PRIORITY 1: A file that is manually moved to a known or possible shelf folder
-        must take over this shelf and ignores all previous manual markings.
+        PRIORITY 1: A file that is manually moved to a known or possible shelf_name folder
+        must take over this shelf_name and ignores all previous manual markings.
         """
         # Arrange
         mock_config.setting = self.config_setting
@@ -65,8 +65,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         # Assert
         self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], subdir_shelf)
 
-    @patch("shelves.utils.ShelfUtils.add_known_shelf")
-    @patch("shelves.utils.ShelfUtils.get_shelf_from_path")
+    @patch("shelves.utils.ShelfUtils.get_shelf_name_from_path")
     @patch("shelves.utils.ShelfUtils.validate_shelf_names")
     @patch("shelves.processors.config")
     def test_manual_location_unknown_shelf_overrides_manual_tag(
@@ -74,11 +73,10 @@ class ProcessorPriorityTest(unittest.TestCase):
         mock_config,
         mock_get_configured_shelves,
         mock_get_shelf_from_path,
-        _mock_add_known_shelf,
     ):
         """
-        PRIORITY 1: A file that is manually moved to a known or possible shelf folder
-        must take over this shelf and ignores all previous manual markings.
+        PRIORITY 1: A file that is manually moved to a known or possible shelf_name folder
+        must take over this shelf_name and ignores all previous manual markings.
         """
         # Arrange
         mock_config.setting = self.config_setting
@@ -106,7 +104,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         # Assert
         self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], unknown_shelf)
 
-    @patch("shelves.utils.ShelfUtils.get_shelf_from_path")
+    @patch("shelves.utils.ShelfUtils.get_shelf_name_from_path")
     @patch("shelves.utils.ShelfUtils.validate_shelf_names")
     @patch("shelves.processors.config")
     def test_manual_tag_overrides_workflow(
@@ -143,8 +141,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         )
 
     @patch("shelves.processors.ShelfProcessors._apply_workflow_transition")
-    @patch("shelves.utils.ShelfUtils.add_known_shelf")
-    @patch("shelves.utils.ShelfUtils.get_shelf_from_path")
+    @patch("shelves.utils.ShelfUtils.get_shelf_name_from_path")
     @patch("shelves.utils.ShelfUtils.validate_shelf_names")
     @patch("shelves.processors.config")
     def test_workflow_applies_by_default(
@@ -152,7 +149,6 @@ class ProcessorPriorityTest(unittest.TestCase):
         mock_config,
         mock_get_configured_shelves,
         mock_get_shelf_from_path,
-        _mock_add_known_shelf,
         mock_apply_workflow_transition,
     ):
         """

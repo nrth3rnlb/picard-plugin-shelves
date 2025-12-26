@@ -3,19 +3,20 @@ from typing import Optional
 
 class ShelfNotFoundException(Exception):
     """
-    Represents an exception raised when a specific shelf cannot be found in a given context.
+    Represents an exception raised when a specific shelf_name cannot be found in a given context.
 
-    This exception is used to indicate that an operation requiring access to or information about a shelf
-    has failed because the shelf does not exist. Ensure that the shelf name or identifier provided
-    corresponds to an existing shelf.
+    This exception is used to indicate that an operation requiring access to or information about a shelf_name
+    has failed because the shelf_name does not exist. Ensure that the shelf_name name or identifier provided
+    corresponds to an existing shelf_name.
     """
 
     def __init__(
-            self,
-            album_id: Optional[str] = None,
-            message: Optional[str] = None,
-            *,
-            cause: Optional[BaseException] = None, ) -> None:
+        self,
+        album_id: Optional[str] = None,
+        message: Optional[str] = None,
+        *,
+        cause: Optional[BaseException] = None,
+    ) -> None:
         if message is None:
             if album_id:
                 message = f"Shelf for album '{album_id}' not found."
@@ -32,4 +33,8 @@ class ShelfNotFoundException(Exception):
         return base
 
     def to_dict(self) -> dict:
-        return {"message": str(self), "album_id": self.album_id, "cause": repr(self.cause) if self.cause else None, }
+        return {
+            "message": str(self),
+            "album_id": self.album_id,
+            "cause": repr(self.cause) if self.cause else None,
+        }

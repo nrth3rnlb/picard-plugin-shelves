@@ -12,7 +12,7 @@ from shelves.manager import ShelfManager
 
 class ManagerTest(unittest.TestCase):
     """
-    Tests for the core _state management logic in ShelfManager.
+    Tests for the core _shelf_state management logic in ShelfManager.
     """
 
     def setUp(self):
@@ -40,7 +40,7 @@ class ManagerTest(unittest.TestCase):
         self.assertNotEqual(b.test_value, "foobar")
 
     def test_vote_for_shelf_increments_counter(self):
-        """Test that voting for a shelf increments its vote count."""
+        """Test that voting for a shelf_name increments its vote count."""
         ShelfManager.destroy()
         ShelfManager().vote_for_shelf(
             self.album_id, "ShelfA", weight=0.0, reason="test"
@@ -52,7 +52,7 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(ShelfManager()._shelf_votes[self.album_id]["ShelfA"], 2)
 
     def test_voting_determines_winner(self):
-        """Test that the shelf with the most _votes is set as the winner."""
+        """Test that the shelf_name with the most _shelf_votes is set as the winner."""
         ShelfManager.destroy()
         # pylint: disable=protected-access
         ShelfManager().vote_for_shelf(
@@ -84,10 +84,10 @@ class ManagerTest(unittest.TestCase):
 
         shelf, decision = ShelfManager().get_album_shelf(self.album_id)
         self.assertEqual(shelf, "ShelfB")
-        self.assertEqual(decision, "_votes")
+        self.assertEqual(decision, "_shelf_votes")
 
     def test_get_album_shelf_returns_none_for_unknown_album(self):
-        """Test that get_album_shelf returns None for an album with no _votes."""
+        """Test that get_album_shelf returns None for an album with no _shelf_votes."""
         ShelfManager.destroy()
         # pylint: disable=protected-access
         shelf, decision = ShelfManager().get_album_shelf("unknown_album_id")
@@ -101,12 +101,12 @@ class ManagerTest(unittest.TestCase):
             self.album_id, "ShelfA", weight=0.0, reason="test"
         )
 
-        # Verify _state exists
+        # Verify _shelf_state exists
         # pylint: disable=protected-access
         self.assertIn(self.album_id, ShelfManager()._shelf_votes)
         self.assertIn(self.album_id, ShelfManager()._shelves_by_album)
 
-        # Clear and verify _state is gone
+        # Clear and verify _shelf_state is gone
         ShelfManager.clear_album(self.album_id)
         # pylint: disable=protected-access
         self.assertNotIn(self.album_id, ShelfManager()._shelf_votes)

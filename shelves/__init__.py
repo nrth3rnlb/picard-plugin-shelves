@@ -3,7 +3,7 @@
 """
 Shelves Plugin for MusicBrainz Picard.
 
-This plugin adds virtual shelf management to MusicBrainz Picard,
+This plugin adds virtual shelf_name management to MusicBrainz Picard,
 allowing music files to be organized by top-level folders.
 """
 from __future__ import annotations
@@ -11,7 +11,8 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from picard.file import (
-    register_file_post_addition_to_track_processor, register_file_post_load_processor,
+    register_file_post_addition_to_track_processor,
+    register_file_post_load_processor,
     register_file_post_removal_from_track_processor,
 )
 from picard.metadata import register_track_metadata_processor
@@ -20,7 +21,12 @@ from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
 from .actions import (
-    DetermineShelfAction as _DetermineShelfActionBase, ResetShelfAction as _ResetShelfActionBase,
+    DetermineShelfAction as _DetermineShelfActionBase,
+)
+from .actions import (
+    ResetShelfAction as _ResetShelfActionBase,
+)
+from .actions import (
     SetShelfAction as _SetShelfActionBase,
 )
 from .processors import ShelfProcessors
@@ -31,20 +37,20 @@ from .ui.options import OptionsPage as _ShelvesOptionsPageBase
 PLUGIN_NAME = "Shelves"
 PLUGIN_AUTHOR = "nrth3rnlb"
 PLUGIN_DESCRIPTION = """
-The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing you to organise your music files 
+The **Shelves** plugin adds virtual shelf_name management to MusicBrainz Picard, allowing you to organise your music files
 by top-level folders (shelves) in your music library.
 
-Think of your music library as a physical library with different shelves — one for your standard collection, 
+Think of your music library as a physical library with different shelves — one for your standard collection,
 one for incoming/unprocessed music, one for Christmas music, etc.
 
 ## Features
 
-- **Automatic shelf detection** from file paths during scanning
+- **Automatic shelf_name detection** from file paths during scanning
 - **Smart detection** prevents artist/album names from being mistaken as shelves
-- **Manual shelf assignment** via context menu
+- **Manual shelf_name assignment** via context menu
 - **Shelf management** in plugin settings (add, remove, scan directory)
 - **Workflow automation** automatically moves files between shelves (e.g. "Incoming" > "Standard")
-- **Script function `$shelf()`** for file naming integration
+- **Script function `$shelf_name()`** for file naming integration
 - **Visual script preview** in settings shows your file naming snippet
 """
 PLUGIN_VERSION = "1.6.1"
@@ -107,7 +113,11 @@ def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
 
 
 def _set_shelf_in_metadata_wrapper(
-        album: Any, metadata: Dict[str, Any], track: Any, release: Any, ) -> None:
+    album: Any,
+    metadata: Dict[str, Any],
+    track: Any,
+    release: Any,
+) -> None:
     """Wrapper for set_shelf_in_metadata."""
     shelf_processors.set_shelf_in_metadata(album, metadata, track, release)
 
@@ -134,4 +144,4 @@ register_album_action(ResetShelfAction())
 register_options_page(ShelvesOptionsPage)
 
 # Register a script function for use in file naming
-register_script_function(function=func_shelf, name="shelf")
+register_script_function(function=func_shelf, name="shelf_name")
