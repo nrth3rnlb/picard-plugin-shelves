@@ -5,6 +5,7 @@ Tests for the utility functions.
 """
 
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from shelves.constants import ShelfConstants
@@ -23,13 +24,12 @@ class AttrDict(dict):
 class UtilsTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment"""
+        self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
         self.config_setting = {
             ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
             ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
             ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: sorted(
-                ["Incoming", "Standard", "Stash", "Live"]
-            ),
+            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: self.known_shelves,
         }
 
     @patch("shelves.utils.ShelfUtils.validate_shelf_name", new_callable=MagicMock)
@@ -57,6 +57,18 @@ class UtilsTest(unittest.TestCase):
 
         # Assert: duplicates removed, sorted, non-strings ignored, invalid excluded
         self.assertSetEqual(result, {"alpha", "beta"})
+
+    def test_get_shelf_name_from_path(self):
+        # Arrange
+        shelf_sub_dir = self.known_shelves[0]
+
+        # Act
+        shelf_name = ShelfUtils.get_shelf_name_from_path(
+            Path(f"/music/{shelf_sub_dir}/artist/album/track.mp3"), Path("/music")
+        )
+
+        # Assert
+        self.assertEqual(shelf_name, shelf_sub_dir)
 
 
 class UtilsValidationTest(unittest.TestCase):

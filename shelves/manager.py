@@ -31,21 +31,21 @@ class ShelfManager:
         if not hasattr(self, "_initialized"):
             self._initialized = True
             self._test_value = None
-            self.log_data = namedtuple("log_data", ["album_id", "votes", "winner"])
+            self._base_path: Path = None
 
             # Minimum in-memory state
             self._shelf_state: Dict[str, Dict[str, Any]] = defaultdict(dict)
-            self._shelf_votes: Dict[str, List[Tuple[str, float, str]]] = defaultdict(
-                list
+            self._shelf_votes_weighted: Dict[str, List[Tuple[str, float, str]]] = (
+                defaultdict(list)
             )
-            # self._shelf_votes: Dict[str, Counter] = {}
+            self._shelf_votes_counted: Dict[str, Counter] = {}
 
             self._shelves_by_album: Dict[str, str] = {}
 
             # Cache shelf_name names
             self._shelf_names: Set[str] = set()
 
-            self._base_path: str = ""
+            self.log_data: Optional[Tuple[str, Dict[str, int], str]] = None
 
     @property
     def shelf_names(self) -> Set[str]:
@@ -66,7 +66,7 @@ class ShelfManager:
 
         :return:
         """
-        return self._shelf_votes
+        return self._shelf_votes_weighted
 
     @property
     def test_value(self):
@@ -91,7 +91,7 @@ class ShelfManager:
         Get the base file_path_str.
         :return:
         """
-        return self.base_path
+        return self._base_path
 
     @base_path.setter
     def base_path(self, value: str):
@@ -100,8 +100,7 @@ class ShelfManager:
         :param value:
         :return:
         """
-        base_path_str = value
-        self._base_path = Path(base_path_str).resolve()
+        self._base_path = Path(value).resolve()
 
     @classmethod
     def destroy(cls):
@@ -127,33 +126,33 @@ class ShelfManager:
         :param reason:
         :return:
         """
-        if not shelf_name or not shelf_name.strip():
+        if not shelf_name:
             return
+
+        shelf_name = shelf_name.strip()
 
         # pylint: disable=protected-access
         with cls._lock:
-            # Weighted counting (counter can only use ints,
-            # therefore, additionally _shelf_votes for weights)
+            # Counter for majority decisions
+            if album_id not in cls._instance._shelf_votes_counted:
+                cls._instance._shelf_votes_counted[album_id] = Counter()
+            cls._instance._shelf_votes_counted[album_id][shelf_name] += 1
 
-            if album_id not in cls._instance._shelf_votes:
-                cls._instance._shelf_votes[album_id] = Counter()
+            winner = cls._instance._shelf_votes_counted[album_id].most_common(1)[0][0]
+            LogData = namedtuple("LogData", ["album_id", "votes", "winner"])
 
-            # For a quick "majority" view, we increase the count by 1
-            cls._instance._shelf_votes[album_id][shelf_name] += 1
-
-            winner = cls._instance._shelf_votes[album_id].most_common(1)[0][0]
-
-            if len(cls._instance._shelf_votes[album_id]) > 1:
-                all_votes = cls._instance._shelf_votes[album_id].most_common()
-                cls._instance.log_data = (album_id, dict(all_votes), winner)
+            if len(cls._instance._shelf_votes_counted[album_id]) > 1:
+                all_votes = cls._instance._shelf_votes_counted[album_id].most_common()
+                cls._instance.log_data = LogData(album_id, dict(all_votes), winner)
 
             cls._instance._shelves_by_album[album_id] = winner
 
-        # Weighted for the real decision
-        vote = cls._instance._shelf_votes.setdefault(album_id, [])
-        vote["shelf_name"] = shelf_name
-        vote["weight"] = weight
-        vote["reason"] = reason
+            # For weighted decisions
+            if not hasattr(cls._instance, "_shelf_votes_weighted"):
+                cls._instance._shelf_votes_weighted = defaultdict(list)
+            cls._instance._shelf_votes_weighted[album_id].append(
+                (shelf_name, weight, reason)
+            )
 
         if cls._instance.log_data:
             log.warning(
@@ -167,17 +166,17 @@ class ShelfManager:
     #     if not shelf_name or not shelf_name.strip():
     #         return
     #
-    #     if album_id not in cls._shelf_votes:
-    #         cls._shelf_votes[album_id] = Counter()
+    #     if album_id not in cls._shelf_votes_weighted:
+    #         cls._shelf_votes_weighted[album_id] = Counter()
     #
-    #     cls._shelf_votes[album_id][shelf_name] += 1
+    #     cls._shelf_votes_weighted[album_id][shelf_name] += 1
     #
-    #     # Get the shelf_name with most _shelf_votes
-    #     winner = cls._shelf_votes[album_id].most_common(1)[0][0]
+    #     # Get the shelf_name with most _shelf_votes_weighted
+    #     winner = cls._shelf_votes_weighted[album_id].most_common(1)[0][0]
     #
     #     # Check for conflicts
-    #     if len(cls._shelf_votes[album_id]) > 1:
-    #         all_votes = cls._shelf_votes[album_id].most_common()
+    #     if len(cls._shelf_votes_weighted[album_id]) > 1:
+    #         all_votes = cls._shelf_votes_weighted[album_id].most_common()
     #         log.warning(
     #             "%s: Album %s has files from different shelf_names. Votes: %s. Using: '%s'",
     #             cls.plugin_name,
@@ -223,7 +222,7 @@ class ShelfManager:
         """
         Read with priority:
         1. Manual _lock or `shelf_source=='manual'` => return the current value.
-        2. Otherwise, weighted winner from `_shelf_votes`.
+        2. Otherwise, weighted winner from `_shelf_votes_weighted`.
         3. Fallback to the last observed winner (`_shelves_by_album`).
 
         :param album_id:
@@ -236,7 +235,7 @@ class ShelfManager:
 
         # 2. Weighted decision
         # pylint: disable=protected-access
-        chosen = cls._winner(cls._instance._shelf_votes.get(album_id, []))
+        chosen = cls._winner(cls._instance._shelf_votes_weighted.get(album_id, []))
         if chosen:
             return chosen, ShelfConstants.SHELF_SOURCE_VOTES
 
@@ -261,7 +260,7 @@ class ShelfManager:
         """
         # pylint: disable=protected-access
         cls._instance._shelves_by_album.pop(album_id, None)
-        cls._instance._shelf_votes.pop(album_id, None)
+        cls._instance._shelf_votes_weighted.pop(album_id, None)
 
     @classmethod
     def is_likely_shelf_name(
@@ -312,14 +311,14 @@ class ShelfManager:
     def set_album_shelf(
         cls,
         album_id: str,
-        shelf: str,
+        shelf_name: str,
         source: str = ShelfConstants.SHELF_SOURCE_MANUAL,
         lock: Optional[bool] = None,
     ) -> Optional[str]:
         """
 
         :param album_id:
-        :param shelf:
+        :param shelf_name:
         :param source:
         :param lock:
         :return:
@@ -333,7 +332,7 @@ class ShelfManager:
         if state.get("shelf_locked") and source != ShelfConstants.SHELF_SOURCE_MANUAL:
             return state.get("shelf_name")
 
-        state["shelf_name"] = shelf
+        state["shelf_name"] = shelf_name
         state["shelf_source"] = source
         state["shelf_locked"] = bool(lock)
 
@@ -341,12 +340,12 @@ class ShelfManager:
             # Register dominant decision (∞ weight)
             cls.vote_for_shelf(
                 album_id=album_id,
-                shelf_name=shelf,
+                shelf_name=shelf_name,
                 weight=float("inf"),
                 reason="manual override",
             )
 
-        return shelf
+        return shelf_name
 
     @classmethod
     def clear_manual_override(cls, album_id: str) -> None:

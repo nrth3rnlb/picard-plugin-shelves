@@ -69,9 +69,7 @@ class SetShelfAction(BaseAction):
             album_id = obj.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
             if album_id:
                 ShelfManager.set_album_shelf(
-                    album_id=album_id,
-                    shelf=shelf_name,
-                    lock=True,
+                    album_id=album_id, shelf_name=shelf_name, lock=True
                 )
 
             obj.metadata[ShelfConstants.TAG_KEY] = shelf_tag

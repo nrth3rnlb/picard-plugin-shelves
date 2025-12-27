@@ -7,6 +7,7 @@ File processors for loading and saving shelf_name information.
 from __future__ import annotations
 
 import traceback
+from os import name
 from typing import Any, Dict, Optional
 
 from picard import config, log
@@ -98,85 +99,82 @@ class ShelfProcessors:
         """
         Process a file after it has been added to a track, with a destroy priority model.
         """
+        shelf_name: Optional[str] = None
+
         try:
             file_meta = getattr(file, "metadata", None)
-            if file_meta is None:
+            if not file_meta:
+                return
+            album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+            if not album_id:
                 return
 
-            shelf_name: Optional[str]
-            shelf_tag: Optional[str]
-            shelf_from_path: Optional[str]
-            was_explicitly_found: bool
-            shelf_from_path, was_explicitly_found = ShelfUtils.get_shelf_name_from_path(
-                file_path_str=file.filename
+            name_from_path = ShelfUtils.get_shelf_name_from_path(
+                file_path=file, base_path=ShelfManager().base_path
+            )
+            name_from_tag = file_meta.get(ShelfConstants.TAG_KEY, "")
+
+            is_known_name_from_path = (
+                name_from_path and name_from_path in ShelfManager().shelf_names
+            )
+            is_known_name_from_tag_and_manual = (
+                name_from_tag
+                and name_from_tag in ShelfManager().shelf_names
+                and ShelfConstants.MANUAL_SHELF_SUFFIX in name_from_tag
+            )
+            is_known_name_from_tag = (
+                name_from_tag and name_from_tag in ShelfManager().shelf_names
+            )
+            is_unknown_name_from_tag = (
+                name_from_tag and name_from_tag not in ShelfManager().shelf_names
+            )
+            is_unknown_name_from_path = (
+                name_from_path is not None
+                and name_from_path not in ShelfManager().shelf_names
             )
 
-            shelf_from_tag = file_meta.get(ShelfConstants.TAG_KEY, "")
-            is_manual_shelf = (
-                isinstance(shelf_from_tag, str)
-                and ShelfConstants.MANUAL_SHELF_SUFFIX in shelf_from_tag
-            )
+            priority_1 = is_known_name_from_path
+            priority_2 = is_known_name_from_tag_and_manual
+            priority_3 = is_known_name_from_tag
+            priority_4 = is_unknown_name_from_tag
+            priority_5 = is_unknown_name_from_path
 
-            # PRIORITY 1: Physical location
-            if shelf_from_path and was_explicitly_found:
-                shelf_name = shelf_from_path
-                shelf_tag = shelf_name
-                log.debug(
-                    "Priority 1: Physical location in specific shelf_name '%s' wins.",
-                    shelf_name,
-                )
-
-            # PRIORITY 2: Persistent manual tag
-            elif is_manual_shelf:
-                shelf_name = ShelfUtils.get_shelf_name_from_tag(shelf_from_tag)
-                shelf_tag = shelf_from_tag
-                log.debug(
-                    "Priority 2: Persisted manual tag '%s' wins.",
-                    shelf_tag,
-                )
-
-            # PRIORITY 3: Standard logic
-            else:
-                shelf_name = ShelfProcessors._apply_workflow_transition(shelf_from_path)
-                shelf_tag = shelf_name
-                log.debug(
-                    "Priority 3: Default logic. Path shelf_name '%s', final shelf_name '%s'.",
-                    shelf_from_path,
-                    shelf_name,
-                )
+            if priority_1:
+                shelf_name = name_from_path
+            elif priority_2:
+                shelf_name = name_from_tag
+            elif priority_3:
+                shelf_name = name_from_tag
+            elif priority_4 or priority_5:
+                shelf_name = name_from_path
 
             # Set metadata and update manager _shelf_state
-            if shelf_name:
+            if shelf_name is not None:
+                shelf_name = ShelfProcessors._apply_workflow_transition(shelf_name)
                 ShelfProcessors._set_metadata(
                     file,
                     ShelfConstants.TAG_KEY,
-                    shelf_tag,
+                    shelf_name,
                     "file",
                 )
                 if track:
                     ShelfProcessors._set_metadata(
                         track,
                         ShelfConstants.TAG_KEY,
-                        shelf_tag,
+                        shelf_name,
                         "track",
                     )
 
-                album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
-                if album_id:
-                    # If the decision was based on a physical or persisted manual tag, _lock it in.
-                    if was_explicitly_found or is_manual_shelf:
-                        ShelfManager().set_album_shelf(
-                            album_id=album_id,
-                            shelf=shelf_name,
-                            lock=True,
-                        )
-                    else:
-                        ShelfManager().vote_for_shelf(
-                            album_id=album_id,
-                            shelf_name=shelf_name,
-                        )
+                # If the decision was based on a physical or persisted manual tag, lock it in.
+                if priority_1 or priority_2 or priority_3:
+                    ShelfManager().set_album_shelf(
+                        album_id=album_id, shelf_name=shelf_name, lock=True
+                    )
 
-                log.debug("Final shelf_name for %s is '%s'", file.filename, shelf_name)
+                ShelfManager().vote_for_shelf(
+                    album_id=album_id,
+                    shelf_name=shelf_name,
+                )
 
         except (KeyError, AttributeError, ValueError) as e:
             log.error("Error in file processor: %s", e)

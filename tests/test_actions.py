@@ -163,10 +163,7 @@ class DetermineShelfActionTest(unittest.TestCase):
         self.actions.callback([obj])
 
         # Assert
-        mock_get_configured_shelves.assert_called_once()
-        mock_get_shelf_from_path.assert_called_once_with(
-            path="test.mp3", known_shelves=["Incoming", "Standard"]
-        )
+        mock_get_shelf_from_path.assert_called_once_with(file_path_str="test.mp3")
         self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "Standard")
 
     @patch("shelves.utils.ShelfUtils.validate_shelf_names", new_callable=MagicMock)
@@ -191,8 +188,7 @@ class DetermineShelfActionTest(unittest.TestCase):
         DetermineShelfAction._determine_shelf_recursive(obj)
 
         # Assert
-        mock_get_configured_shelves.assert_called_once()
         mock_get_shelf_from_path.assert_called_once_with(
-            path="another_test.mp3", known_shelves=["Incoming", "Standard"]
+            file_path_str="another_test.mp3"
         )
         self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "Incoming")

@@ -37,7 +37,7 @@ class ShelfConstants:
     SHELF_SOURCE_MANUAL = "manual"
     MANUAL_SHELF_SUFFIX = f"; {SHELF_SOURCE_MANUAL}"
     # Value determined by voting is used
-    SHELF_SOURCE_VOTES = "_shelf_votes"
+    SHELF_SOURCE_VOTES = "_shelf_votes_weighted"
     # If nothing else works, use the value in TAG_KEY
     SHELF_SOURCE_FALLBACK = "fallback"
 

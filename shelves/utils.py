@@ -12,7 +12,6 @@ from typing import Optional, Tuple
 from picard import log
 
 from .constants import ShelfConstants
-from .manager import ShelfManager
 
 
 class ShelfUtils:
@@ -65,53 +64,34 @@ class ShelfUtils:
         return tag
 
     @staticmethod
-    def get_shelf_name_from_path(file_path_str: str) -> Tuple[Optional[str], bool]:
+    def get_shelf_name_from_path(file_path: Path, base_path: Path) -> Optional[str]:
         """
-        Extract the shelf_name name from a file path.
-
-        :rtype: Tuple[Optional[str], bool]
-        :param file_path_str:
+        Extract the shelf_name name from a file_path_str.
+        :param file_path:
+        :param base_path:
         :return:
         """
-        try:
-            base_path: Path = ShelfManager().base_path
-            file_path: Path = Path(file_path_str).resolve()
 
+        try:
             if not file_path.is_relative_to(base_path):
-                log.debug("Path '%s' is not under base directory.", file_path_str)
-                return None, False
+                log.debug("Path '%s' is not under base directory.", file_path)
+                return None
 
             relative_parts = file_path.relative_to(base_path).parts
             if not relative_parts or len(relative_parts) <= 1:
                 log.debug("File is directly in base directory.")
-                return None, False
+                return None
 
             potential_shelf = relative_parts[0]
-            is_likely, reason = ShelfManager.is_likely_shelf_name(
-                potential_shelf,
-                ShelfManager().shelf_names,
-            )
-            if is_likely:
-                log.debug(
-                    "Confirmed shelf_name '%s' from file_path_str.", potential_shelf
-                )
-                return potential_shelf, True
-
-            log.warning(
-                "Folder '%s' is not a likely shelf_name (%s). "
-                "If this is a shelf_name, add it in settings.",
-                potential_shelf,
-                reason,
-            )
-            return None, False
+            return potential_shelf
 
         except (KeyError, ValueError, OSError) as e:
             log.error(
                 "Error extracting shelf_name from file_path_str '%s': %s.",
-                file_path_str,
+                file_path,
                 e,
             )
-            return None, False
+            return None
 
     @staticmethod
     def validate_shelf_name(name: str) -> Tuple[bool, Optional[str]]:
@@ -149,12 +129,10 @@ class ShelfUtils:
         return True, None
 
     @staticmethod
-    def get_shelf_dirs() -> set[str]:
+    def get_shelf_dirs(base_dir: Path) -> set[str]:
         """
 
         :return:
         """
-        base_dir = Path(ShelfManager().base_path)
-
         shelves_found = {entry.name for entry in base_dir.iterdir() if entry.is_dir()}
         return shelves_found

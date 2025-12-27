@@ -454,8 +454,14 @@ class OptionsPage(PicardOptions):
             self.plugin_configuration.currentIndex()
         )
 
+        known_shelves = []
+        for i in range(self.shelf_management_shelves.count()):
+            element = self.shelf_management_shelves.item(i)
+            if element is not None:
+                known_shelves.append(element.text())
+
         config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = (  # type: ignore[index]
-            list(ShelfManager().shelf_names)
+            known_shelves
         )
 
         shelves_stage_1 = []
