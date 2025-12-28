@@ -7,7 +7,7 @@ Utility functions for managing shelf_names.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Set, Tuple
 
 from picard import log
 
@@ -94,9 +94,9 @@ class ShelfUtils:
             return None
 
     @staticmethod
-    def validate_shelf_name(name: str) -> Tuple[bool, Optional[str]]:
+    def validate_shelf_name(name: str) -> Tuple[bool, str]:
         """
-        Validate a shelf_name name.
+        Validate a shelf name.
 
         :param name:
         :return:
@@ -105,34 +105,56 @@ class ShelfUtils:
             return False, "Shelf name cannot be empty"
 
         trimmed = name.strip()
+        hr = ", ".join(set(ShelfConstants.INVALID_PATH_CHARS))
 
-        if trimmed in {".", ".."}:
-            return False, "Cannot use '.' or '..'"
+        if trimmed in ShelfConstants.INVALID_PATH_CHARS:
+            return (
+                False,
+                f"Can not use {trimmed} as shelf name. Also invalid are: {hr}",
+            )
 
-        bad = [ch for ch in trimmed if ch in ShelfConstants.INVALID_PATH_CHARS]
-        if bad:
-            return False, f"Contains invalid characters: {', '.join(sorted(set(bad)))}"
+        bad_chars = [
+            char for char in trimmed if char in ShelfConstants.INVALID_PATH_CHARS
+        ]
+        if bad_chars:
+            return (
+                False,
+                f"Contains invalid characters: {', '.join(set(bad_chars))}. Also invalid are: {hr}",
+            )
 
         if len(trimmed) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
-            return False, "Shelf name too long"
+            return (
+                False,
+                f"Shelf name too long. Maximum allowed is {ShelfConstants.MAX_SHELF_NAME_LENGTH}",
+            )
 
         if len(trimmed.split()) > ShelfConstants.MAX_WORD_COUNT:
-            return False, "Shelf name has too many words"
+            return (
+                False,
+                f"Shelf name has too many words. Maximum allowed is {ShelfConstants.MAX_WORD_COUNT}",
+            )
 
         lower = trimmed.lower()
         if any(token.lower() in lower for token in ShelfConstants.ALBUM_INDICATORS):
-            return False, "Name contains album indicator(s)"
+            return (
+                False,
+                f"Name contains album indicator(s): {', '.join(ShelfConstants.ALBUM_INDICATORS)}",
+            )
 
-        if trimmed.startswith(".") or trimmed.endswith("."):
-            return True, "Shelf name may cause issues due to leading/trailing dot"
-
-        return True, None
+        return True, "Valid shelf name"
 
     @staticmethod
-    def get_shelf_dirs(base_path: Path) -> set[str]:
+    def get_shelf_dirs(base_path: Path) -> Set[str]:
         """
 
         :return:
         """
-        shelves_found = {entry.name for entry in base_path.iterdir() if entry.is_dir()}
-        return shelves_found
+        shelf_sub_dirs: Set[str] = set()
+        try:
+            shelf_sub_dirs: Set[str] = set(
+                entry.name for entry in base_path.iterdir() if entry.is_dir()
+            )
+
+        except (OSError, PermissionError) as e:
+            log.error("Error scanning directory: %s", e)
+        return shelf_sub_dirs

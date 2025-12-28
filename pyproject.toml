@@ -10,23 +10,15 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "PyQt5>=5.15.0",
-    "PyYAML>=6.0",
-    "fasteners~=0.14",
-    "Markdown~=3.2",
-    "mutagen~=1.37",
-    "PyJWT~=2.0",
-    "python-dateutil~=2.7",
-    "python_libdiscid~=2.0",
+    "black>=25.12.0",
+    "picard>=2.13.3",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "aiohttp==3.13.2",
     "black==25.12.0",
     "mypy>=1.11",
     "picard==2.13.3",
-    "pylint>=3.0",
     "pylint>=3.0",
     "python-semantic-release>=7.23.3",
     "ruff>=0.14.10",

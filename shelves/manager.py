@@ -58,6 +58,13 @@ class ShelfManager:
 
     @shelf_names.setter
     def shelf_names(self, value: Set[str]):
+        """
+        Set the list of shelf_name names.
+        :param value:
+        :type value:
+        :return:
+        :rtype:
+        """
         self._shelf_names = value
 
     @property

@@ -19,7 +19,9 @@ class ShelfConstants:
     # TODO Make configurable
     MAX_SHELF_NAME_LENGTH = 30
     MAX_WORD_COUNT = 3
-    INVALID_PATH_CHARS = frozenset(["<", ">", "|", ":", "*", "?", '"', "/", "\\", "'"])
+    INVALID_PATH_CHARS = frozenset(
+        ["<", ">", "|", ":", "*", "?", '"', "/", "\\", "'", ".", ".."]
+    )
     ALBUM_INDICATORS = frozenset(["Vol.", "Volume", "Disc", "CD", "Part"])
 
     # Config keys

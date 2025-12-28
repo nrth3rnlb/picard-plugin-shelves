@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Optional
+from typing import Optional, Set
 
 from picard import config, log
 from picard.config import BoolOption, IntOption, ListOption, Option, TextOption
@@ -103,7 +103,7 @@ class OptionsPage(PicardOptions):
         ui_dir = os.path.join(os.path.dirname(__file__), "")
         sys.path.insert(0, str(ui_dir))
 
-        ui_file = os.path.join(os.path.dirname(__file__), "", "shelves.ui")
+        ui_file = os.path.join(os.path.dirname(__file__), "", "options.ui")
         uic.loadUi(ui_file, self)
 
         # Shelf Management
@@ -113,7 +113,7 @@ class OptionsPage(PicardOptions):
         self.add_shelf_button.clicked.connect(self._add_shelf)
         self.remove_shelf_button.clicked.connect(self._remove_shelf)
         self.remove_unknown_shelves_button.clicked.connect(self._remove_unknown_shelves)
-        self.scan_for_shelves_button.clicked.connect(self._scan_for_shelves)
+        self.scan_for_shelves_button.clicked.connect(OptionsPage._scan_for_shelves)
         self.shelf_management_shelves.itemSelectionChanged.connect(
             self._on_shelf_list_selection_changed,
         )
@@ -212,7 +212,7 @@ class OptionsPage(PicardOptions):
         :return:
         """
         log.debug("Rebuilding shelf_names for stages")
-        possible_shelves_stage_2 = ShelfManager().shelf_names
+        possible_shelves_stage_2 = self.shelf_names
         possible_shelves_stage_1 = self._build_workflow_stage_2(
             possible_shelves_stage_2,
         )
@@ -273,11 +273,11 @@ class OptionsPage(PicardOptions):
         return selected_shelves_stage_2
 
     def _add_shelf(self) -> None:
-        """Add a new shelf_name."""
+        """Add a new shelf name."""
         shelf_name, ok = QtWidgets.QInputDialog.getText(
             self,
             "Add Shelf",
-            "Enter shelf_name name:",
+            "Enter shelf name name:",
         )
         if not ok or not shelf_name:
             return
@@ -285,7 +285,6 @@ class OptionsPage(PicardOptions):
         shelf_name = shelf_name.strip()
         is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
         if not is_valid:
-            # Stelle sicher, dass `text` ein `str` ist (kein `None`)
             QtWidgets.QMessageBox.warning(
                 self,
                 "Invalid Name",
@@ -293,17 +292,9 @@ class OptionsPage(PicardOptions):
             )
             return
 
-        if shelf_name in self.shelf_management_shelves:
-            QtWidgets.QMessageBox.information(
-                self,
-                "Already Exists",
-                f"Shelf '{shelf_name}' already exists.",
-            )
-            return
-
-        self.shelf_management_shelves.addItem(shelf_name)
-        self.shelf_management_shelves.sortItems()
-        ShelfManager().shelf_names.add(shelf_name)
+        shelf_names = self.shelf_names
+        shelf_names.add(shelf_name)
+        self.shelf_names = shelf_names
 
     def _remove_shelf(self) -> None:
         """Remove the selected shelf_names."""
@@ -311,26 +302,25 @@ class OptionsPage(PicardOptions):
         if not selected_items:
             return
 
-        shelves_to_remove = [item.text() for item in selected_items]
-        workflow_shelves = set(
-            self._get_selected_shelves_stage_1() + self._get_selected_shelves_stage_2(),
+        shelves_to_remove: set[str] = set(item.text() for item in selected_items)
+        workflow_shelves: set[str] = set(self._get_selected_shelves_stage_1()).union(
+            set(self._get_selected_shelves_stage_2())
         )
-        conflicting_shelves = [
+        conflicting_shelves: set[str] = set(
             shelf for shelf in shelves_to_remove if shelf in workflow_shelves
-        ]
+        )
 
         if conflicting_shelves:
-            shelf_list_str = ", ".join(f"'{s}'" for s in conflicting_shelves)
             if len(conflicting_shelves) == 1:
                 title = "Remove Workflow Shelf?"
                 message = (
-                    f"'{conflicting_shelves[0]}' is a workflow stage shelf_name. "
+                    f"'{conflicting_shelves.pop()}' is a workflow stage shelf name. "
                     "Are you sure you want to remove it?"
                 )
             else:
                 title = "Remove Workflow Shelves?"
                 message = (
-                    f"The shelf_names {shelf_list_str} are used in your workflow. "
+                    f"The shelf names {', '.join(conflicting_shelves)} are used in your workflow. "
                     "Are you sure you want to remove them?"
                 )
 
@@ -343,70 +333,29 @@ class OptionsPage(PicardOptions):
             if reply == QtWidgets.QMessageBox.No:
                 return
 
-        for item in selected_items:
-            ShelfManager().shelf_names.remove(item.text())
-            self.shelf_management_shelves.takeItem(
-                self.shelf_management_shelves.row(item),
-            )
+        shelf_names = self.shelf_names
+        shelf_names = shelf_names.difference(shelves_to_remove)
+        self.shelf_names = shelf_names
 
     def _remove_unknown_shelves(self) -> None:
         """Remove shelf_names that no longer exist in the music directory."""
-        shelf_dirs: set[str] = ShelfUtils.get_shelf_dirs(
+        shelf_sub_dirs: set[str] = ShelfUtils.get_shelf_dirs(
             base_path=ShelfManager().base_path
         )
-        shelf_names_without_dir: set[str] = set()
 
-        # Identify shelf_names by name to remove
-        for shelf_name in ShelfManager().shelf_names:
-            if shelf_name not in shelf_dirs:
-                shelf_names_without_dir.add(shelf_name)
-
-        # Remove identified shelf_names
-        for shelf_name_without_dir in shelf_names_without_dir:
-            # Find all items with the shelf_name name
-            items = self.shelf_management_shelves.findItems(
-                text=shelf_name_without_dir,
-                flags=Qt.MatchFlag.MatchExactly,
-            )
-            for item in items:
-                ShelfManager().shelf_names.remove(item.text())
-                row = self.shelf_management_shelves.row(item)
-                _removed_item = self.shelf_management_shelves.takeItem(row)
-                del _removed_item
+        shelf_names = self.shelf_names
+        shelf_names = shelf_names.intersection(shelf_sub_dirs)
+        self.shelf_names = shelf_names
 
     def _scan_for_shelves(self) -> None:
-        """Scan Picard's target directory for shelf_names."""
-        try:
-            # Load existing directories
-            shelves_found = ShelfUtils.get_shelf_dirs(
-                base_path=ShelfManager().base_path
-            )
-            if not shelves_found:
-                QtWidgets.QMessageBox.information(
-                    self,
-                    "No Shelves Found",
-                    "No subdirectories found in the selected directory.",
-                )
-                log.debug(
-                    "No shelf_names found during scan in %s",
-                    config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY],  # type: ignore[index]
-                )
-                return
+        """Scan Picard's target directory for shelf names."""
+        shelf_sub_dirs: set[str] = ShelfUtils.get_shelf_dirs(
+            base_path=ShelfManager().base_path
+        )
 
-            for shelf in shelves_found:
-                if shelf not in ShelfManager().shelf_names:
-                    is_valid, _ = ShelfUtils.validate_shelf_name(shelf)
-                    if is_valid:
-                        self.shelf_management_shelves.addItem(shelf)
-                        ShelfManager().shelf_names.add(shelf)
-
-        except (OSError, PermissionError) as e:
-            log.error("Error scanning directory: %s", e)
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Scan Error",
-                f"Error scanning directory: {e}",
-            )
+        shelf_names = self.shelf_names
+        shelf_names = shelf_names.union(shelf_sub_dirs)
+        self.shelf_names = shelf_names
 
     def _on_shelf_list_selection_changed(self) -> None:
         """Enable / disable the remove button based on selection."""
@@ -419,25 +368,22 @@ class OptionsPage(PicardOptions):
         self.naming_script_code.setPlainText(self.rename_snippet)
 
     def load(self) -> None:
-        """Load already known shelf_names from config."""
-
+        """
+        Load configuration into the options_page.
+        :return:
+        :rtype:
+        """
         # Set the base file_path_str in the manager to prevent access to the configuration.
-        ShelfManager().base_path: str = config.setting[
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY  # type: ignore[index]
-        ]  # type: ignore[index]
-
-        shelves: list[str] = sorted(
-            ShelfUtils.validate_shelf_names(
-                config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY],  # type: ignore[index]
-            ),
-        )
-        # Automatically scan for shelf_names if the list is empty
-        if self.shelf_management_shelves.count() == 0:
+        ShelfManager().base_path = config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]  # type: ignore[index] # noqa""
+        # Load known shelf_names from config
+        shelves: set[str] = set(config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY])  # type: ignore[index]
+        # Update ShelfManager shelf_names
+        self.shelf_names = shelves
+        if len(self.shelf_names) == 0:
             log.debug("Shelf list is empty, auto-scanning for shelf_names.")
             self._scan_for_shelves()
-
-        self.shelf_management_shelves.addItems(shelves)
-        ShelfManager().shelf_names = set(shelves)
+        if len(self.shelf_names) == 0:
+            log.error("No shelves found during scan.")
 
         self.plugin_configuration.setCurrentIndex(
             config.setting[ShelfConstants.CONFIG_ACTIVE_TAB],  # type: ignore[index]
@@ -455,17 +401,11 @@ class OptionsPage(PicardOptions):
 
     def save(self) -> None:
         """Save shelf_names list to config."""
+        config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = self.shelf_names  # type: ignore[index]
+
         config.setting[ShelfConstants.CONFIG_ACTIVE_TAB] = (  # type: ignore[index]
             self.plugin_configuration.currentIndex()
         )
-
-        known_shelves = []
-        for i in range(self.shelf_management_shelves.count()):
-            element = self.shelf_management_shelves.item(i)
-            if element is not None:
-                known_shelves.append(element.text())
-
-        config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = known_shelves  # type: ignore[index]
 
         shelves_stage_1 = []
         for i in range(self.workflow_stage_1.count()):
@@ -493,16 +433,34 @@ class OptionsPage(PicardOptions):
             self.stage_1_includes_non_shelves.isChecked()
         )
 
-    @staticmethod
-    def add_known_shelf(shelf_name: str) -> None:
+    @property
+    def shelf_names(self) -> Set[str]:
         """
-        Add a known shelf_name to the configuration.
-        :param shelf_name:
+
         :return:
+        :rtype:
         """
-        if not shelf_name or not shelf_name.strip():
-            return
-        ShelfManager().shelf_names.add(shelf_name)
-        config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = (  # type: ignore[index]
-            list(ShelfManager().shelf_names)
+        valid_names = set(
+            filter(
+                lambda name: ShelfUtils.validate_shelf_name(name)[0],
+                ShelfManager().shelf_names,
+            )
         )
+        return valid_names
+
+    @shelf_names.setter
+    def shelf_names(self, names: Set[str]):
+        """
+
+        :param names:
+        :type names:
+        :return:
+        :rtype:
+        """
+        self.shelf_management_shelves.clear()
+        valid_names = set(
+            filter(lambda name: ShelfUtils.validate_shelf_name(name)[0], names)
+        )
+        self.shelf_management_shelves.addItems(valid_names)
+        self.shelf_management_shelves.sortItems()
+        ShelfManager().shelf_names = valid_names
