@@ -165,7 +165,6 @@ class OptionsPage(PicardOptions):
         source: QtWidgets.QListWidget,
         target: QtWidgets.QListWidget,
     ) -> None:
-
         item = source.currentItem()
         if not item:
             return
@@ -213,7 +212,7 @@ class OptionsPage(PicardOptions):
         :return:
         """
         log.debug("Rebuilding shelf_names for stages")
-        possible_shelves_stage_2 = self.shelf_names
+        possible_shelves_stage_2 = ShelfManager().shelf_names
         possible_shelves_stage_1 = self._build_workflow_stage_2(
             possible_shelves_stage_2,
         )
@@ -351,8 +350,10 @@ class OptionsPage(PicardOptions):
             )
 
     def _remove_unknown_shelves(self) -> None:
-        """Remove shelf_names that no longer exist in the music directodeory."""
-        shelf_dirs: set[str] = ShelfUtils.get_shelf_dirs()
+        """Remove shelf_names that no longer exist in the music directory."""
+        shelf_dirs: set[str] = ShelfUtils.get_shelf_dirs(
+            base_path=ShelfManager().base_path
+        )
         shelf_names_without_dir: set[str] = set()
 
         # Identify shelf_names by name to remove
@@ -377,7 +378,9 @@ class OptionsPage(PicardOptions):
         """Scan Picard's target directory for shelf_names."""
         try:
             # Load existing directories
-            shelves_found = ShelfUtils.get_shelf_dirs()
+            shelves_found = ShelfUtils.get_shelf_dirs(
+                base_path=ShelfManager().base_path
+            )
             if not shelves_found:
                 QtWidgets.QMessageBox.information(
                     self,
@@ -391,11 +394,11 @@ class OptionsPage(PicardOptions):
                 return
 
             for shelf in shelves_found:
-                if shelf not in self.shelf_names:
+                if shelf not in ShelfManager().shelf_names:
                     is_valid, _ = ShelfUtils.validate_shelf_name(shelf)
                     if is_valid:
                         self.shelf_management_shelves.addItem(shelf)
-                        self.shelf_names.add(shelf)
+                        ShelfManager().shelf_names.add(shelf)
 
         except (OSError, PermissionError) as e:
             log.error("Error scanning directory: %s", e)
@@ -419,7 +422,9 @@ class OptionsPage(PicardOptions):
         """Load already known shelf_names from config."""
 
         # Set the base file_path_str in the manager to prevent access to the configuration.
-        ShelfManager().base_path: str = config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]  # type: ignore[index]
+        ShelfManager().base_path: str = config.setting[
+            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY  # type: ignore[index]
+        ]  # type: ignore[index]
 
         shelves: list[str] = sorted(
             ShelfUtils.validate_shelf_names(
@@ -460,17 +465,15 @@ class OptionsPage(PicardOptions):
             if element is not None:
                 known_shelves.append(element.text())
 
-        config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = (  # type: ignore[index]
-            known_shelves
-        )
+        config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = known_shelves  # type: ignore[index]
 
         shelves_stage_1 = []
         for i in range(self.workflow_stage_1.count()):
             element = self.workflow_stage_1.item(i)
             if element is not None:
                 shelves_stage_1.append(element.text())
-        config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = (  # type: ignore[index]
-            shelves_stage_1
+        config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = (
+            shelves_stage_1  # type: ignore[index]
         )
 
         shelves_stage_2 = []
@@ -478,8 +481,8 @@ class OptionsPage(PicardOptions):
             element = self.workflow_stage_2.item(i)
             if element is not None:
                 shelves_stage_2.append(element.text())
-        config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = (  # type: ignore[index]
-            shelves_stage_2
+        config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = (
+            shelves_stage_2  # type: ignore[index]
         )
 
         config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = (  # type: ignore[index]

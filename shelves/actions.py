@@ -7,6 +7,7 @@ Context menu actions for the Shelves plugin.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any, List, Optional
 
 from picard import log
@@ -205,29 +206,18 @@ class DetermineShelfAction(BaseAction):
         :return:
         :rtype:
         """
-        log.debug("DetermineShelfAction called with %d objects", len(objs))
-
         for obj in objs:
-            self._determine_shelf_recursive(obj)
-
-        log.info(
-            "Determined shelf_name for %d object(s)",
-            len(objs),
-        )
-
-    @staticmethod
-    def _determine_shelf_recursive(obj: Any) -> None:
-        if hasattr(obj, "iterfiles"):
-            for file in obj.iterfiles():
-                shelf_name, _ = ShelfUtils.get_shelf_name_from_path(
-                    file_path_str=file.filename,
-                )
-                if shelf_name is not None:
-                    file.metadata[ShelfConstants.TAG_KEY] = shelf_name
-                    log.debug(
-                        "Determined shelf_name '%s' for file: %s",
-                        shelf_name,
-                        file.filename,
+            if hasattr(obj, "iterfiles"):
+                for file in obj.iterfiles():
+                    shelf_name, _ = ShelfUtils.get_shelf_name_from_path(
+                        file_path=Path(file.filename).resolve(),
+                        base_path=ShelfManager().base_path,
                     )
-
-                    ShelfManager().shelf_names.add(shelf_name)
+                    if shelf_name is not None:
+                        file.metadata[ShelfConstants.TAG_KEY] = shelf_name
+                        log.debug(
+                            "Determined shelf_name '%s' for file: %s",
+                            shelf_name,
+                            file.filename,
+                        )
+                        ShelfManager().shelf_names.add(shelf_name)

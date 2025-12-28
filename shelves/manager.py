@@ -31,7 +31,7 @@ class ShelfManager:
         if not hasattr(self, "_initialized"):
             self._initialized = True
             self._test_value = None
-            self._base_path: Path = None
+            self._base_path: Optional[Path] = None
 
             # Minimum in-memory state
             self._shelf_state: Dict[str, Dict[str, Any]] = defaultdict(dict)

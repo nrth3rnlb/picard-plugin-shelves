@@ -129,10 +129,10 @@ class ShelfUtils:
         return True, None
 
     @staticmethod
-    def get_shelf_dirs(base_dir: Path) -> set[str]:
+    def get_shelf_dirs(base_path: Path) -> set[str]:
         """
 
         :return:
         """
-        shelves_found = {entry.name for entry in base_dir.iterdir() if entry.is_dir()}
+        shelves_found = {entry.name for entry in base_path.iterdir() if entry.is_dir()}
         return shelves_found
