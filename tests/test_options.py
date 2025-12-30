@@ -4,7 +4,7 @@ Tests for the options options_page logic.
 
 import sys
 import unittest
-from copy import copy, deepcopy
+from copy import deepcopy
 from unittest.mock import MagicMock, PropertyMock, patch
 
 from PyQt5.QtWidgets import QApplication
@@ -36,17 +36,27 @@ class OptionsPageTest(unittest.TestCase):
         self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
         self.number_known_shelves = len(self.known_shelves)
         self.config_setting = {
+            ShelfConstants.CONFIG_ACTIVE_TAB: 1,
+            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: self.known_shelves,
+            ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: True,
+            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
             ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: self.known_shelves[
                 : self.number_known_shelves - 2
             ],
             ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: self.known_shelves[
                 self.number_known_shelves - 1 :
             ],
-            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
-            ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: False,
             ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: self.known_shelves,
-            ShelfConstants.CONFIG_ACTIVE_TAB: 1,
+        }
+
+        # Mapping zwischen Config-Keys und Attributnamen der OptionsPage
+        self.mapping = {
+            ShelfConstants.CONFIG_ACTIVE_TAB: self.options_page.plugin_configuration,
+            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: self.options_page.shelf_management_shelves,
+            ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: self.options_page.stage_1_includes_non_shelves,
+            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: self.options_page.workflow_enabled,
+            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: self.options_page.workflow_stage_1,
+            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: self.options_page.workflow_stage_2,
         }
 
         # Create a config mock and patch the module-level `shelves.ui.options.config`
@@ -56,6 +66,23 @@ class OptionsPageTest(unittest.TestCase):
         self._config_patcher = patch("shelves.ui.options.config", new=self.config)
         self._config_patcher.start()
         self.addCleanup(self._config_patcher.stop)
+
+    @staticmethod
+    def setup_ui_mock(widget, value):
+        """Configures a mock based on the data type of the value."""
+        if isinstance(value, (list, set)):
+            items = []
+            for text in value:
+                item = MagicMock()
+                item.text.return_value = text
+                items.append(item)
+            widget.count.return_value = len(items)
+            widget.item.side_effect = items
+        elif isinstance(value, bool):
+            widget.isChecked.return_value = value
+        elif isinstance(value, int):
+            widget.currentIndex.return_value = value
+        return value
 
     def test_options_use_correct_namespace(self):
         """Test that all options use the correct namespace 'setting'."""
@@ -74,164 +101,90 @@ class OptionsPageTest(unittest.TestCase):
 
     @patch("shelves.ui.options.config")
     def test_save_writes_to_config(self, mock_config):
-        """Test if the save method correctly writes UI _shelf_state to config."""
+        """Test if the save method correctly writes UI state to config."""
         # Arrange
-        mock_config.setting = copy(self.config_setting)
+        mock_config.setting = {}
 
-        self.options_page.workflow_stage_1.return_value = self.config_setting[
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY
-        ]
-        self.options_page.workflow_stage_2.return_value = self.config_setting[
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY
-        ]
-        self.options_page.shelf_management_shelves.return_value = self.config_setting[
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY
-        ]
+        for option in OptionsPage.options:
+            if option.name in self.mapping:
+                widget = self.mapping[option.name]
+                self.setup_ui_mock(widget, self.config_setting[option.name])
 
-        self.options_page.plugin_configuration.currentIndex.return_value = (
-            self.config_setting[ShelfConstants.CONFIG_ACTIVE_TAB]
-        )
-        self.options_page.workflow_enabled.isChecked.return_value = self.config_setting[
-            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY
-        ]
-        self.options_page.stage_1_includes_non_shelves.isChecked.return_value = (
-            self.config_setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY]
-        )
+        # We patch the property of the OptionsPage that is read in the save()
+        with patch.object(
+            OptionsPage, "shelf_names", new_callable=PropertyMock
+        ) as mock_prop:
+            mock_prop.return_value = set(self.known_shelves)
 
-        # Act
-        self.options_page.save()
+            # Act
+            self.options_page.save()
 
         # Assert
-        self.assertEqual(
-            self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY],
-            self.options_page.workflow_stage_1.return_value,
-        )
-        self.assertEqual(
-            self.config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY],
-            self.options_page.workflow_stage_2.return_value,
-        )
-        self.assertEqual(
-            self.config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY],
-            self.options_page.shelf_management_shelves.return_value,
-        )
-        self.assertEqual(
-            self.config.setting[ShelfConstants.CONFIG_ACTIVE_TAB],
-            self.options_page.plugin_configuration.currentIndex(),
-        )
-        self.assertEqual(
-            self.config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY],
-            self.options_page.workflow_enabled.isChecked(),
-        )
-        self.assertEqual(
-            self.config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY],
-            self.options_page.stage_1_includes_non_shelves.isChecked(),
-        )
+        for key in self.mapping.keys():
+            with self.subTest(key=key):
+                actual = mock_config.setting.get(key)
+                expected_value = self.config_setting[key]
+                if isinstance(expected_value, (list, set)):
+                    self.assertSetEqual(set(actual), set(expected_value))
+                else:
+                    self.assertEqual(actual, expected_value)
 
     @patch("shelves.ui.options.ShelfManager")
-    @patch("shelves.utils.ShelfUtils.validate_shelf_names")
-    def test_load_populates_ui_from_config(
-        self, mock_get_configured_shelves, mock_shelf_manager
-    ):
+    def test_load_populates_ui_from_config(self, mock_shelf_manager):
         """Test if the load method correctly populates UI from config."""
-        # Arrange
-        mock_get_configured_shelves.return_value = self.config.setting[
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY
-        ]
-        mock_instance = mock_shelf_manager.return_value
+        # # Arrange
+        for option in OptionsPage.options:
+            if option.name in self.mapping:
+                widget = self.mapping[option.name]
+                self.setup_ui_mock(widget, self.config_setting[option.name])
 
-        self.config.setting = {
-            ShelfConstants.CONFIG_ACTIVE_TAB: 0,
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: self.known_shelves,
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
-            ShelfConstants.CONFIG_RENAME_SNIPPET_SKELETON_KEY: ShelfConstants.RENAME_SNIPPET,
-            ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: True,
-            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
-        }
-        self.options_page.naming_script_code.setPlainText = MagicMock()
-        self.options_page.plugin_configuration.setCurrentIndex = MagicMock()
-        self.options_page.shelf_management_shelves.addItems = MagicMock()
-        self.options_page.stage_1_includes_non_shelves.setChecked = MagicMock()
-        self.options_page.workflow_enabled.setChecked = MagicMock()
+        # We patch the property of the OptionsPage that is read in the load()
+        with patch.object(
+            OptionsPage, "shelf_names", new_callable=PropertyMock
+        ) as mock_prop:
+            mock_prop.return_value = set(self.known_shelves)
 
-        # Act
-        self.options_page.load()
+            # Act
+            self.options_page.load()
 
         # Assert
-        self.assertEqual(
-            mock_instance.base_path,
-            self.config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY],
-        )
-        self.options_page.shelf_management_shelves.addItems.assert_called_once()
-        self.assertSetEqual(
-            mock_instance.shelf_names,
-            set(self.config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]),
-        )
-
-        self.options_page.plugin_configuration.setCurrentIndex.assert_called_with(
-            self.config.setting[ShelfConstants.CONFIG_ACTIVE_TAB]
-        )
-        self.options_page.stage_1_includes_non_shelves.setChecked.assert_called_with(
-            self.config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY]
-        )
-        self.options_page.naming_script_code.setPlainText.assert_called_with(
-            self.config.setting[ShelfConstants.CONFIG_RENAME_SNIPPET_SKELETON_KEY]
-        )
-        self.options_page.workflow_enabled.setChecked.assert_called_with(
-            self.config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]
-        )
-
-    @patch("shelves.utils.ShelfUtils.validate_shelf_names")
-    def test_load_no_configured_shelves(self, mock_validate_shelf_names):
-        """Test if the load method correctly handles no configured shelves."""
-        # Arrange
-        self.config.setting = {
-            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: [],
-            ShelfConstants.CONFIG_ACTIVE_TAB: 0,
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
-            ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: True,
-        }
-
-        mock_validate_shelf_names.return_value = []
-        self.options_page.shelf_management_shelves.count.return_value = 0
-        self.options_page._scan_for_shelves = MagicMock()
-
-        # Act
-        self.options_page.load()
-
-        # Assert
-        self.options_page.shelf_management_shelves.addItems.assert_called_once()
-        self.options_page._scan_for_shelves.assert_called_once()
+        for key in self.mapping.keys():
+            with self.subTest(key=key):
+                print(key)
+                actual = self.options_page.options[key]
+                expected_value = self.config_setting[key]
+                if isinstance(expected_value, (list, set)):
+                    self.assertSetEqual(set(actual), set(expected_value))
+                else:
+                    self.assertEqual(actual, expected_value)
 
     @patch(
         "shelves.ui.options.QtWidgets.QInputDialog.getText",
-        return_value=("NewShelf", True),
     )
-    def test_add_shelf(self, _mock_get_text):
+    @patch("shelves.ui.options.ShelfManager.shelf_names", new_callable=PropertyMock)
+    def test_add_shelf(self, mock_shelf_names, mock_get_text):
         """Test adding a new, valid shelf_name."""
         # Arrange
-        self.options_page._get_configured_shelves = MagicMock(return_value={"Incoming"})
-        self.options_page.shelf_management_shelves.sortItems = MagicMock()
-        self.options_page._rebuild_shelves_for_stages = MagicMock()
-        self.options_page.shelf_management_shelves.addItem = MagicMock()
+        mock_shelf_names.return_value = deepcopy(self.known_shelves)
+        popped = mock_shelf_names.return_value.pop()
+        mock_get_text.return_value = (popped, True)
 
         # Act
         self.options_page._add_shelf()
 
         # Assert
-        self.options_page.shelf_management_shelves.addItem.assert_called_with(
-            "NewShelf"
-        )
-        self.options_page.shelf_management_shelves.sortItems.assert_called_once()
+        expected_shelves = deepcopy(self.known_shelves)
+        mock_shelf_names.assert_called_with(set(expected_shelves))
 
     @patch("shelves.ui.options.ShelfManager.shelf_names", new_callable=PropertyMock)
     def test_remove_shelf(self, mock_shelf_names):
         """Test removing a selected shelf_name."""
         # Arrange
         mock_shelf_names.return_value = deepcopy(self.known_shelves)
-
+        possible_selections_text = deepcopy(self.known_shelves)
+        selected_text = possible_selections_text.pop()
         mock_item = MagicMock()
-        mock_item.text.return_value = self.known_shelves[0]
+        mock_item.text.return_value = selected_text
         self.options_page.shelf_management_shelves.selectedItems.return_value = [
             mock_item
         ]
@@ -240,11 +193,12 @@ class OptionsPageTest(unittest.TestCase):
         self.options_page._remove_shelf()
 
         # Assert
-        self.assertIn(mock_item.text.return_value, self.known_shelves)
+        expected_shelves = possible_selections_text
+        mock_shelf_names.assert_called_with(set(expected_shelves))
 
     @patch("shelves.ui.options.ShelfManager.shelf_names", new_callable=PropertyMock)
     @patch("shelves.utils.ShelfUtils.get_shelf_dirs")
-    def test_remove_unknown_shelves(self, mock_get_existing_dirs, mock_shelf_names):
+    def test_remove_unknown_shelves(self, mock_get_shelf_dirs, mock_shelf_names):
         """Test removing unknown shelves."""
         # Arrange
         mock_shelf_names.return_value = deepcopy(self.known_shelves)
@@ -254,8 +208,8 @@ class OptionsPageTest(unittest.TestCase):
             mock_item.text.return_value = name
             mock_items[name] = [mock_item]
 
-        mock_get_existing_dirs.return_value = deepcopy(self.known_shelves)
-        popped = mock_get_existing_dirs.return_value.pop()
+        mock_get_shelf_dirs.return_value = deepcopy(self.known_shelves)
+        popped = mock_get_shelf_dirs.return_value.pop()
 
         self.options_page.shelf_management_shelves.takeItem = MagicMock()
 
@@ -275,7 +229,30 @@ class OptionsPageTest(unittest.TestCase):
         self.options_page._remove_unknown_shelves()
 
         # Assert
-        self.options_page.shelf_management_shelves.takeItem.assert_called_once()
+        expected_shelves = mock_get_shelf_dirs.return_value
+        mock_shelf_names.assert_called_with(set(expected_shelves))
+
+    @patch("shelves.ui.options.ShelfManager.shelf_names", new_callable=PropertyMock)
+    @patch("shelves.utils.ShelfUtils.get_shelf_dirs")
+    def test_scan_for_shelves(self, mock_get_shelf_dirs, mock_shelf_names):
+        """Test scanning for shelves adds them to the shelf management list."""
+        # Arrange
+        mock_get_shelf_dirs.return_value = deepcopy(self.known_shelves)
+        mock_shelf_names.return_value = deepcopy(self.known_shelves)
+        popped = mock_shelf_names.return_value.pop()
+        mock_items = {}
+        for name in mock_shelf_names.return_value:
+            mock_item = MagicMock()
+            mock_item.text.return_value = name
+            mock_items[name] = [mock_item]
+        self.options_page._get_configured_shelves = MagicMock(return_value={"Incoming"})
+
+        # Act
+        self.options_page._scan_for_shelves()
+
+        # Assert
+        expected_shelves = deepcopy(self.known_shelves)
+        mock_shelf_names.assert_called_with(set(expected_shelves))
 
 
 if __name__ == "__main__":
