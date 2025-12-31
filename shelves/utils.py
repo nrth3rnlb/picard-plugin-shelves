@@ -104,41 +104,81 @@ class ShelfUtils:
         if not isinstance(name, str) or not name.strip():
             return False, "Shelf name cannot be empty"
 
-        trimmed = name.strip()
-        hr = ", ".join(set(ShelfConstants.INVALID_PATH_CHARS))
+        shelf_name = name.strip()
 
-        if trimmed in ShelfConstants.INVALID_PATH_CHARS:
-            return (
-                False,
-                f"Can not use {trimmed} as shelf name. Also invalid are: {hr}",
-            )
-
-        bad_chars = [
-            char for char in trimmed if char in ShelfConstants.INVALID_PATH_CHARS
+        invalid_names_used = [
+            name_used
+            for name_used in shelf_name.split()
+            if name_used in ShelfConstants.INVALID_SHELF_NAMES
         ]
-        if bad_chars:
+        if invalid_names_used:
+            hr_invalid_names_used = (
+                f"{', '.join(repr(c) for c in set(invalid_names_used))}"
+            )
+            hr_invalid_names = (
+                f"{', '.join(repr(c) for c in ShelfConstants.INVALID_SHELF_NAMES)}"
+            )
             return (
                 False,
-                f"Contains invalid characters: {', '.join(set(bad_chars))}. Also invalid are: {hr}",
+                f"Cannot use '{shelf_name}' as shelf name."
+                f" The name is an invalid name: {hr_invalid_names_used}."
+                f" Not allowed are: {hr_invalid_names}.",
             )
 
-        if len(trimmed) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
+        invalid_chars_used = [
+            char_used
+            for char_used in shelf_name
+            if char_used in ShelfConstants.INVALID_SHELF_NAME_CHARS
+        ]
+        if invalid_chars_used:
+            hr_invalid_chars_used = (
+                f"{', '.join(repr(c) for c in set(invalid_chars_used))}"
+            )
+            hr_invalid_name_chars = (
+                f"{', '.join(repr(c) for c in ShelfConstants.INVALID_SHELF_NAME_CHARS)}"
+            )
             return (
                 False,
-                f"Shelf name too long. Maximum allowed is {ShelfConstants.MAX_SHELF_NAME_LENGTH}",
+                f"Cannot use '{shelf_name}' as shelf name."
+                f" The name contains invalid character(s): {hr_invalid_chars_used}."
+                f" Not allowed are: {hr_invalid_name_chars}.",
             )
 
-        if len(trimmed.split()) > ShelfConstants.MAX_WORD_COUNT:
+        invalid_tokens_used = [
+            token_used
+            for token_used in shelf_name.split()
+            if token_used.lower()
+            in [token.lower() for token in ShelfConstants.ALBUM_INDICATORS]
+        ]
+
+        if invalid_tokens_used:
+            hr_invalid_tokens_used = (
+                f"{', '.join(repr(c) for c in set(invalid_tokens_used))}"
+            )
+            hr_invalid_name_tokens = (
+                f"{', '.join(repr(c) for c in ShelfConstants.ALBUM_INDICATORS)}"
+            )
             return (
                 False,
-                f"Shelf name has too many words. Maximum allowed is {ShelfConstants.MAX_WORD_COUNT}",
+                f"Cannot use '{shelf_name}' as shelf name."
+                f" The name contains album indicator(s): {hr_invalid_tokens_used}."
+                f" Not allowed are: {hr_invalid_name_tokens}.",
             )
 
-        lower = trimmed.lower()
-        if any(token.lower() in lower for token in ShelfConstants.ALBUM_INDICATORS):
+        if len(shelf_name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
             return (
                 False,
-                f"Name contains album indicator(s): {', '.join(ShelfConstants.ALBUM_INDICATORS)}",
+                f"Cannot use '{shelf_name}' as shelf name."
+                f" The name is too long with {len(shelf_name)} characters."
+                f" Maximum allowed is {ShelfConstants.MAX_SHELF_NAME_LENGTH}.",
+            )
+
+        if len(shelf_name.split()) > ShelfConstants.MAX_WORD_COUNT:
+            return (
+                False,
+                f"Cannot use '{shelf_name}' as shelf name."
+                f" Shelf name is too long with {len(shelf_name.split())} words."
+                f" Maximum allowed is {ShelfConstants.MAX_WORD_COUNT}.",
             )
 
         return True, "Valid shelf name"

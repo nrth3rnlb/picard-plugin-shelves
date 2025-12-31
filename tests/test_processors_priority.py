@@ -27,7 +27,7 @@ class ProcessorPriorityTest(unittest.TestCase):
             "Soundtracks",
             "Favorites",
         }
-        self.config_setting = {
+        self.test_configuration = {
             ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: False,
             ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
             ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
@@ -48,12 +48,12 @@ class ProcessorPriorityTest(unittest.TestCase):
     #     must take over this shelf_name and ignores all previous manual markings.
     #     """
     #     # Arrange
-    #     mock_config.setting = self.config_setting
+    #     mock_config.setting = self.test_configuration
     #     mock_config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = False
     #
-    #     mock_get_configured_shelves.return_value = self.known_shelves
+    #     mock_get_configured_shelves.return_value = self.test_known_shelves
     #
-    #     shelf_sub_dir = self.known_shelves[0]
+    #     shelf_sub_dir = self.test_known_shelves[0]
     #     mock_get_shelf_from_path.return_value = shelf_sub_dir
     #
     #     file_mock = MagicMock()
@@ -88,7 +88,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         # Arrange
         mock_shelf_manager_shelf_names.return_value = self.known_shelves
         shelf_sub_dir = copy(self.known_shelves).pop()
-        mock_shelf_manager_base_path.return_value = self.config_setting[
+        mock_shelf_manager_base_path.return_value = self.test_configuration[
             ShelfConstants.CONFIG_MOVE_FILES_TO_KEY
         ]
         mock_apply_workflow_transition.return_value = shelf_sub_dir
@@ -137,7 +137,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         known_shelves_clone = copy(self.known_shelves)
         shelf_name = known_shelves_clone.pop()
         shelf_sub_dir = known_shelves_clone.pop()
-        mock_shelf_manager_base_path.return_value = self.config_setting[
+        mock_shelf_manager_base_path.return_value = self.test_configuration[
             ShelfConstants.CONFIG_MOVE_FILES_TO_KEY
         ]
         mock_apply_workflow_transition.return_value = shelf_sub_dir
@@ -179,7 +179,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         PRIORITY 3: The standard logic should be applied to a file without special properties
         """
         # Arrange
-        mock_config.settings = self.config_setting
+        mock_config.settings = self.test_configuration
         mock_shelf_manager_shelf_names.return_value = self.known_shelves
 
         shelf_sub_dir = copy(self.known_shelves).pop()

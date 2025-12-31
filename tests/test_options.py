@@ -33,18 +33,18 @@ class OptionsPageTest(unittest.TestCase):
         for attr in self.UI_ATTRS:
             setattr(self.options_page, attr, MagicMock())
 
-        self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
-        self.number_known_shelves = len(self.known_shelves)
-        self.config_setting = {
+        self.test_known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
+        self.test_number_known_shelves = len(self.test_known_shelves)
+        self.test_configuration = {
             ShelfConstants.CONFIG_ACTIVE_TAB: 1,
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: self.known_shelves,
+            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: self.test_known_shelves,
             ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: True,
             ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: self.known_shelves[
-                : self.number_known_shelves - 2
+            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: self.test_known_shelves[
+                : self.test_number_known_shelves - 2
             ],
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: self.known_shelves[
-                self.number_known_shelves - 1 :
+            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: self.test_known_shelves[
+                self.test_number_known_shelves - 1 :
             ],
             ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
         }
@@ -62,7 +62,7 @@ class OptionsPageTest(unittest.TestCase):
         # Create a config mock and patch the module-level `shelves.ui.options.config`
         self.config = MagicMock()
         # Share the same dict so tests that mutate config.setting see the changes
-        self.config.setting = self.config_setting
+        self.config.setting = self.test_configuration
         self._config_patcher = patch("shelves.ui.options.config", new=self.config)
         self._config_patcher.start()
         self.addCleanup(self._config_patcher.stop)
@@ -97,7 +97,7 @@ class OptionsPageTest(unittest.TestCase):
     def test_all_options_used(self):
         for option in OptionsPage.options:
             with self.subTest(option=option.name):
-                self.assertIn(option.name, self.config_setting)
+                self.assertIn(option.name, self.test_configuration)
 
     @patch("shelves.ui.options.config")
     def test_save_writes_to_config(self, mock_config):
@@ -108,13 +108,13 @@ class OptionsPageTest(unittest.TestCase):
         for option in OptionsPage.options:
             if option.name in self.mapping:
                 widget = self.mapping[option.name]
-                self.setup_ui_mock(widget, self.config_setting[option.name])
+                self.setup_ui_mock(widget, self.test_configuration[option.name])
 
         # We patch the property of the OptionsPage that is read in the save()
         with patch.object(
             OptionsPage, "shelf_names", new_callable=PropertyMock
         ) as mock_prop:
-            mock_prop.return_value = set(self.known_shelves)
+            mock_prop.return_value = set(self.test_known_shelves)
 
             # Act
             self.options_page.save()
@@ -123,7 +123,7 @@ class OptionsPageTest(unittest.TestCase):
         for key in self.mapping.keys():
             with self.subTest(key=key):
                 actual = mock_config.setting.get(key)
-                expected_value = self.config_setting[key]
+                expected_value = self.test_configuration[key]
                 if isinstance(expected_value, (list, set)):
                     self.assertSetEqual(set(actual), set(expected_value))
                 else:
@@ -132,27 +132,14 @@ class OptionsPageTest(unittest.TestCase):
     @patch("shelves.ui.options.ShelfManager")
     def test_load_populates_ui_from_config(self, mock_shelf_manager):
         """Test if the load method correctly populates UI from config."""
-        # # Arrange
-        for option in OptionsPage.options:
-            if option.name in self.mapping:
-                widget = self.mapping[option.name]
-                self.setup_ui_mock(widget, self.config_setting[option.name])
-
-        # We patch the property of the OptionsPage that is read in the load()
-        with patch.object(
-            OptionsPage, "shelf_names", new_callable=PropertyMock
-        ) as mock_prop:
-            mock_prop.return_value = set(self.known_shelves)
-
-            # Act
-            self.options_page.load()
+        # Act
+        self.options_page.load()
 
         # Assert
         for key in self.mapping.keys():
             with self.subTest(key=key):
-                print(key)
-                actual = self.options_page.options[key]
-                expected_value = self.config_setting[key]
+                actual = self.config.setting[key]
+                expected_value = self.test_configuration[key]
                 if isinstance(expected_value, (list, set)):
                     self.assertSetEqual(set(actual), set(expected_value))
                 else:
@@ -165,7 +152,7 @@ class OptionsPageTest(unittest.TestCase):
     def test_add_shelf(self, mock_shelf_names, mock_get_text):
         """Test adding a new, valid shelf_name."""
         # Arrange
-        mock_shelf_names.return_value = deepcopy(self.known_shelves)
+        mock_shelf_names.return_value = deepcopy(self.test_known_shelves)
         popped = mock_shelf_names.return_value.pop()
         mock_get_text.return_value = (popped, True)
 
@@ -173,15 +160,15 @@ class OptionsPageTest(unittest.TestCase):
         self.options_page._add_shelf()
 
         # Assert
-        expected_shelves = deepcopy(self.known_shelves)
+        expected_shelves = deepcopy(self.test_known_shelves)
         mock_shelf_names.assert_called_with(set(expected_shelves))
 
     @patch("shelves.ui.options.ShelfManager.shelf_names", new_callable=PropertyMock)
     def test_remove_shelf(self, mock_shelf_names):
         """Test removing a selected shelf_name."""
         # Arrange
-        mock_shelf_names.return_value = deepcopy(self.known_shelves)
-        possible_selections_text = deepcopy(self.known_shelves)
+        mock_shelf_names.return_value = deepcopy(self.test_known_shelves)
+        possible_selections_text = deepcopy(self.test_known_shelves)
         selected_text = possible_selections_text.pop()
         mock_item = MagicMock()
         mock_item.text.return_value = selected_text
@@ -201,14 +188,14 @@ class OptionsPageTest(unittest.TestCase):
     def test_remove_unknown_shelves(self, mock_get_shelf_dirs, mock_shelf_names):
         """Test removing unknown shelves."""
         # Arrange
-        mock_shelf_names.return_value = deepcopy(self.known_shelves)
+        mock_shelf_names.return_value = deepcopy(self.test_known_shelves)
         mock_items = {}
         for name in mock_shelf_names.return_value:
             mock_item = MagicMock()
             mock_item.text.return_value = name
             mock_items[name] = [mock_item]
 
-        mock_get_shelf_dirs.return_value = deepcopy(self.known_shelves)
+        mock_get_shelf_dirs.return_value = deepcopy(self.test_known_shelves)
         popped = mock_get_shelf_dirs.return_value.pop()
 
         self.options_page.shelf_management_shelves.takeItem = MagicMock()
@@ -237,8 +224,8 @@ class OptionsPageTest(unittest.TestCase):
     def test_scan_for_shelves(self, mock_get_shelf_dirs, mock_shelf_names):
         """Test scanning for shelves adds them to the shelf management list."""
         # Arrange
-        mock_get_shelf_dirs.return_value = deepcopy(self.known_shelves)
-        mock_shelf_names.return_value = deepcopy(self.known_shelves)
+        mock_get_shelf_dirs.return_value = deepcopy(self.test_known_shelves)
+        mock_shelf_names.return_value = deepcopy(self.test_known_shelves)
         popped = mock_shelf_names.return_value.pop()
         mock_items = {}
         for name in mock_shelf_names.return_value:
@@ -251,7 +238,7 @@ class OptionsPageTest(unittest.TestCase):
         self.options_page._scan_for_shelves()
 
         # Assert
-        expected_shelves = deepcopy(self.known_shelves)
+        expected_shelves = deepcopy(self.test_known_shelves)
         mock_shelf_names.assert_called_with(set(expected_shelves))
 
 
