@@ -173,6 +173,7 @@ class ShelfUtils:
                 f" Maximum allowed is {ShelfConstants.MAX_SHELF_NAME_LENGTH}.",
             )
 
+        # TODO(#16): Decide if max word count validation should be enforced
         if len(shelf_name.split()) > ShelfConstants.MAX_WORD_COUNT:
             return (
                 False,
