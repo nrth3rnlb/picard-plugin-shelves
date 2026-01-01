@@ -165,6 +165,7 @@ class ShelfUtils:
                 f" Not allowed are: {hr_invalid_name_tokens}.",
             )
 
+        # TODO(#15): Decide if max length validation should be enforced
         if len(shelf_name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
             return (
                 False,
