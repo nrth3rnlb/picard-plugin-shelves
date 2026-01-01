@@ -166,13 +166,13 @@ class ShelfUtils:
             )
 
         # TODO(#15): Decide if max length validation should be enforced
-        if len(shelf_name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
-            return (
-                False,
-                f"Cannot use '{shelf_name}' as shelf name."
-                f" The name is too long with {len(shelf_name)} characters."
-                f" Maximum allowed is {ShelfConstants.MAX_SHELF_NAME_LENGTH}.",
-            )
+        # if len(shelf_name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
+        #     return (
+        #         False,
+        #         f"Cannot use '{shelf_name}' as shelf name."
+        #         f" The name is too long with {len(shelf_name)} characters."
+        #         f" Maximum allowed is {ShelfConstants.MAX_SHELF_NAME_LENGTH}.",
+        #     )
 
         if len(shelf_name.split()) > ShelfConstants.MAX_WORD_COUNT:
             return (
