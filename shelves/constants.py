@@ -19,10 +19,10 @@ class ShelfConstants:
     # TODO Make configurable
     MAX_SHELF_NAME_LENGTH = 30
     MAX_WORD_COUNT = 3
-    INVALID_SHELF_NAME_CHARS = frozenset(
-        ["<", ">", "|", ":", "*", "?", '"', "/", "\\", "'"]
-    )
-    # INVALID_SHELF_NAME_CHARS = frozenset([])
+    # INVALID_SHELF_NAME_CHARS = frozenset(
+    #     ["<", ">", "|", ":", "*", "?", '"', "/", "\\", "'"]
+    # )
+    INVALID_SHELF_NAME_CHARS: set[str] = set()
     INVALID_SHELF_NAMES = frozenset([".", ".."])
     ALBUM_INDICATORS = frozenset(["Vol.", "Volume", "Disc", "CD", "Part"])
 
@@ -50,10 +50,3 @@ $set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
 
 %_shelffolder%
 $if2(%albumartist%,%artist%)/%album%/%title%"""
-
-
-# Default configuration values
-DEFAULT_SHELVES = {
-    ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: "",
-    ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: "",
-}

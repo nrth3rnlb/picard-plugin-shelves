@@ -193,7 +193,7 @@ class ShelfUtils:
         """
         shelf_sub_dirs: Set[str] = set()
         try:
-            shelf_sub_dirs: Set[str] = set(
+            shelf_sub_dirs = set(
                 entry.name for entry in base_path.iterdir() if entry.is_dir()
             )
 

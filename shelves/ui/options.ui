@@ -152,7 +152,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="scan_for_shelves_button">
+                  <widget class="QPushButton" name="scan_for_shelf_names_button">
                    <property name="toolTip">
                     <string>Automatically detect shelves
                                                                                     from your music library directory
@@ -164,7 +164,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="remove_shelf_button">
+                  <widget class="QPushButton" name="remove_shelves_button">
                    <property name="enabled">
                     <bool>false</bool>
                    </property>

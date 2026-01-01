@@ -253,7 +253,7 @@ class ShelfManager:
             shelf_name = cls._instance._shelves_by_album.get(album_id)
             if shelf_name is None:
                 log.warning(
-                    "Shelf for album %s could not be determined with certainty.",
+                    "Shelf for album '%s' could not be determined with certainty.",
                     album_id,
                 )
             return shelf_name, ShelfConstants.SHELF_SOURCE_FALLBACK

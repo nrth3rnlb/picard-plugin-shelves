@@ -199,7 +199,7 @@ class ProcessorPriorityTest(unittest.TestCase):
 
         # Assert
         mock_set_album_shelf.assert_called_with(
-            album_id="album123", shelf=shelf_sub_dir, lock=True
+            album_id="album123", shelf_name=shelf_sub_dir, lock=True
         )
 
 
