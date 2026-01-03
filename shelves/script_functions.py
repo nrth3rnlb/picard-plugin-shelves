@@ -14,7 +14,7 @@ from .utils import ShelfUtils
 
 def func_shelf(parser: Any) -> str:
     """
-    Picard script function: `$shelf_name()`
+    Picard script function: `$shelf()`
     Returns the clean shelf_name name from the file's metadata, removing any internal suffixes.
     """
     shelf_tag = parser.context[ShelfConstants.TAG_KEY]

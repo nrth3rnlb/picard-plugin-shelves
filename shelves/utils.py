@@ -46,7 +46,7 @@ class ShelfUtils:
     @staticmethod
     def get_shelf_name_from_tag(tag_value: Optional[str]) -> Optional[str]:
         """
-        Extract the shelf_name name from a tag value.
+        Extract the shelf name from a tag value.
 
         :param tag_value:
         :return:
