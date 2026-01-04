@@ -7,9 +7,9 @@ import unittest
 from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
+from picard.config import BoolOption, IntOption, ListOption
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication
-from picard.config import BoolOption, IntOption, ListOption
 
 from shelves.constants import ShelfConstants
 from shelves.ui.options import OptionsPage
@@ -176,7 +176,7 @@ class OptionsPageTest(unittest.TestCase):
 
         # We patch the property of the OptionsPage that is read in the save()
         with patch.object(
-            OptionsPage, "_registered_shelf_names"
+            OptionsPage, "registered_shelf_names"
         ) as mock_registered_shelf_names:
             mock_registered_shelf_names.return_value = _test_configuration[
                 ShelfConstants.CONFIG_KNOWN_SHELVES_KEY
@@ -209,7 +209,7 @@ class OptionsPageTest(unittest.TestCase):
 
         # We patch the property of the OptionsPage that is read in the save()
         with patch.object(
-            OptionsPage, "_registered_shelf_names"
+            OptionsPage, "registered_shelf_names"
         ) as mock_registered_shelf_names:
             mock_registered_shelf_names.return_value = set(self.test_known_shelves)
             # Act
@@ -272,7 +272,7 @@ class OptionsPageTest(unittest.TestCase):
         mock_get_text.return_value = (popped, True)
 
         with patch.object(
-            OptionsPage, "_registered_shelf_names"
+            OptionsPage, "registered_shelf_names"
         ) as mock_get_registered_shelf_names:
             mock_get_registered_shelf_names.return_value = set(self.test_known_shelves)
             # Act
@@ -307,7 +307,7 @@ class OptionsPageTest(unittest.TestCase):
         )
 
         with patch.object(
-            OptionsPage, "_registered_shelf_names"
+            OptionsPage, "registered_shelf_names"
         ) as mock_registered_shelf_names:
             mock_registered_shelf_names.return_value = set(self.test_known_shelves)
             # Act
@@ -334,7 +334,7 @@ class OptionsPageTest(unittest.TestCase):
         ]
 
         with patch.object(
-            OptionsPage, "_registered_shelf_names"
+            OptionsPage, "registered_shelf_names"
         ) as mock_registered_shelf_names:
             mock_registered_shelf_names.return_value = set(self.test_known_shelves)
             # Act
@@ -381,7 +381,7 @@ class OptionsPageTest(unittest.TestCase):
         )
 
         with patch.object(
-            OptionsPage, "_registered_shelf_names"
+            OptionsPage, "registered_shelf_names"
         ) as _mock_registered_shelf_names:
             _mock_registered_shelf_names.return_value = set(self.test_known_shelves)
 
@@ -439,7 +439,7 @@ class OptionsPageTest(unittest.TestCase):
         ).index(item.text())
 
         with patch.object(
-            OptionsPage, "_registered_shelf_names"
+            OptionsPage, "registered_shelf_names"
         ) as mock_registered_shelf_names:
             mock_registered_shelf_names.return_value = set(self.test_known_shelves)
             # Act

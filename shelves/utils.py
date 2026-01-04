@@ -6,6 +6,7 @@ Utility functions for managing shelf_names.
 
 from __future__ import annotations
 
+from gettext import gettext as _
 from pathlib import Path
 from typing import Optional, Set, Tuple
 
@@ -66,7 +67,7 @@ class ShelfUtils:
     @staticmethod
     def get_shelf_name_from_path(file_path: Path, base_path: Path) -> Optional[str]:
         """
-        Extract the shelf_name name from a file_path_str.
+        Extract the shelf name from a file_path.
         :param file_path:
         :param base_path:
         :return:
@@ -74,20 +75,21 @@ class ShelfUtils:
 
         try:
             if not file_path.is_relative_to(base_path):
-                log.debug("Path '%s' is not under base directory.", file_path)
+                log.warning(_("Path '%s' is not under base directory."), file_path)
                 return None
 
             relative_parts = file_path.relative_to(base_path).parts
             if not relative_parts or len(relative_parts) <= 1:
-                log.debug("File is directly in base directory.")
+                log.warning(_("File is directly in base directory."))
                 return None
 
             potential_shelf = relative_parts[0]
+            log.debug("Potential shelf name extracted: '%s'.", potential_shelf)
             return potential_shelf
 
         except (KeyError, ValueError, OSError) as e:
             log.error(
-                "Error extracting shelf_name from file_path_str '%s': %s.",
+                _("Error extracting shelf_name from file_path_str '%s': %s."),
                 file_path,
                 e,
             )
@@ -102,7 +104,7 @@ class ShelfUtils:
         :return:
         """
         if not isinstance(name, str) or not name.strip():
-            return False, "Shelf name cannot be empty"
+            return False, _("Shelf name cannot be empty")
 
         shelf_name = name.strip()
 

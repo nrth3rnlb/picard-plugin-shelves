@@ -11,9 +11,10 @@ from collections import Counter, defaultdict, namedtuple
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from picard import log
+from picard import config, log
 
 from .constants import ShelfConstants
+from .utils import ShelfUtils
 
 
 class ShelfManager:
@@ -21,17 +22,18 @@ class ShelfManager:
 
     _instance = None
     _lock = threading.Lock()
+    _log_data: Optional[Tuple[str, Dict[str, int], str]] = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
+    # noinspection PyTypeHints
     def __init__(self):
         if not hasattr(self, "_initialized"):
             self._initialized = True
             self._test_value = None
-            self._base_path: Optional[Path] = None
 
             # Minimum in-memory state
             self._shelf_state: Dict[str, Dict[str, Any]] = defaultdict(dict)
@@ -39,13 +41,15 @@ class ShelfManager:
                 defaultdict(list)
             )
             self._shelf_votes_counted: Dict[str, Counter] = {}
-
             self._shelves_by_album: Dict[str, str] = {}
 
-            # Cache shelf_name names
-            self._shelf_names: Set[str] = set()
+            self.base_path: Path = config.setting[
+                ShelfConstants.CONFIG_MOVE_FILES_TO_KEY
+            ]
 
-            self.log_data: Optional[Tuple[str, Dict[str, int], str]] = None
+            self.shelf_names: Set[str] = set(
+                config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]
+            )
 
     @property
     def shelf_names(self) -> Set[str]:
@@ -57,15 +61,17 @@ class ShelfManager:
         return self._shelf_names
 
     @shelf_names.setter
-    def shelf_names(self, value: Set[str]):
+    def shelf_names(self, names: Set[str]):
         """
         Set the list of shelf_name names.
-        :param value:
-        :type value:
+        :param names:
+        :type names:
         :return:
         :rtype:
         """
-        self._shelf_names = value
+        self._shelf_names = set(
+            filter(lambda name: ShelfUtils.validate_shelf_name(name)[0], names)
+        )
 
     @property
     def shelf_votes(self):
@@ -138,35 +144,34 @@ class ShelfManager:
 
         shelf_name = shelf_name.strip()
 
-        # pylint: disable=protected-access
         with cls._lock:
             # Counter for majority decisions
-            if album_id not in cls._instance._shelf_votes_counted:
-                cls._instance._shelf_votes_counted[album_id] = Counter()
-            cls._instance._shelf_votes_counted[album_id][shelf_name] += 1
+            if album_id not in ShelfManager()._shelf_votes_counted:
+                ShelfManager()._shelf_votes_counted[album_id] = Counter()
+            ShelfManager()._shelf_votes_counted[album_id][shelf_name] += 1
 
-            winner = cls._instance._shelf_votes_counted[album_id].most_common(1)[0][0]
+            winner = ShelfManager()._shelf_votes_counted[album_id].most_common(1)[0][0]
             LogData = namedtuple("LogData", ["album_id", "votes", "winner"])
 
-            if len(cls._instance._shelf_votes_counted[album_id]) > 1:
-                all_votes = cls._instance._shelf_votes_counted[album_id].most_common()
-                cls._instance.log_data = LogData(album_id, dict(all_votes), winner)
+            if len(ShelfManager()._shelf_votes_counted[album_id]) > 1:
+                all_votes = ShelfManager()._shelf_votes_counted[album_id].most_common()
+                ShelfManager()._log_data = LogData(album_id, dict(all_votes), winner)
 
-            cls._instance._shelves_by_album[album_id] = winner
+            ShelfManager()._shelves_by_album[album_id] = winner
 
             # For weighted decisions
             if not hasattr(cls._instance, "_shelf_votes_weighted"):
-                cls._instance._shelf_votes_weighted = defaultdict(list)
-            cls._instance._shelf_votes_weighted[album_id].append(
+                ShelfManager()._shelf_votes_weighted = defaultdict(list)
+            ShelfManager()._shelf_votes_weighted[album_id].append(
                 (shelf_name, weight, reason)
             )
 
-        if cls._instance.log_data:
+        if _log_data := ShelfManager()._log_data:
             log.warning(
                 "Album %s has files from different shelf_names. Votes: %s. Use: '%s'",
-                cls._instance.log_data[0],
-                cls._instance.log_data[1],
-                cls._instance.log_data[2],
+                _log_data[0],
+                _log_data[1],
+                _log_data[2],
             )
 
     # def vote_for_shelf(cls, album_id: str, shelf_name: str) -> None:
@@ -206,7 +211,7 @@ class ShelfManager:
     @classmethod
     def _get_manual_override(cls, album_id: str) -> Optional[str]:
         # pylint: disable=protected-access
-        state = cls._instance._shelf_state.get(album_id, {})
+        state = ShelfManager()._shelf_state.get(album_id, {})
         if (
             state.get("shelf_locked")
             or state.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL
@@ -242,15 +247,15 @@ class ShelfManager:
 
         # 2. Weighted decision
         # pylint: disable=protected-access
-        chosen = cls._winner(cls._instance._shelf_votes_weighted.get(album_id, []))
+        chosen = cls._winner(ShelfManager()._shelf_votes_weighted.get(album_id, []))
         if chosen:
             return chosen, ShelfConstants.SHELF_SOURCE_VOTES
 
         # 3. Fallback: simple majority winner from counter
         # pylint: disable=protected-access
-        with cls._instance._lock:
+        with ShelfManager()._lock:
             # pylint: disable=protected-access
-            shelf_name = cls._instance._shelves_by_album.get(album_id)
+            shelf_name = ShelfManager()._shelves_by_album.get(album_id)
             if shelf_name is None:
                 log.warning(
                     "Shelf for album '%s' could not be determined with certainty.",
@@ -266,8 +271,8 @@ class ShelfManager:
         :return:
         """
         # pylint: disable=protected-access
-        cls._instance._shelves_by_album.pop(album_id, None)
-        cls._instance._shelf_votes_weighted.pop(album_id, None)
+        ShelfManager()._shelves_by_album.pop(album_id, None)
+        ShelfManager()._shelf_votes_weighted.pop(album_id, None)
 
     @classmethod
     def is_likely_shelf_name(
@@ -331,7 +336,7 @@ class ShelfManager:
         :return:
         """
         # pylint: disable=protected-access
-        state = cls._instance._shelf_state.setdefault(album_id, {})
+        state = ShelfManager()._shelf_state.setdefault(album_id, {})
         if lock is None:
             lock = source == ShelfConstants.SHELF_SOURCE_MANUAL
 
@@ -361,8 +366,48 @@ class ShelfManager:
         :param album_id:
         :return:
         """
-        # pylint: disable=protected-access
-        state = cls._instance._shelf_state.setdefault(album_id, {})
+        state = ShelfManager()._shelf_state.setdefault(album_id, {})
         state["shelf_locked"] = False
         if state.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL:
             state["shelf_source"] = ShelfConstants.SHELF_SOURCE_VOTES
+
+    @classmethod
+    def intersect_shelf_names(cls, names: Set[str] | str) -> None:
+        """
+        Intersect shelf names with the provided set and update the UI.
+
+        :param names: Single shelf name or set of shelf names to intersect.
+        :type names: Set[str] | str
+        :return: None
+        :rtype: None
+        """
+        if isinstance(names, str):
+            names = {names}
+        ShelfManager().shelf_names = ShelfManager().shelf_names.intersection(names)
+
+    @classmethod
+    def remove_shelf_names(cls, names: Set[str] | str) -> None:
+        """
+        Remove shelf names from the registry and update the UI if requested.
+
+        :param names: Single shelf name or set of shelf names to remove.
+        :type names: Set[str] | str
+        :return: None
+        :rtype: None
+        """
+        if isinstance(names, str):
+            names = {names}
+        ShelfManager().shelf_names = ShelfManager().shelf_names.difference(names)
+
+    @classmethod
+    def add_shelf_names(cls, names: Set[str] | str) -> None:
+        """
+        Add shelf names to the registry and update the UI.
+
+        :param names: Single shelf name or set of shelf names to add.
+        :type names: Set[str] | str
+        :return: None
+        """
+        if isinstance(names, str):
+            names = {names}
+        ShelfManager().shelf_names = ShelfManager().shelf_names.union(names)
