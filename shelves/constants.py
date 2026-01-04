@@ -13,7 +13,7 @@ class ShelfConstants:
     # noinspection SpellCheckingInspection
     MUSICBRAINZ_ALBUMID = "musicbrainz_albumid"
     # noinspection SpellCheckingInspection
-    TAG_KEY = "shelf_name"
+    TAG_KEY = "shelf"
 
     # Validation limits
     # TODO Make configurable
@@ -45,7 +45,7 @@ class ShelfConstants:
     # If nothing else works, use the value in TAG_KEY
     SHELF_SOURCE_FALLBACK = "fallback"
 
-    RENAME_SNIPPET = """$set(_shelffolder,$shelf_name())
+    RENAME_SNIPPET = """$set(_shelffolder,$shelf())
 $set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
 
 %_shelffolder%
