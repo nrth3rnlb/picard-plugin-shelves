@@ -23,6 +23,8 @@ class ShelfManager:
     _instance = None
     _lock = threading.Lock()
     _log_data: Optional[Tuple[str, Dict[str, int], str]] = None
+    _shelf_names: Set[str] = set()
+    _base_path: Path = Path(".")
 
     def __new__(cls):
         if cls._instance is None:
@@ -43,10 +45,9 @@ class ShelfManager:
             self._shelf_votes_counted: Dict[str, Counter] = {}
             self._shelves_by_album: Dict[str, str] = {}
 
-            self.base_path: Path = config.setting[
-                ShelfConstants.CONFIG_MOVE_FILES_TO_KEY
-            ]
-
+            self.base_path: Path = Path(
+                config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]
+            )
             self.shelf_names: Set[str] = set(
                 config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]
             )
@@ -107,13 +108,18 @@ class ShelfManager:
         return self._base_path
 
     @base_path.setter
-    def base_path(self, value: str):
+    def base_path(self, value: str | Path):
         """
-        Sets the base file_path_str for the shelf_name paths.
+        Set the base file_path.
         :param value:
+        :type value:
         :return:
+        :rtype:
         """
-        self._base_path = Path(value).resolve()
+        if isinstance(value, str):
+            self._base_path = Path(value).resolve()
+        else:
+            self._base_path = value.resolve()
 
     @classmethod
     def destroy(cls):
@@ -129,7 +135,7 @@ class ShelfManager:
         album_id: str,
         shelf_name: str,
         weight: float = 0.0,
-        reason: str = None,
+        reason: str = "",
     ) -> None:
         """
 

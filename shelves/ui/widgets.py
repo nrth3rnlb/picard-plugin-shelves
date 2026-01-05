@@ -7,7 +7,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class MaxItemsDropListWidget(QtWidgets.QListWidget):
     itemCountChanged = QtCore.pyqtSignal(int)
 
-    UNLIMITED = 0
+    UNLIMITED: int = 0
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)

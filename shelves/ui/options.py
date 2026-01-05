@@ -157,8 +157,8 @@ class OptionsPage(PicardOptions):
         """Save shelf_names list to config."""
         config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = (
             item.text()
-            for i in range(self.self.shelf_management_shelves.count())
-            if (item := self.self.shelf_management_shelves.item(i)) is not None
+            for i in range(self.shelf_management_shelves.count())
+            if (item := self.shelf_management_shelves.item(i)) is not None
         )
         config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = [
             item.text()
@@ -250,7 +250,7 @@ class OptionsPage(PicardOptions):
             if reply == QtWidgets.QMessageBox.No:
                 return
 
-        self._remove_shelf_names(selected_names)
+        ShelfManager().remove_shelf_names(selected_names)
 
     def _action_scan_for_shelf_names(self) -> None:
         """
@@ -263,7 +263,7 @@ class OptionsPage(PicardOptions):
             base_path=ShelfManager().base_path
         )
 
-        self._add_shelf_names(shelf_names)
+        ShelfManager().add_shelf_names(shelf_names)
 
     def _action_intersect_shelves(self) -> None:
         """
@@ -276,7 +276,7 @@ class OptionsPage(PicardOptions):
             base_path=ShelfManager().base_path
         )
 
-        self._intersect_shelf_names(shelf_names)
+        ShelfManager().intersect_shelf_names(shelf_names)
 
     # ============================================================================
     # Workflow - Move actions

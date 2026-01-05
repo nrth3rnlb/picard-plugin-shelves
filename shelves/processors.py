@@ -184,9 +184,11 @@ class ShelfProcessors:
         if not album_id:
             return
 
-        name_from_path: str = ShelfUtils.get_shelf_name_from_path(
+        if name_from_path := ShelfUtils.get_shelf_name_from_path(
             file_path=Path(file.filename), base_path=ShelfManager().base_path
-        ).strip()
+        ):
+            name_from_path = name_from_path.strip()
+
         name_from_tag: str = file_meta.get(ShelfConstants.TAG_KEY, "").strip()
         name_from_tag_without_suffix: str = name_from_tag.replace(
             ShelfConstants.MANUAL_SHELF_SUFFIX, ""
@@ -196,19 +198,15 @@ class ShelfProcessors:
         )
         is_known_name_from_tag_and_manual = (
             name_from_tag
-            and name_from_tag_without_suffix
-            in ShelfManager().shelf_names
+            and name_from_tag_without_suffix in ShelfManager().shelf_names
             and ShelfConstants.MANUAL_SHELF_SUFFIX in name_from_tag
         )
         is_known_name_from_tag = (
-            name_from_tag
-            and name_from_tag_without_suffix
-            in ShelfManager().shelf_names
+            name_from_tag and name_from_tag_without_suffix in ShelfManager().shelf_names
         )
         is_unknown_name_from_tag = (
             name_from_tag
-            and name_from_tag_without_suffix
-            not in ShelfManager().shelf_names
+            and name_from_tag_without_suffix not in ShelfManager().shelf_names
         )
         is_unknown_name_from_path = (
             name_from_path is not None

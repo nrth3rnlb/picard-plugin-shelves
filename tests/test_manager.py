@@ -5,8 +5,9 @@ Tests for the ShelfManager class.
 """
 
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
+from shelves.constants import ShelfConstants
 from shelves.manager import ShelfManager
 
 
@@ -21,6 +22,16 @@ class ManagerTest(unittest.TestCase):
         self.mock_validators = MagicMock()
         self.mock_utils = MagicMock()
         self.album_id = "album123"
+
+        self.test_configuration: dict[
+            str,
+            str | list[str] | bool | int,
+        ] = {
+            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",  # noqa: F821
+        }
+        self.config = MagicMock()
+        # Share the same dict so tests that mutate config.setting see the changes
+        self.config.setting = self.test_configuration
 
     def test_singleton(self):
         """Test that the ShelfManager is a singleton."""
@@ -53,9 +64,12 @@ class ManagerTest(unittest.TestCase):
     #         ShelfManager()._shelf_votes_weighted[self.album_id]["ShelfA"], 2
     #     )
 
-    def test_voting_determines_winner(self):
+    @patch("shelves.ui.options.config")
+    def test_voting_determines_winner(self, mock_config):
         """Test that the shelf_name with the most _shelf_votes_weighted is set as the winner."""
+        # Arrange
         ShelfManager.destroy()
+
         # pylint: disable=protected-access
         ShelfManager().vote_for_shelf(
             self.album_id, "ShelfA", weight=0.1, reason="test"

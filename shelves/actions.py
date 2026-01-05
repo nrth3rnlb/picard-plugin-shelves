@@ -13,7 +13,7 @@ from typing import Any, List, Optional
 from picard import log
 from picard.ui.itemviews import BaseAction
 from PyQt5 import (
-    QtWidgets,  # type: ignore # uic has no type stubs
+    QtWidgets,
     uic,
 )
 from PyQt5.QtWidgets import QDialog
@@ -209,9 +209,11 @@ class DetermineShelfAction(BaseAction):
         for obj in objs:
             if hasattr(obj, "iterfiles"):
                 for file in obj.iterfiles():
-                    shelf_name, _ = ShelfUtils.get_shelf_name_from_path(
-                        file_path=Path(file.filename).resolve(),
-                        base_path=ShelfManager().base_path,
+                    file_path = Path(file.filename).resolve()
+                    base_path = ShelfManager().base_path
+                    shelf_name = ShelfUtils.get_shelf_name_from_path(
+                        file_path=file_path,
+                        base_path=base_path,
                     )
                     if shelf_name is not None:
                         file.metadata[ShelfConstants.TAG_KEY] = shelf_name
