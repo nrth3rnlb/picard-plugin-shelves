@@ -268,7 +268,7 @@ class OptionsPageTest(unittest.TestCase):
         mock_get_text.return_value = (popped, True)
 
         # Act
-        self.options_page._action_add_shelf()
+        self.options_page._management_action_add()
 
         # Assert
         expected_shelves = popped
@@ -301,7 +301,7 @@ class OptionsPageTest(unittest.TestCase):
         ) as mock_registered_shelf_names:
             mock_registered_shelf_names.return_value = set(self.test_known_shelves)
             # Act
-            self.options_page._action_add_shelf()
+            self.options_page._management_action_add()
 
         # Assert - The warning dialog should have been called
         mock_warning.assert_called_once()
@@ -327,7 +327,7 @@ class OptionsPageTest(unittest.TestCase):
         ]
 
         # Act
-        self.options_page._action_remove_shelves()
+        self.options_page._management_action_remove()
 
         # Assert
         expected_shelves = {selected_text}
@@ -369,7 +369,7 @@ class OptionsPageTest(unittest.TestCase):
         )
 
         # Act
-        self.options_page._action_remove_shelves()
+        self.options_page._management_action_remove()
 
         # Assert - The dialog should have been called because there's a conflict
         mock_question.assert_called_once()
@@ -419,7 +419,7 @@ class OptionsPageTest(unittest.TestCase):
         ).index(item.text())
 
         # Act
-        self.options_page._action_intersect_shelves()
+        self.options_page._management_action_intersect()
 
         # Assert
         expected_shelves = shelf_dirs
@@ -440,7 +440,7 @@ class OptionsPageTest(unittest.TestCase):
         mock_get_shelf_dirs.return_value = deepcopy(self.test_known_shelves)
 
         # Act
-        self.options_page._action_scan_for_shelf_names()
+        self.options_page._management_action_scan()
 
         # Assert
         expected_shelves = deepcopy(self.test_known_shelves)

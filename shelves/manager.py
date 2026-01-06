@@ -390,6 +390,8 @@ class ShelfManager:
         if isinstance(names, str):
             names = {names}
         ShelfManager().shelf_names = ShelfManager().shelf_names.intersection(names)
+        log.debug("Intersected shelf names: %s", names)
+        log.debug("Current shelf names: %s", ShelfManager().shelf_names)
 
     @classmethod
     def remove_shelf_names(cls, names: Set[str] | str) -> None:
@@ -404,6 +406,8 @@ class ShelfManager:
         if isinstance(names, str):
             names = {names}
         ShelfManager().shelf_names = ShelfManager().shelf_names.difference(names)
+        log.debug("Removed shelf names: %s", names)
+        log.debug("Current shelf names: %s", ShelfManager().shelf_names)
 
     @classmethod
     def add_shelf_names(cls, names: Set[str] | str) -> None:
@@ -417,3 +421,5 @@ class ShelfManager:
         if isinstance(names, str):
             names = {names}
         ShelfManager().shelf_names = ShelfManager().shelf_names.union(names)
+        log.debug("Added shelf names: %s", names)
+        log.debug("Current shelf names: %s", ShelfManager().shelf_names)
