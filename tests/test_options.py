@@ -29,10 +29,10 @@ class OptionsPageTest(unittest.TestCase):
     # Setup and teardown
     # ============================================================================
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Set up QApplication once for all tests."""
         if QApplication.instance() is None:
-            cls._app = QApplication(sys.argv)
+            cls._app = QApplication(sys.argv)  # type: ignore[attr-defined]
 
     def setUp(self):
         """Set up test fixtures."""
@@ -107,14 +107,6 @@ class OptionsPageTest(unittest.TestCase):
                 "getter": None,
             },
         }
-
-        # Create a config mock and patch the module-level `shelves.ui.options.config`
-        self.config = MagicMock()
-        # Share the same dict so tests that mutate config.setting see the changes
-        self.config.setting = self.test_configuration
-        self._config_patcher = patch("shelves.ui.options.config", new=self.config)
-        self._config_patcher.start()
-        self.addCleanup(self._config_patcher.stop)
 
     # ============================================================================
     # Helper methods

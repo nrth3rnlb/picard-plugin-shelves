@@ -27,6 +27,10 @@ COMBO_SHELF_NAME = "combo_shelves"
 
 
 class SetShelfAction(BaseAction):
+    """
+    Manually set shelf_name
+    """
+
     NAME = "Set shelf_name name..."
 
     tagger: Any
@@ -86,6 +90,10 @@ class SetShelfAction(BaseAction):
 
 
 class ResetShelfAction(BaseAction):
+    """
+    Restore automatic shelf_name
+    """
+
     NAME = "Restore automatic shelf_name"
 
     tagger: Any
@@ -128,6 +136,10 @@ class ResetShelfAction(BaseAction):
 
 
 class SetShelfDialog(QDialog):
+    """
+    Dialog to set shelf_name name
+    """
+
     NAME = "Set Shelf"
 
     def __init__(self) -> None:
@@ -200,7 +212,7 @@ class DetermineShelfAction(BaseAction):
 
     def callback(self, objs: List[Any]) -> None:
         """
-        Determine shelf_name
+        Determine the shelf name
         :param objs:
         :type objs:
         :return:
@@ -222,4 +234,4 @@ class DetermineShelfAction(BaseAction):
                             shelf_name,
                             file.filename,
                         )
-                        ShelfManager().shelf_names.add(shelf_name)
+                        ShelfManager().add_shelf_names(shelf_name)

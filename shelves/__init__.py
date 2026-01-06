@@ -6,6 +6,7 @@ Shelves Plugin for MusicBrainz Picard.
 This plugin adds virtual shelf_name management to MusicBrainz Picard,
 allowing music files to be organized by top-level folders.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
@@ -144,4 +145,4 @@ register_album_action(ResetShelfAction())
 register_options_page(ShelvesOptionsPage)
 
 # Register a script function for use in file naming
-register_script_function(function=func_shelf, name="shelf_name")
+register_script_function(function=func_shelf, name="shelf")

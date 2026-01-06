@@ -18,22 +18,15 @@ class ManagerTest(unittest.TestCase):
 
     def setUp(self):
         """Set up a new ShelfManager _instance for each test."""
-        # Mock the dependencies required by the ShelfManager constructor
-        self.mock_validators = MagicMock()
-        self.mock_utils = MagicMock()
-        self.album_id = "album123"
-
         self.test_configuration: dict[
             str,
             str | list[str] | bool | int,
         ] = {
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",  # noqa: F821
+            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
         }
-        self.config = MagicMock()
-        # Share the same dict so tests that mutate config.setting see the changes
-        self.config.setting = self.test_configuration
 
-    def test_singleton(self):
+    @patch("shelves.manager.config")
+    def test_singleton(self, _mock_config):
         """Test that the ShelfManager is a singleton."""
         ShelfManager.destroy()
         a = ShelfManager()
@@ -41,8 +34,10 @@ class ManagerTest(unittest.TestCase):
         b = ShelfManager()
         self.assertEqual("foobar", b.test_value)
 
-    def test_singleton_destroy(self):
+    @patch("shelves.manager.config")
+    def test_singleton_destroy(self, _mock_config):
         """Test that the ShelfManager is a singleton."""
+
         ShelfManager.destroy()
         a = ShelfManager()
         a.test_value = "foobar"
@@ -54,60 +49,51 @@ class ManagerTest(unittest.TestCase):
     #     """Test that voting for a shelf_name increments its vote count."""
     #     ShelfManager.destroy()
     #     ShelfManager().vote_for_shelf(
-    #         self.album_id, "ShelfA", weight=0.1, reason="test"
+    #         _album_id, "ShelfA", weight=0.1, reason="test"
     #     )
     #     ShelfManager().vote_for_shelf(
-    #         self.album_id, "ShelfA", weight=0.1, reason="test"
+    #         _album_id, "ShelfA", weight=0.1, reason="test"
     #     )
     #     # pylint: disable=protected-access
     #     self.assertEqual(
-    #         ShelfManager()._shelf_votes_weighted[self.album_id]["ShelfA"], 2
+    #         ShelfManager()._shelf_votes_weighted[_album_id]["ShelfA"], 2
     #     )
 
-    @patch("shelves.ui.options.config")
-    def test_voting_determines_winner(self, mock_config):
+    @patch("shelves.manager.config")
+    def test_voting_determines_winner(self, _mock_config):
         """Test that the shelf_name with the most _shelf_votes_weighted is set as the winner."""
         # Arrange
         ShelfManager.destroy()
-
+        _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
         # pylint: disable=protected-access
-        ShelfManager().vote_for_shelf(
-            self.album_id, "ShelfA", weight=0.1, reason="test"
-        )
-        ShelfManager().vote_for_shelf(
-            self.album_id, "ShelfB", weight=0.1, reason="test"
-        )
-        ShelfManager().vote_for_shelf(
-            self.album_id, "ShelfA", weight=0.1, reason="test"
-        )
+        ShelfManager().vote_for_shelf(_album_id, "ShelfA", weight=0.1, reason="test")
+        ShelfManager().vote_for_shelf(_album_id, "ShelfB", weight=0.1, reason="test")
+        ShelfManager().vote_for_shelf(_album_id, "ShelfA", weight=0.1, reason="test")
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
-            ShelfManager().get_album_shelf(self.album_id),
+            ShelfManager().get_album_shelf(_album_id),
             ("ShelfA", "_shelf_votes_weighted"),
         )
 
-    def test_get_album_shelf_returns_winner(self):
+    @patch("shelves.manager.config")
+    def test_get_album_shelf_returns_winner(self, _mock_config):
         """Test that get_album_shelf returns the correct winner."""
         ShelfManager.destroy()
+        _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
         # pylint: disable=protected-access
-        ShelfManager().vote_for_shelf(
-            self.album_id, "ShelfB", weight=0.1, reason="test"
-        )
-        ShelfManager().vote_for_shelf(
-            self.album_id, "ShelfB", weight=0.1, reason="test"
-        )
-        ShelfManager().vote_for_shelf(
-            self.album_id, "ShelfA", weight=0.1, reason="test"
-        )
+        ShelfManager().vote_for_shelf(_album_id, "ShelfB", weight=0.1, reason="test")
+        ShelfManager().vote_for_shelf(_album_id, "ShelfB", weight=0.1, reason="test")
+        ShelfManager().vote_for_shelf(_album_id, "ShelfA", weight=0.1, reason="test")
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
-            ShelfManager().get_album_shelf(self.album_id),
+            ShelfManager().get_album_shelf(_album_id),
             ("ShelfB", "_shelf_votes_weighted"),
         )
 
-    def test_get_album_shelf_returns_none_for_unknown_album(self):
+    @patch("shelves.manager.config")
+    def test_get_album_shelf_returns_none_for_unknown_album(self, _mock_config):
         """Test that get_album_shelf returns None for an album with no _shelf_votes_weighted."""
         ShelfManager.destroy()
         # pylint: disable=protected-access
@@ -115,23 +101,24 @@ class ManagerTest(unittest.TestCase):
         self.assertIsNone(shelf)
         self.assertEqual(decision, "fallback")
 
-    def test_clear_album_resets_state(self):
+    @patch("shelves.manager.config")
+    def test_clear_album_resets_state(self, _mock_config):
         """Test that clear_album removes all voting data for an album."""
         ShelfManager.destroy()
-        ShelfManager().vote_for_shelf(
-            self.album_id, "ShelfA", weight=0.1, reason="test"
-        )
+        # mock_config.setting = self.test_configuration
+        _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
+        ShelfManager().vote_for_shelf(_album_id, "ShelfA", weight=0.1, reason="test")
 
         # Verify _shelf_state exists
         # pylint: disable=protected-access
-        self.assertIn(self.album_id, ShelfManager()._shelf_votes_weighted)
-        self.assertIn(self.album_id, ShelfManager()._shelves_by_album)
+        self.assertIn(_album_id, ShelfManager()._shelf_votes_weighted)
+        self.assertIn(_album_id, ShelfManager()._shelves_by_album)
 
         # Clear and verify _shelf_state is gone
-        ShelfManager.clear_album(self.album_id)
+        ShelfManager.clear_album(_album_id)
         # pylint: disable=protected-access
-        self.assertNotIn(self.album_id, ShelfManager()._shelf_votes_weighted)
-        self.assertNotIn(self.album_id, ShelfManager()._shelves_by_album)
+        self.assertNotIn(_album_id, ShelfManager()._shelf_votes_weighted)
+        self.assertNotIn(_album_id, ShelfManager()._shelves_by_album)
 
 
 if __name__ == "__main__":
