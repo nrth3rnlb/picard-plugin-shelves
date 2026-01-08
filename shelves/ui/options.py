@@ -13,12 +13,11 @@ from picard import config, log
 from picard.config import BoolOption, IntOption, ListOption, Option, TextOption
 from picard.ui.options import OptionsPage as PicardOptions
 from PyQt5 import (
+    QtCore,
     QtGui,
     QtWidgets,
     uic,
 )
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAbstractItemView, QListWidget
 
 from ..constants import ShelfConstants
 from ..manager import ShelfManager
@@ -148,18 +147,6 @@ class OptionsPage(PicardOptions):
         self.stage_1_includes_non_shelves.setChecked(
             config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY],
         )
-
-        # noinspection PyTypeHints
-        remaining_shelves = (
-            ShelfManager()
-            .shelf_names.difference(
-                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
-            )
-            .difference(
-                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
-            )
-        )
-        self._workflow_build_list_widget(remaining_shelves, "", self.shelves_for_stages)
 
         self._management_setup_configuration()
         self._workflow_setup_configuration()
@@ -327,30 +314,56 @@ class OptionsPage(PicardOptions):
     # ============================================================================
     def _workflow_setup_configuration(self) -> None:
         """Setup workflow configuration UI components and connect signals."""
-        self.shelves_for_stages.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
-        # Workflow stage 1
-        self.label_workflow_stage_1.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.workflow_stage_1.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.workflow_stage_1.itemSelectionChanged.connect(
-            self._workflow_on_stage_changed,
+        # Shelves for stages connections
+        self.shelves_for_stages.setSelectionMode(
+            QtWidgets.QAbstractItemView.ExtendedSelection
         )
+        self.shelves_for_stages.itemSelectionChanged.connect(
+            self._workflow_on_shelves_for_stages_changed,
+        )
+        if (model := self.shelves_for_stages.model()) is not None:
+            model.rowsInserted.connect(
+                self._workflow_on_shelves_for_stages_changed,
+            )
+            model.rowsRemoved.connect(
+                self._workflow_on_shelves_for_stages_changed,
+            )
 
-        # Workflow stage 2
+        # Stage 1 connections
+        self.label_workflow_stage_1.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.workflow_stage_1.setSelectionMode(
+            QtWidgets.QAbstractItemView.ExtendedSelection
+        )
+        self.workflow_stage_1.itemSelectionChanged.connect(
+            self._workflow_on_stage_1_changed,
+        )
+        if (model := self.workflow_stage_1.model()) is not None:
+            model.rowsInserted.connect(
+                self._workflow_on_stage_1_changed,
+            )
+            model.rowsRemoved.connect(
+                self._workflow_on_stage_1_changed,
+            )
+
+        # Stage 2 connections
         self.workflow_stage_2.max_item_count = 1
         log.debug(f"Max item count: {self.workflow_stage_2.max_item_count}")
-        self.workflow_stage_2.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.workflow_stage_2.itemSelectionChanged.connect(
-            self._workflow_on_stage_changed,
+        self.workflow_stage_2.setSelectionMode(
+            QtWidgets.QAbstractItemView.ExtendedSelection
         )
-
-        # Button icons
-        self.button_all_to_stage_1.setIcon(self.go_down_icon)
-        self.button_all_to_stage_2.setIcon(self.go_down_icon)
-        self.button_stage_1_to_all.setIcon(self.go_up_icon)
-        self.button_stage_1_to_stage_2.setIcon(self.go_next_icon)
-        self.button_stage_2_to_all.setIcon(self.go_up_icon)
-        self.button_stage_2_to_stage_1.setIcon(self.go_previous_icon)
+        self.workflow_stage_2.itemSelectionChanged.connect(
+            self._workflow_on_stage_2_changed,
+        )
+        if (model := self.workflow_stage_2.model()) is not None:
+            model.rowsInserted.connect(
+                self._workflow_on_stage_2_changed,
+            )
+            model.rowsRemoved.connect(
+                self._workflow_on_stage_2_changed,
+            )
 
         # Button connections
         self.button_all_to_stage_1.clicked.connect(
@@ -372,10 +385,31 @@ class OptionsPage(PicardOptions):
             self._workflow_action_move_item_stage_2_to_stage_1,
         )
 
+        # Button icons
+        self.button_all_to_stage_1.setIcon(self.go_down_icon)
+        self.button_all_to_stage_2.setIcon(self.go_down_icon)
+        self.button_stage_1_to_all.setIcon(self.go_up_icon)
+        self.button_stage_1_to_stage_2.setIcon(self.go_next_icon)
+        self.button_stage_2_to_all.setIcon(self.go_up_icon)
+        self.button_stage_2_to_stage_1.setIcon(self.go_previous_icon)
+
+        # Build shelves for stages and trigger an initial state change
+        # noinspection PyTypeHints
+        remaining_shelves = (
+            ShelfManager()
+            .shelf_names.difference(
+                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
+            )
+            .difference(
+                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+            )
+        )
+        self._workflow_build_list_widget(remaining_shelves, "", self.shelves_for_stages)
+
     def _management_setup_configuration(self) -> None:
         """Setup shelf management UI components and connect signals."""
         self.shelf_management_shelves.setSelectionMode(
-            QAbstractItemView.ExtendedSelection,
+            QtWidgets.QAbstractItemView.ExtendedSelection,
         )
         self.add_shelf_button.clicked.connect(self._management_action_add)
         self.remove_shelves_button.clicked.connect(self._management_action_remove)
@@ -450,7 +484,7 @@ class OptionsPage(PicardOptions):
     def _workflow_build_list_widget(
         shelf_names: set[str],
         config_key: str,
-        widget: QListWidget,
+        widget: QtWidgets.QListWidget,
     ) -> set[str]:
         """
         Build workflow list widgets based on possible shelves and config.
@@ -516,11 +550,56 @@ class OptionsPage(PicardOptions):
             len(self.shelf_management_shelves.selectedItems()) > 0,
         )
 
-    def _workflow_on_stage_changed(self) -> None:
+    def _workflow_on_shelves_for_stages_changed(self) -> None:
         """
-        Handle workflow stage change and update naming script code.
+        Handles the state change for shelves available for workflow stages.
+
+        :return: This method does not return any value.
+        :rtype: None
+        """
+        has_items_shelves_for_stages = self.shelves_for_stages.count() > 0
+        is_full_shelves_for_stages = (
+            self.shelves_for_stages.count() >= self.shelves_for_stages.max_item_count
+        )
+
+        self.button_stage_1_to_all.setEnabled(not is_full_shelves_for_stages)
+        self.button_stage_2_to_all.setEnabled(not is_full_shelves_for_stages)
+
+        self.button_all_to_stage_1.setEnabled(has_items_shelves_for_stages)
+        self.button_all_to_stage_2.setEnabled(has_items_shelves_for_stages)
+
+    def _workflow_on_stage_1_changed(self) -> None:
+        """
+        Handles the state change for workflow stage 1.
+
+        :return: This method does not return any value.
+        :rtype: None
+        """
+        has_items_stage_1 = self.workflow_stage_1.count() > 0
+        is_full_stage_1 = (
+            self.workflow_stage_1.count() >= self.workflow_stage_1.max_item_count
+        )
+
+        self.button_all_to_stage_1.setEnabled(not is_full_stage_1)
+        self.button_stage_2_to_stage_1.setEnabled(not is_full_stage_1)
+
+        self.button_stage_1_to_all.setEnabled(has_items_stage_1)
+        self.button_stage_1_to_stage_2.setEnabled(has_items_stage_1)
+
+    def _workflow_on_stage_2_changed(self) -> None:
+        """
+        Handles the state change for workflow stage 2.
 
         :return: None
         :rtype: None
         """
-        self.naming_script_code.setPlainText(ShelfConstants.RENAME_SNIPPET)
+        has_items_stage_2 = self.workflow_stage_2.count() > 0
+        is_full_stage_2 = (
+            self.workflow_stage_2.count() >= self.workflow_stage_2.max_item_count
+        )
+
+        self.button_all_to_stage_2.setEnabled(not is_full_stage_2)
+        self.button_stage_1_to_stage_2.setEnabled(not is_full_stage_2)
+
+        self.button_stage_2_to_all.setEnabled(has_items_stage_2)
+        self.button_stage_2_to_stage_1.setEnabled(has_items_stage_2)
