@@ -1,44 +1,56 @@
 from typing import Optional
 
-from picard import log
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class MaxItemsDropListWidget(QtWidgets.QListWidget):
-    itemCountChanged = QtCore.pyqtSignal(int)
+class QShelvesWidget(QtWidgets.QListWidget):
+    """
+    Custom QListWidget that supports limiting the number of items it can contain.
+    """
 
     UNLIMITED: int = 0
+    _max_item_count: int = UNLIMITED
 
-    def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
+    def __init__(
+        self,
+        parent: Optional[QtWidgets.QWidget] = None,
+        max_count: int = UNLIMITED,
+    ):
         super().__init__(parent)
 
-        self._max_item_count: int = self.UNLIMITED
+        # self._max_item_count: int = self.UNLIMITED
+        self.max_item_count = max_count
         self._update_drop_acceptance()
 
-    def maximumItemCount(self) -> int:
+    @property
+    def max_item_count(self):
         """
+        Gets the maximum item count allowed.
 
-        :return:
-        :rtype:
+        :return: The maximum number of items permitted.
+        :rtype: int
         """
         return self._max_item_count
 
-    def setMaximumItemCount(self, count: int = UNLIMITED) -> None:
+    @max_item_count.setter
+    def max_item_count(self, value: int):
         """
+        Sets the maximum number of items that are allowed.
 
-        :param count:
-        :type count:
-        :return:
-        :rtype:
+        :param value: The maximum count of items to be set. Must be an integer and comply with
+            the constraints of the system.
+        :type value: int
+        :return: None
+        :rtype: None
         """
-        normalized = max(0, int(count))
+        normalized = max(0, int(value))
         if normalized == self._max_item_count:
             return
 
         self._max_item_count = normalized
         self._update_drop_acceptance()
 
-    def dropEvent(self, event: QtGui.QDropEvent) -> None:
+    def dropEvent(self, event: Optional[QtGui.QDropEvent]) -> None:
         """
 
         :param event:
@@ -46,27 +58,24 @@ class MaxItemsDropListWidget(QtWidgets.QListWidget):
         :return:
         :rtype:
         """
+        if not event:
+            return
+
         if self._max_item_count <= self.UNLIMITED:
             super().dropEvent(event)
             return
 
         source = event.source()
-        if not isinstance(source, QtWidgets.QListWidget):
+        if not isinstance(source, QShelvesWidget):
             event.ignore()
             return
-        event.setDropAction(QtCore.Qt.MoveAction)
+        event.setDropAction(QtCore.Qt.DropAction.MoveAction)
 
         selected_items = source.selectedItems()
         if not selected_items:
             event.ignore()
             return
 
-        log.debug(
-            "already available: %s, to add: %s, maximum: %s",
-            self.count(),
-            len(selected_items),
-            self._max_item_count,
-        )
         if self.count() + len(selected_items) > self._max_item_count:
             event.ignore()
             return
@@ -81,6 +90,6 @@ class MaxItemsDropListWidget(QtWidgets.QListWidget):
     def _update_drop_acceptance(self) -> None:
         # 0 means "unlimited"
         self.setAcceptDrops(
-            self._max_item_count <= self.UNLIMITED
-            or self.count() <= self._max_item_count,
+            self.max_item_count <= self.UNLIMITED
+            or self.count() <= self.max_item_count,
         )

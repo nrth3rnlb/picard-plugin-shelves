@@ -95,7 +95,7 @@
                <number>0</number>
               </property>
               <item>
-               <widget class="QListWidget" name="shelf_management_shelves">
+               <widget class="QShelvesWidget" name="shelf_management_shelves">
                 <property name="enabled">
                  <bool>true</bool>
                 </property>
@@ -253,7 +253,7 @@
                   <number>0</number>
                  </property>
                  <item>
-                  <widget class="MaxItemsDropListWidget" name="shelves_for_stages">
+                  <widget class="QShelvesWidget" name="shelves_for_stages">
                    <property name="dragDropMode">
                     <enum>QAbstractItemView::DragDrop</enum>
                    </property>
@@ -460,7 +460,7 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="MaxItemsDropListWidget" name="workflow_stage_1">
+                     <widget class="QShelvesWidget" name="workflow_stage_1">
                       <property name="dragDropMode">
                        <enum>QAbstractItemView::DragDrop</enum>
                       </property>
@@ -566,7 +566,7 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="MaxItemsDropListWidget" name="workflow_stage_2">
+                     <widget class="QShelvesWidget" name="workflow_stage_2">
                       <property name="dragDropMode">
                        <enum>QAbstractItemView::DragDrop</enum>
                       </property>
@@ -638,7 +638,7 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>MaxItemsDropListWidget</class>
+   <class>QShelvesWidget</class>
    <extends>QListWidget</extends>
    <header>widgets</header>
   </customwidget>

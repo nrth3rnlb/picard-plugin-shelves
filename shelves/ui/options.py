@@ -9,7 +9,7 @@ import sys
 from gettext import gettext as _
 from typing import Optional
 
-from picard import config
+from picard import config, log
 from picard.config import BoolOption, IntOption, ListOption, Option, TextOption
 from picard.ui.options import OptionsPage as PicardOptions
 from PyQt5 import (
@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import QAbstractItemView, QListWidget
 from ..constants import ShelfConstants
 from ..manager import ShelfManager
 from ..utils import ShelfUtils
-from .widgets import MaxItemsDropListWidget
+from .widgets import QShelvesWidget
 
 
 class OptionsPage(PicardOptions):
@@ -44,9 +44,6 @@ class OptionsPage(PicardOptions):
             ShelfConstants.CONFIG_KNOWN_SHELVES_KEY,
             [],
         ),
-        TextOption(
-            "setting", ShelfConstants.CONFIG_ALBUM_SHELF_KEY, ShelfConstants.TAG_KEY
-        ),
         ListOption(
             "setting",
             ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY,
@@ -62,6 +59,9 @@ class OptionsPage(PicardOptions):
             "setting",
             ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY,
             False,
+        ),
+        TextOption(
+            "setting", ShelfConstants.CONFIG_ALBUM_SHELF_KEY, ShelfConstants.TAG_KEY
         ),
         IntOption("setting", ShelfConstants.CONFIG_ACTIVE_TAB, 0),
     ]
@@ -81,12 +81,12 @@ class OptionsPage(PicardOptions):
     remove_shelves_button: QtWidgets.QPushButton
     remove_unknown_shelves_button: QtWidgets.QPushButton
     scan_for_shelf_names_button: QtWidgets.QPushButton
-    shelf_management_shelves: QtWidgets.QListWidget
-    shelves_for_stages: MaxItemsDropListWidget
+    shelf_management_shelves: QShelvesWidget
+    shelves_for_stages: QShelvesWidget
     stage_1_includes_non_shelves: QtWidgets.QCheckBox
     workflow_enabled: QtWidgets.QCheckBox
-    workflow_stage_1: MaxItemsDropListWidget
-    workflow_stage_2: MaxItemsDropListWidget
+    workflow_stage_1: QShelvesWidget
+    workflow_stage_2: QShelvesWidget
     workflow_transitions: QtWidgets.QWidget
 
     # Picard Icons
@@ -111,9 +111,6 @@ class OptionsPage(PicardOptions):
             uic.loadUi(ui_file, self)
         finally:
             sys.path.pop(0)
-
-        self._management_setup_configuration()
-        self._workflow_setup_configuration()
 
     # ============================================================================
     # Load/Save methods
@@ -151,6 +148,21 @@ class OptionsPage(PicardOptions):
         self.stage_1_includes_non_shelves.setChecked(
             config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY],
         )
+
+        # noinspection PyTypeHints
+        remaining_shelves = (
+            ShelfManager()
+            .shelf_names.difference(
+                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
+            )
+            .difference(
+                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+            )
+        )
+        self._workflow_build_list_widget(remaining_shelves, "", self.shelves_for_stages)
+
+        self._management_setup_configuration()
+        self._workflow_setup_configuration()
 
     # noinspection PyTypeHints
     def save(self) -> None:
@@ -315,31 +327,18 @@ class OptionsPage(PicardOptions):
     # ============================================================================
     def _workflow_setup_configuration(self) -> None:
         """Setup workflow configuration UI components and connect signals."""
-        # noinspection PyTypeHints
-        remaining_shelves = (
-            ShelfManager()
-            .shelf_names.difference(
-                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
-            )
-            .difference(
-                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
-            )
-        )
-        self._workflow_build_list_widget(remaining_shelves, "", self.shelves_for_stages)
-
-        self.shelves_for_stages.setMaximumItemCount()
         self.shelves_for_stages.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         # Workflow stage 1
         self.label_workflow_stage_1.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.workflow_stage_1.setMaximumItemCount()
         self.workflow_stage_1.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.workflow_stage_1.itemSelectionChanged.connect(
             self._workflow_on_stage_changed,
         )
 
         # Workflow stage 2
-        self.workflow_stage_2.setMaximumItemCount(1)
+        self.workflow_stage_2.max_item_count = 1
+        log.debug(f"Max item count: {self.workflow_stage_2.max_item_count}")
         self.workflow_stage_2.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.workflow_stage_2.itemSelectionChanged.connect(
             self._workflow_on_stage_changed,
@@ -470,11 +469,14 @@ class OptionsPage(PicardOptions):
             # noinspection PyTypeHints
             to_use = set(config.setting[config_key])
 
+        intersection = shelf_names.intersection(to_use)
+        difference = shelf_names.difference(to_use)
+
         widget.clear()
-        widget.addItems(shelf_names.intersection(to_use))
+        widget.addItems(intersection)
         widget.sortItems()
 
-        return shelf_names.difference(to_use)
+        return difference
 
     # ============================================================================
     # Event handlers
