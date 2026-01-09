@@ -12,11 +12,10 @@ from typing import Any, List, Optional
 
 from picard import log
 from picard.ui.itemviews import BaseAction
-from PyQt5 import (
+from Py             Qt5 import (
     QtWidgets,
     uic,
 )
-from PyQt5.QtWidgets import QDialog
 
 from .constants import ShelfConstants
 from .manager import ShelfManager
@@ -135,7 +134,7 @@ class ResetShelfAction(BaseAction):
         log.info("Reset shelf_name to automatic for %d object(s)", len(objs))
 
 
-class SetShelfDialog(QDialog):
+class SetShelfDialog(QtWidgets.QDialog):
     """
     Dialog to set shelf_name name
     """
