@@ -12,7 +12,7 @@ from typing import Any, List, Optional
 
 from picard import log
 from picard.ui.itemviews import BaseAction
-from Py             Qt5 import (
+from PyQt5 import (
     QtWidgets,
     uic,
 )
