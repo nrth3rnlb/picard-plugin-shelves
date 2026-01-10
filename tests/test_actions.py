@@ -7,8 +7,9 @@ from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock, patch
 
 from shelves import SetShelfAction
-from shelves.actions import DetermineShelfAction, ResetShelfAction, SetShelfDialog
+from shelves.actions import DetermineShelfAction, ResetShelfAction
 from shelves.constants import ShelfConstants
+from shelves.dialogs import SetShelfDialog
 
 
 class AttrDict(dict):
