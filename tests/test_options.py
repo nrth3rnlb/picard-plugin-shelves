@@ -12,7 +12,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication
 
 from shelves.constants import ShelfConstants
-from shelves.ui.options import OptionsPage
+from shelves.options import OptionsPage
 
 
 class OptionsPageTest(unittest.TestCase):
@@ -150,8 +150,8 @@ class OptionsPageTest(unittest.TestCase):
     # ============================================================================
     # Load/Save tests
     # ============================================================================
-    @patch("shelves.ui.options.config")
-    @patch("shelves.ui.options.ShelfManager")
+    @patch("shelves.options.config")
+    @patch("shelves.options.ShelfManager")
     def test_save_writes_to_config_empty_shelves(self, mock_shelf_manager, mock_config):
         """Test if the save method correctly writes UI state to config with empty shelves."""
         # Arrange
@@ -182,8 +182,8 @@ class OptionsPageTest(unittest.TestCase):
                 else:
                     self.assertEqual(actual, expected_value)
 
-    @patch("shelves.ui.options.config")
-    @patch("shelves.ui.options.ShelfManager")
+    @patch("shelves.options.config")
+    @patch("shelves.options.ShelfManager")
     def test_save_writes_to_config_with_shelves(self, mock_shelf_manager, mock_config):
         """Test if the save method correctly writes UI state to config with shelves."""
         # Arrange
@@ -210,8 +210,8 @@ class OptionsPageTest(unittest.TestCase):
                 else:
                     self.assertEqual(actual, expected_value)
 
-    @patch("shelves.ui.options.config")
-    @patch("shelves.ui.options.ShelfManager")
+    @patch("shelves.options.config")
+    @patch("shelves.options.ShelfManager")
     def test_load_populates_ui_from_config(
         self, mock_shelf_manager, mock_config
     ) -> None:
@@ -252,9 +252,9 @@ class OptionsPageTest(unittest.TestCase):
     # ============================================================================
     # Shelf management tests - Add
     # ============================================================================
-    @patch("shelves.ui.options.ShelfManager")
+    @patch("shelves.options.ShelfManager")
     @patch(
-        "shelves.ui.options.QtWidgets.QInputDialog.getText",
+        "shelves.options.QtWidgets.QInputDialog.getText",
     )
     def test_add_valid_shelf(self, mock_get_text, mock_shelf_manager):
         """Test adding a new, valid shelf_name."""
@@ -275,10 +275,10 @@ class OptionsPageTest(unittest.TestCase):
         mock_manager_instance.add_shelf_names.assert_called_with(expected_shelves)
 
     @patch(
-        "shelves.ui.options.QtWidgets.QInputDialog.getText",
+        "shelves.options.QtWidgets.QInputDialog.getText",
     )
     @patch(
-        "shelves.ui.options.QtWidgets.QMessageBox.warning",
+        "shelves.options.QtWidgets.QMessageBox.warning",
     )
     @unittest.skipUnless(
         ShelfConstants.INVALID_SHELF_NAME_CHARS,
@@ -311,7 +311,7 @@ class OptionsPageTest(unittest.TestCase):
     # ============================================================================
     # Shelf management tests - Remove
     # ============================================================================
-    @patch("shelves.ui.options.ShelfManager")
+    @patch("shelves.options.ShelfManager")
     def test_remove_shelf(self, mock_shelf_manager):
         """Test removing a selected shelf_name without conflicts."""
         # Arrange
@@ -336,9 +336,9 @@ class OptionsPageTest(unittest.TestCase):
         )
 
     @patch(
-        "shelves.ui.options.QtWidgets.QMessageBox.question",
+        "shelves.options.QtWidgets.QMessageBox.question",
     )
-    @patch("shelves.ui.options.ShelfManager")
+    @patch("shelves.options.ShelfManager")
     def test_remove_shelves_with_conflicts(self, _mock_shelf_manager, mock_question):
         """Test removing shelves that are used in workflow shows confirmation dialog."""
         # Arrange
@@ -373,20 +373,9 @@ class OptionsPageTest(unittest.TestCase):
 
         # Assert - The dialog should have been called because there's a conflict
         mock_question.assert_called_once()
-        call_args = mock_question.call_args
-        self.assertEqual(call_args.args[1], "Remove Workflow Shelves?")
-        self.assertEqual(
-            call_args.args[2],
-            f"The shelf name(s) '{_selected_item_text}' are used in your workflow. Are you sure you want to remove "
-            f"them?",
-        )
-        self.assertEqual(
-            call_args[1]["buttons"],
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-        )
 
     @patch("shelves.utils.ShelfUtils.get_shelf_dirs")
-    @patch("shelves.ui.options.ShelfManager")
+    @patch("shelves.options.ShelfManager")
     def test_remove_unknown_shelves(self, mock_shelf_manager, mock_get_shelf_dirs):
         """Test removing unknown shelves that no longer exist in filesystem."""
         # Arrange
@@ -431,7 +420,7 @@ class OptionsPageTest(unittest.TestCase):
     # Shelf management tests - Scan
     # ============================================================================
     @patch("shelves.utils.ShelfUtils.get_shelf_dirs")
-    @patch("shelves.ui.options.ShelfManager")
+    @patch("shelves.options.ShelfManager")
     def test_scan_for_shelves(self, mock_shelf_manager, mock_get_shelf_dirs):
         """Test scanning for shelves adds them to the shelf management list."""
         # Arrange

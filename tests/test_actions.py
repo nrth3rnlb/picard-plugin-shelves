@@ -9,7 +9,6 @@ from unittest.mock import MagicMock, PropertyMock, patch
 from shelves import SetShelfAction
 from shelves.actions import DetermineShelfAction, ResetShelfAction, SetShelfDialog
 from shelves.constants import ShelfConstants
-from shelves.manager import ShelfManager
 
 
 class AttrDict(dict):
@@ -152,7 +151,7 @@ class DetermineShelfActionTest(unittest.TestCase):
         }
 
     @patch("shelves.manager.ShelfManager.add_shelf_names")
-    @patch("shelves.ui.options.ShelfManager.base_path", new_callable=PropertyMock)
+    @patch("shelves.options.ShelfManager.base_path", new_callable=PropertyMock)
     @patch("shelves.manager.config")
     def test_callback(
         self,

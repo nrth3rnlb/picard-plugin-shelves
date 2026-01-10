@@ -30,9 +30,9 @@ from .actions import (
 from .actions import (
     SetShelfAction as _SetShelfActionBase,
 )
+from .options import OptionsPage as _ShelvesOptionsPageBase
 from .processors import ShelfProcessors
 from .script_functions import func_shelf as _func_shelf_base
-from .ui.options import OptionsPage as _ShelvesOptionsPageBase
 
 # Plugin metadata
 PLUGIN_NAME = "Shelves"

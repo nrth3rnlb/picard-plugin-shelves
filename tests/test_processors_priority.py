@@ -71,8 +71,8 @@ class ProcessorPriorityTest(unittest.TestCase):
     #     # Assert
     #     self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], shelf_sub_dir)
 
-    @patch("shelves.ui.options.ShelfManager.base_path", new_callable=PropertyMock)
-    @patch("shelves.ui.options.ShelfManager.shelf_names", new_callable=PropertyMock)
+    @patch("shelves.options.ShelfManager.base_path", new_callable=PropertyMock)
+    @patch("shelves.options.ShelfManager.shelf_names", new_callable=PropertyMock)
     @patch("shelves.manager.ShelfManager.set_album_shelf", new_callable=MagicMock)
     @patch(
         "shelves.processors.ShelfProcessors._apply_workflow_transition",
@@ -112,8 +112,8 @@ class ProcessorPriorityTest(unittest.TestCase):
             lock=True,
         )
 
-    @patch("shelves.ui.options.ShelfManager.base_path", new_callable=PropertyMock)
-    @patch("shelves.ui.options.ShelfManager.shelf_names", new_callable=PropertyMock)
+    @patch("shelves.options.ShelfManager.base_path", new_callable=PropertyMock)
+    @patch("shelves.options.ShelfManager.shelf_names", new_callable=PropertyMock)
     @patch("shelves.manager.ShelfManager.set_album_shelf", new_callable=MagicMock)
     @patch(
         "shelves.processors.ShelfProcessors._apply_workflow_transition",
@@ -163,7 +163,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         )
 
     @patch("shelves.manager.ShelfManager.set_album_shelf")
-    @patch("shelves.ui.options.ShelfManager.shelf_names", new_callable=PropertyMock)
+    @patch("shelves.options.ShelfManager.shelf_names", new_callable=PropertyMock)
     @patch("shelves.processors.ShelfProcessors._apply_workflow_transition")
     @patch("shelves.utils.ShelfUtils.get_shelf_name_from_path")
     @patch("shelves.processors.config")

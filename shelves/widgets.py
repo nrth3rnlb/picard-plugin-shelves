@@ -30,7 +30,11 @@ class QShelvesWidget(QtWidgets.QListWidget):
         :return: The maximum number of items permitted.
         :rtype: int
         """
-        return self._max_item_count
+        return (
+            self.UNLIMITED
+            if self._max_item_count == self.UNLIMITED
+            else self._max_item_count
+        )
 
     @max_item_count.setter
     def max_item_count(self, value: int):
