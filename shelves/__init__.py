@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Shelves Plugin for MusicBrainz Picard.
 
@@ -63,29 +61,17 @@ PLUGIN_LICENSE_URL = "https://www.gnu.org/licenses/gpl-2.0.html"
 class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the OptionsPage to ensure proper plugin registration."""
 
-    # def __init__(self, parent=None) -> None:  #     """Initialize with the global shelf_manager _instance."""  #
-    # super().__init__(parent)
-
 
 class SetShelfAction(_SetShelfActionBase):
     """Wrapper class for SetShelfAction to ensure proper plugin registration."""
-
-    # def __init__(self) -> None:  #     """Initialize with the global shelf_manager _instance."""  #     super(
-    # ).__init__()
 
 
 class DetermineShelfAction(_DetermineShelfActionBase):
     """Wrapper class for DetermineShelfAction to ensure proper plugin registration."""
 
-    # def __init__(self) -> None:  #     """Initialize with the global shelf_manager _instance."""  #     super(
-    # ).__init__()
-
 
 class ResetShelfAction(_ResetShelfActionBase):
     """Wrapper class for ResetShelfAction to ensure proper plugin registration."""
-
-    # def __init__(self) -> None:  #     """Initialize with the global shelf_manager _instance."""  #     super(
-    # ).__init__()
 
 
 shelf_processors = ShelfProcessors()
@@ -106,11 +92,6 @@ def _file_post_load_processor_wrapper(file: Any) -> None:
 def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
     shelf_processors.file_post_addition_to_track_processor(track=track, file=file)
-
-
-# def _file_post_save_processor_wrapper(file: Any) -> None:
-#     """Wrapper for file_post_save_processor."""
-#     file_post_save_processor(file)
 
 
 def _set_shelf_in_metadata_wrapper(

@@ -374,7 +374,7 @@ class OptionsPageTest(unittest.TestCase):
         # Assert - The dialog should have been called because there's a conflict
         mock_question.assert_called_once()
 
-    @patch("shelves.utils.ShelfUtils.get_shelf_dirs")
+    @patch("shelves.utils.get_shelf_dirs")
     @patch("shelves.options.ShelfManager")
     def test_remove_unknown_shelves(self, mock_shelf_manager, mock_get_shelf_dirs):
         """Test removing unknown shelves that no longer exist in filesystem."""
@@ -419,7 +419,7 @@ class OptionsPageTest(unittest.TestCase):
     # ============================================================================
     # Shelf management tests - Scan
     # ============================================================================
-    @patch("shelves.utils.ShelfUtils.get_shelf_dirs")
+    @patch("shelves.utils.get_shelf_dirs")
     @patch("shelves.options.ShelfManager")
     def test_scan_for_shelves(self, mock_shelf_manager, mock_get_shelf_dirs):
         """Test scanning for shelves adds them to the shelf management list."""

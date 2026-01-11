@@ -11,23 +11,28 @@ from collections import Counter, defaultdict, namedtuple
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from exceptions import ShelfNotFoundException
 from picard import config, log
 
+from . import utils
 from .constants import ShelfConstants
-from .utils import ShelfUtils
 
 
 class ShelfRegistry:
     """Registry for shelf_name assignments and _shelf_state with conflict detection."""
 
+
 class ShelfAssignmentEngine:
     """Engine for assigning shelf_name to albums."""
+
 
 class ShelfLockManager:
     """Manager for shelf_name locks."""
 
+
 class ShelfValidator:
     """Validator for shelf_name assignments."""
+
 
 class ShelfManager:
     """Manages shelf_name assignments and _shelf_state with conflict detection."""
@@ -83,7 +88,7 @@ class ShelfManager:
         :rtype:
         """
         self._shelf_names = set(
-            filter(lambda name: ShelfUtils.validate_shelf_name(name)[0], names)
+            filter(lambda name: utils.validate_shelf_name(name)[0], names)
         )
 
     @property
@@ -282,10 +287,10 @@ class ShelfManager:
             # pylint: disable=protected-access
             shelf_name = ShelfManager()._shelves_by_album.get(album_id)
             if shelf_name is None:
-                log.warning(
-                    "Shelf for album '%s' could not be determined with certainty.",
-                    album_id,
+                raise ShelfNotFoundException(
+                    f"Album ID '{album_id}' has no associated shelf."
                 )
+
             return shelf_name, ShelfConstants.SHELF_SOURCE_FALLBACK
 
     @classmethod

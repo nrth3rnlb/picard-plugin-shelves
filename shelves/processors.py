@@ -13,90 +13,15 @@ from typing import Any, Dict, Optional
 
 from picard import log
 
+from . import utils
 from .constants import ShelfConstants
 from .manager import ShelfManager
-from .utils import ShelfUtils
-
-# class PriorityStrategy:
-#     def applies(self, context) -> bool:
-#         if self.__name__ not in context:
-#             raise NotImplementedError
-#         return context[self.__name__]
-#
-#     def apply(self, album_id, file, track, name_from_path, name_from_tag):
-#         raise NotImplementedError
-#
-#
-# class KnownNameFromPathStrategy(PriorityStrategy):
-#     def applies(self, context) -> bool:
-#         """
-#
-#         :param context:
-#         :type context:
-#         :return:
-#         :rtype:
-#         """
-#         return super().applies(context)
-#
-#     def apply(self, album_id, file, track, name_from_path, name_from_tag):
-#         shelf_name = name_from_path
-#         ShelfProcessors._set_metadata(
-#             file if file else track,
-#             ShelfConstants.TAG_KEY,
-#             shelf_name,
-#             "file" if file else "track",
-#         )
-#         ShelfManager().set_album_shelf(
-#             album_id=album_id, shelf_name=shelf_name, lock=True
-#         )
-#
-
-#
-# class KnownNameFromTagAndManual(PriorityStrategy):
-#     def applies(self, context):
-#         tag = file.metadata.get(context["tag_key"], "")
-#         return tag.endswith(context["manual_suffix"])
-#
-#     def apply(self, album_id, file, track, name_from_path, name_from_tag):
-#         shelf = file.metadata[context["tag_key"]].replace(context["manual_suffix"], "")
-#         context["set_album_shelf"](
-#             album_id=file.metadata[context["album_id_key"]], shelf=shelf, lock=True
-#         )
-#
-#
-# class DefaultStrategy(PriorityStrategy):
-#     def applies(self, context):
-#         return True  # Fallback
-#
-#     def apply(self, album_id, file, track, name_from_path, name_from_tag):
-#         shelf_name = context["get_shelf_name_from_path"](file.filename)
-#         context["set_album_shelf"](
-#             album_id=file.metadata[context["album_id_key"]], shelf=shelf_name, lock=True
-#         )
 
 
 class ShelfProcessors:
     """
     File processors for loading and saving shelf_name information.
     """
-
-    # def __init__(self):
-    #     # Processing sequence as defined in the list
-    #
-    #
-    #     # priority_1 = is_known_name_from_path
-    #     # priority_2 = is_known_name_from_tag_and_manual
-    #     # priority_3 = is_known_name_from_tag
-    #     # priority_4 = is_unknown_name_from_tag
-    #     # priority_5 = is_unknown_name_from_path
-    #     # if priority_1:
-    #     #     shelf_name = name_from_path
-    #     # elif priority_2:
-    #     #     shelf_name = name_from_tag
-    #     # elif priority_3:
-    #     #     shelf_name = name_from_tag
-    #     # elif priority_4 or priority_5:
-    #     #     shelf_name = name_from_path
 
     @staticmethod
     def _set_metadata(obj: Any, key: str, value: Any, label: str) -> None:
@@ -129,8 +54,6 @@ class ShelfProcessors:
         """
         Process a file after it has been added to a track, with a destroy priority model.
         """
-        shelf_name: Optional[str] = None
-
         file_meta = getattr(file, "metadata", None)
         if not file_meta:
             return
@@ -138,7 +61,7 @@ class ShelfProcessors:
         if not album_id:
             return
 
-        if name_from_path := ShelfUtils.get_shelf_name_from_path(
+        if name_from_path := utils.get_shelf_name_from_path(
             file_path=Path(file.filename), base_path=ShelfManager().base_path
         ):
             name_from_path = name_from_path.strip()

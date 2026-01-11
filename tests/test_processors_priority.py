@@ -35,8 +35,8 @@ class ProcessorPriorityTest(unittest.TestCase):
             ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
         }
 
-    # @patch("shelves.utils.ShelfUtils.get_shelf_name_from_path")
-    # @patch("shelves.utils.ShelfUtils.validate_shelf_names")
+    # @patch("shelves.utils.get_shelf_name_from_path")
+    # @patch("shelves.utils.validate_shelf_names")
     # @patch("shelves.processors.config")
     # def test_manual_location_known_shelf_overrides_manual_tag(
     #     self,

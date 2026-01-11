@@ -3,6 +3,7 @@
 """
 Tests for the utility functions.
 """
+
 import math
 import random
 import unittest
@@ -10,9 +11,9 @@ from pathlib import Path
 from unittest import skip
 from unittest.mock import MagicMock, patch
 
+from shelves import utils
 from shelves.constants import ShelfConstants
 from shelves.manager import ShelfManager
-from shelves.utils import ShelfUtils
 
 
 class AttrDict(dict):
@@ -34,7 +35,7 @@ class UtilsTest(unittest.TestCase):
             ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: self.test_known_shelves,
         }
 
-    @patch("shelves.utils.ShelfUtils.validate_shelf_name", new_callable=MagicMock)
+    @patch("shelves.utils.validate_shelf_name", new_callable=MagicMock)
     def test_get_configured_shelves_filters_and_sorts(self, mock_validate):
         # Arrange: config contains duplicates, a non-string and one invalid entry
         shelf_names = {
@@ -55,7 +56,7 @@ class UtilsTest(unittest.TestCase):
         mock_validate.side_effect = validate_side_effect
 
         # Act
-        result = ShelfUtils.validate_shelf_names(shelf_names)
+        result = utils.validate_shelf_names(shelf_names)
 
         # Assert: duplicates removed, sorted, non-strings ignored, invalid excluded
         self.assertSetEqual(result, {"alpha", "beta"})
@@ -65,7 +66,7 @@ class UtilsTest(unittest.TestCase):
         shelf_sub_dir = self.test_known_shelves[0]
 
         # Act
-        shelf_name = ShelfUtils.get_shelf_name_from_path(
+        shelf_name = utils.get_shelf_name_from_path(
             Path(f"/music/{shelf_sub_dir}/artist/album/track.mp3"), Path("/music")
         )
 
@@ -86,7 +87,7 @@ class UtilsValidationTest(unittest.TestCase):
 
     def test_validate_shelf_name_empty(self):
         """Test that an empty name is invalid."""
-        is_valid, message = ShelfUtils.validate_shelf_name("  ")
+        is_valid, message = utils.validate_shelf_name("  ")
         self.assertFalse(is_valid)
         self.assertEqual(message, "Shelf name cannot be empty")
 
@@ -109,7 +110,7 @@ class UtilsValidationTest(unittest.TestCase):
                 )
 
                 # Act
-                is_valid, message = ShelfUtils.validate_shelf_name(invalid_shelf_name)
+                is_valid, message = utils.validate_shelf_name(invalid_shelf_name)
 
                 # Assert
                 self.assertFalse(is_valid)
@@ -136,7 +137,7 @@ class UtilsValidationTest(unittest.TestCase):
                 )
 
                 # Act
-                is_valid, message = ShelfUtils.validate_shelf_name(invalid_shelf_name)
+                is_valid, message = utils.validate_shelf_name(invalid_shelf_name)
 
                 # Assert
                 self.assertFalse(is_valid)
@@ -166,7 +167,7 @@ class UtilsValidationTest(unittest.TestCase):
                 )
 
                 # Act
-                is_valid, message = ShelfUtils.validate_shelf_name(invalid_shelf_name)
+                is_valid, message = utils.validate_shelf_name(invalid_shelf_name)
 
                 # Assert
                 self.assertFalse(is_valid)
@@ -201,10 +202,10 @@ class UtilsValidationTest(unittest.TestCase):
             )
 
             # Act
-            is_valid, message = ShelfUtils.validate_shelf_name(invalid_shelf_name)
+            is_valid, message = utils.validate_shelf_name(invalid_shelf_name)
             self.assertFalse(is_valid)
             self.assertIn(f"Cannot use '{invalid_shelf_name}' as shelf name.", message)  # type: ignore[arg-type]
-            self.assertIn(f"Maximum allowed is {hr_invalidations}.", message)  # type: ignore[arg-type]
+            self.assertIn(f"Maximum allowed is {hr_found_invalidations}.", message)  # type: ignore[arg-type]
 
             self.assertIn(
                 f"The name is too long with {len(invalid_shelf_name)} characters.",
@@ -214,13 +215,13 @@ class UtilsValidationTest(unittest.TestCase):
     @skip("TODO(#16): See utils.py:177 - decide if max word count should be enforced")
     def test_validate_shelf_name_too_many_words(self):
         """Test that a name with too many words is invalid."""
-        is_valid, message = ShelfUtils.validate_shelf_name("One Two Three Four")
+        is_valid, message = utils.validate_shelf_name("One Two Three Four")
         self.assertFalse(is_valid)
         self.assertIn("Shelf name has too many words", message)  # type: ignore[arg-type]
 
     def test_validate_shelf_name_valid(self):
         """Test valid shelf_name names."""
-        is_valid, message = ShelfUtils.validate_shelf_name("Soundtracks")
+        is_valid, message = utils.validate_shelf_name("Soundtracks")
         self.assertTrue(is_valid)
         self.assertEqual(message, "Valid shelf name")
 

@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-
 """
-Utility functions for managing shelf_names.
+Utility functions
 """
 
 from __future__ import annotations
@@ -16,193 +14,178 @@ from picard import log
 from .constants import ShelfConstants
 
 
-class ShelfUtils:
+def validate_shelf_names(shelf_names: set[str]) -> set[str]:
     """
-    Utility functions for shelf_name management.
+    Checks a list of shelf_name names and returns a list of valid names.
+    :param shelf_names:
+    :return:
+    """
+    log.debug("Known shelf_names from config: %s", shelf_names)
+    # Validate each shelf_name name
+    valid_shelves: set[str] = set()
+    for shelf_name in shelf_names:
+        is_valid, message = validate_shelf_name(shelf_name)
+        if is_valid or not message:  # Allow warnings
+            valid_shelves.add(shelf_name)
+        else:
+            log.warning("Ignoring invalid shelf_name '%s': %s", shelf_name, message)
+
+    return valid_shelves
+
+
+@deprecated("don't use")
+def get_shelf_name_from_tag(tag_value: Optional[str]) -> Optional[str]:
+    """
+    Extract the shelf name from a tag value.
+
+    :param tag_value: The tag value to extract the shelf name from.
+    :type tag_value: Optional[str]
+    :return: The extracted shelf name or None if not found.
+    :rtype: Optional[str]
     """
 
-    @property
-    def rename_snippet(self) -> str:
-        """Get the renaming script snippet."""
-        return ShelfConstants.RENAME_SNIPPET
+    if not isinstance(tag_value, str):
+        return None
+    tag = tag_value.strip()
+    if not tag:
+        return None
 
-    @staticmethod
-    def validate_shelf_names(shelf_names: set[str]) -> set[str]:
-        """
-        Checks a list of shelf_name names and returns a list of valid names.
-        :param shelf_names:
-        :return:
-        """
-        log.debug("Known shelf_names from config: %s", shelf_names)
-        # Validate each shelf_name name
-        valid_shelves: set[str] = set()
-        for shelf_name in shelf_names:
-            is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
-            if is_valid or not message:  # Allow warnings
-                valid_shelves.add(shelf_name)
-            else:
-                log.warning("Ignoring invalid shelf_name '%s': %s", shelf_name, message)
+    if tag.endswith(ShelfConstants.MANUAL_SHELF_SUFFIX):
+        return tag[: -len(ShelfConstants.MANUAL_SHELF_SUFFIX)].strip() or None
 
-        return valid_shelves
+    return tag
 
-    @staticmethod
-    @deprecated("don't use")
-    def get_shelf_name_from_tag(tag_value: Optional[str]) -> Optional[str]:
-        """
-        Extract the shelf name from a tag value.
 
-        :param tag_value: The tag value to extract the shelf name from.
-        :type tag_value: Optional[str]
-        :return: The extracted shelf name or None if not found.
-        :rtype: Optional[str]
-        """
+def get_shelf_name_from_path(file_path: Path, base_path: Path) -> Optional[str]:
+    """
+    Extract the shelf name from a file_path.
+    :param file_path:
+    :param base_path:
+    :return:
+    """
 
-        if not isinstance(tag_value, str):
-            return None
-        tag = tag_value.strip()
-        if not tag:
+    try:
+        if not file_path.is_relative_to(base_path):
+            log.warning(_("Path '%s' is not under base directory."), file_path)
             return None
 
-        if tag.endswith(ShelfConstants.MANUAL_SHELF_SUFFIX):
-            return tag[: -len(ShelfConstants.MANUAL_SHELF_SUFFIX)].strip() or None
-
-        return tag
-
-    @staticmethod
-    def get_shelf_name_from_path(file_path: Path, base_path: Path) -> Optional[str]:
-        """
-        Extract the shelf name from a file_path.
-        :param file_path:
-        :param base_path:
-        :return:
-        """
-
-        try:
-            if not file_path.is_relative_to(base_path):
-                log.warning(_("Path '%s' is not under base directory."), file_path)
-                return None
-
-            relative_parts = file_path.relative_to(base_path).parts
-            if not relative_parts or len(relative_parts) <= 1:
-                log.warning(_("File is directly in base directory."))
-                return None
-
-            potential_shelf = relative_parts[0]
-            log.debug("Potential shelf name extracted: '%s'.", potential_shelf)
-            return potential_shelf
-
-        except (KeyError, ValueError, OSError) as e:
-            log.error(
-                _("Error extracting shelf_name from file_path_str '%s': %s."),
-                file_path,
-                e,
-            )
+        relative_parts = file_path.relative_to(base_path).parts
+        if not relative_parts or len(relative_parts) <= 1:
+            log.warning(_("File is directly in base directory."))
             return None
 
-    @staticmethod
-    def validate_shelf_name(name: str) -> Tuple[bool, str]:
-        """
-        Validate a shelf name.
+        potential_shelf = relative_parts[0]
+        log.debug("Potential shelf name extracted: '%s'.", potential_shelf)
+        return potential_shelf
 
-        :param name:
-        :return:
-        """
-        if not isinstance(name, str) or not name.strip():
-            return False, _("Shelf name cannot be empty")
+    except (KeyError, ValueError, OSError) as e:
+        log.error(
+            _("Error extracting shelf_name from file_path_str '%s': %s."),
+            file_path,
+            e,
+        )
+        return None
 
-        shelf_name = name.strip()
 
-        invalid_names_used = [
-            name_used
-            for name_used in shelf_name.split()
-            if name_used in ShelfConstants.INVALID_SHELF_NAMES
-        ]
-        if invalid_names_used:
-            hr_invalid_names_used = (
-                f"{', '.join(repr(c) for c in set(invalid_names_used))}"
-            )
-            hr_invalid_names = (
-                f"{', '.join(repr(c) for c in ShelfConstants.INVALID_SHELF_NAMES)}"
-            )
-            return (
-                False,
-                f"Cannot use '{shelf_name}' as shelf name."
-                f" The name is an invalid name: {hr_invalid_names_used}."
-                f" Not allowed are: {hr_invalid_names}.",
-            )
+def validate_shelf_name(name: str) -> Tuple[bool, str]:
+    """
+    Validate a shelf name.
 
-        invalid_chars_used = [
-            char_used
-            for char_used in shelf_name
-            if char_used in ShelfConstants.INVALID_SHELF_NAME_CHARS
-        ]
-        if invalid_chars_used:
-            hr_invalid_chars_used = (
-                f"{', '.join(repr(c) for c in set(invalid_chars_used))}"
-            )
-            hr_invalid_name_chars = (
-                f"{', '.join(repr(c) for c in ShelfConstants.INVALID_SHELF_NAME_CHARS)}"
-            )
-            return (
-                False,
-                f"Cannot use '{shelf_name}' as shelf name."
-                f" The name contains invalid character(s): {hr_invalid_chars_used}."
-                f" Not allowed are: {hr_invalid_name_chars}.",
-            )
+    :param name:
+    :return:
+    """
+    if not isinstance(name, str) or not name.strip():
+        return False, _("Shelf name cannot be empty")
 
-        invalid_tokens_used = [
-            token_used
-            for token_used in shelf_name.split()
-            if token_used.lower()
-            in [token.lower() for token in ShelfConstants.ALBUM_INDICATORS]
-        ]
+    shelf_name = name.strip()
 
-        if invalid_tokens_used:
-            hr_invalid_tokens_used = (
-                f"{', '.join(repr(c) for c in set(invalid_tokens_used))}"
-            )
-            hr_invalid_name_tokens = (
-                f"{', '.join(repr(c) for c in ShelfConstants.ALBUM_INDICATORS)}"
-            )
-            return (
-                False,
-                f"Cannot use '{shelf_name}' as shelf name."
-                f" The name contains album indicator(s): {hr_invalid_tokens_used}."
-                f" Not allowed are: {hr_invalid_name_tokens}.",
-            )
+    invalid_names_used = [
+        name_used
+        for name_used in shelf_name.split()
+        if name_used in ShelfConstants.INVALID_SHELF_NAMES
+    ]
+    if invalid_names_used:
+        hr_invalid_names_used = f"{', '.join(repr(c) for c in set(invalid_names_used))}"
+        hr_invalid_names = (
+            f"{', '.join(repr(c) for c in ShelfConstants.INVALID_SHELF_NAMES)}"
+        )
+        return (
+            False,
+            f"Cannot use '{shelf_name}' as shelf name."
+            f" The name is an invalid name: {hr_invalid_names_used}."
+            f" Not allowed are: {hr_invalid_names}.",
+        )
 
-        # TODO(#15): Decide if max length validation should be enforced
-        # if len(shelf_name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
-        #     return (
-        #         False,
-        #         f"Cannot use '{shelf_name}' as shelf name."
-        #         f" The name is too long with {len(shelf_name)} characters."
-        #         f" Maximum allowed is {ShelfConstants.MAX_SHELF_NAME_LENGTH}.",
-        #     )
+    invalid_chars_used = [
+        char_used
+        for char_used in shelf_name
+        if char_used in ShelfConstants.INVALID_SHELF_NAME_CHARS
+    ]
+    if invalid_chars_used:
+        hr_invalid_chars_used = f"{', '.join(repr(c) for c in set(invalid_chars_used))}"
+        hr_invalid_name_chars = (
+            f"{', '.join(repr(c) for c in ShelfConstants.INVALID_SHELF_NAME_CHARS)}"
+        )
+        return (
+            False,
+            f"Cannot use '{shelf_name}' as shelf name."
+            f" The name contains invalid character(s): {hr_invalid_chars_used}."
+            f" Not allowed are: {hr_invalid_name_chars}.",
+        )
 
-        # TODO(#16): Decide if max word count validation should be enforced
-        # if len(shelf_name.split()) > ShelfConstants.MAX_WORD_COUNT:
-        #     return (
-        #         False,
-        #         f"Cannot use '{shelf_name}' as shelf name."
-        #         f" Shelf name is too long with {len(shelf_name.split())} words."
-        #         f" Maximum allowed is {ShelfConstants.MAX_WORD_COUNT}.",
-        #     )
+    invalid_tokens_used = [
+        token_used
+        for token_used in shelf_name.split()
+        if token_used.lower()
+        in [token.lower() for token in ShelfConstants.ALBUM_INDICATORS]
+    ]
 
-        return True, "Valid shelf name"
+    if invalid_tokens_used:
+        hr_invalid_tokens_used = (
+            f"{', '.join(repr(c) for c in set(invalid_tokens_used))}"
+        )
+        hr_invalid_name_tokens = (
+            f"{', '.join(repr(c) for c in ShelfConstants.ALBUM_INDICATORS)}"
+        )
+        return (
+            False,
+            f"Cannot use '{shelf_name}' as shelf name."
+            f" The name contains album indicator(s): {hr_invalid_tokens_used}."
+            f" Not allowed are: {hr_invalid_name_tokens}.",
+        )
 
-    @staticmethod
-    def get_shelf_dirs(base_path: Path) -> Set[str]:
-        """
+    # TODO(#15): Decide if max length validation should be enforced
+    # if len(shelf_name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
+    #     return (
+    #         False,
+    #         f"Cannot use '{shelf_name}' as shelf name."
+    #         f" The name is too long with {len(shelf_name)} characters."
+    #         f" Maximum allowed is {ShelfConstants.MAX_SHELF_NAME_LENGTH}.",
+    #     )
 
-        :return:
-        """
-        shelf_sub_dirs: Set[str] = set()
-        try:
-            shelf_sub_dirs = set(
-                entry.name for entry in base_path.iterdir() if entry.is_dir()
-            )
+    # TODO(#16): Decide if max word count validation should be enforced
+    # if len(shelf_name.split()) > ShelfConstants.MAX_WORD_COUNT:
+    #     return (
+    #         False,
+    #         f"Cannot use '{shelf_name}' as shelf name."
+    #         f" Shelf name is too long with {len(shelf_name.split())} words."
+    #         f" Maximum allowed is {ShelfConstants.MAX_WORD_COUNT}.",
+    #     )
 
-        except (OSError, PermissionError) as e:
-            log.error("Error scanning directory: %s", e)
-        return shelf_sub_dirs
+    return True, "Valid shelf name"
+
+
+def get_shelf_dirs(base_path: Path) -> Set[str]:
+    """
+
+    :return:
+    """
+    shelf_sub_dirs: Set[str] = set()
+    try:
+        shelf_sub_dirs = set(
+            entry.name for entry in base_path.iterdir() if entry.is_dir()
+        )
+
+    except (OSError, PermissionError) as e:
+        log.error("Error scanning directory: %s", e)
+    return shelf_sub_dirs

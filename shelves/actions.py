@@ -13,10 +13,10 @@ from PyQt5 import (
     QtWidgets,
 )
 
+from . import utils
 from .constants import ShelfConstants
 from .dialogs import SetShelfDialog
 from .manager import ShelfManager
-from .utils import ShelfUtils
 
 
 class SetShelfAction(BaseAction):
@@ -42,7 +42,7 @@ class SetShelfAction(BaseAction):
         if not shelf_name:
             return
 
-        is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
+        is_valid, message = utils.validate_shelf_name(shelf_name)
         if not is_valid:
             QtWidgets.QMessageBox.warning(
                 self.tagger.window,
@@ -164,7 +164,7 @@ class DetermineShelfAction(BaseAction):
                 for file in obj.iterfiles():
                     file_path = Path(file.filename).resolve()
                     base_path = ShelfManager().base_path
-                    shelf_name = ShelfUtils.get_shelf_name_from_path(
+                    shelf_name = utils.get_shelf_name_from_path(
                         file_path=file_path,
                         base_path=base_path,
                     )

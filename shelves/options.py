@@ -19,9 +19,9 @@ from PyQt5 import (
     uic,
 )
 
+from . import utils
 from .constants import ShelfConstants
 from .manager import ShelfManager
-from .utils import ShelfUtils
 from .widgets import QShelvesWidget
 
 MESSAGE_INVALID_SHELF_NAME: str = _("Shelf name is not valid.")
@@ -215,7 +215,7 @@ class OptionsPage(PicardOptions):
         if not ok or not shelf_name:
             return
 
-        is_valid, message = ShelfUtils.validate_shelf_name(shelf_name)
+        is_valid, message = utils.validate_shelf_name(shelf_name)
         if not is_valid:
             QtWidgets.QMessageBox.warning(
                 self,
@@ -276,9 +276,7 @@ class OptionsPage(PicardOptions):
         :return: None
         :rtype: None
         """
-        shelf_names: set[str] = ShelfUtils.get_shelf_dirs(
-            base_path=ShelfManager().base_path
-        )
+        shelf_names: set[str] = utils.get_shelf_dirs(base_path=ShelfManager().base_path)
 
         ShelfManager().add_shelf_names(shelf_names)
         self._management_build_list()
@@ -290,9 +288,7 @@ class OptionsPage(PicardOptions):
         :return: None
         :rtype: None
         """
-        shelf_names: set[str] = ShelfUtils.get_shelf_dirs(
-            base_path=ShelfManager().base_path
-        )
+        shelf_names: set[str] = utils.get_shelf_dirs(base_path=ShelfManager().base_path)
 
         ShelfManager().intersect_shelf_names(shelf_names)
         self._management_build_list()

@@ -9,8 +9,8 @@ from typing import Optional
 
 from PyQt5 import QtWidgets, uic
 
+from . import utils
 from .manager import ShelfManager
-from .utils import ShelfUtils
 
 LABEL_VALIDATION_NAME = "label_validation"
 COMBO_SHELF_NAME = "combo_shelves"
@@ -70,7 +70,7 @@ class SetShelfDialog(QtWidgets.QDialog):
         if not self.validation_label:
             return
 
-        valid, msg = ShelfUtils.validate_shelf_name(text)
+        valid, msg = utils.validate_shelf_name(text)
         if valid:
             self.validation_label.setText("")
         else:

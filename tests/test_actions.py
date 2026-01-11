@@ -67,8 +67,8 @@ class SetShelfActionTest(unittest.TestCase):
         self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
 
     @patch("shelves.actions.ShelfManager")
-    @patch("shelves.utils.ShelfUtils.validate_shelf_name")
-    @patch("shelves.utils.ShelfUtils.validate_shelf_names")
+    @patch("shelves.utils.validate_shelf_name")
+    @patch("shelves.utils.validate_shelf_names")
     @patch(
         "shelves.actions.SetShelfDialog",
     )
