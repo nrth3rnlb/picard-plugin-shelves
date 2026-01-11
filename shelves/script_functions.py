@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from .constants import ShelfConstants
-from .utils import ShelfUtils
+from .manager import ShelfManager
 
 
 def func_shelf(parser: Any) -> str:
@@ -21,7 +21,7 @@ def func_shelf(parser: Any) -> str:
     if not isinstance(shelf_tag, str):
         return ""
 
-    shelf_name = ShelfUtils.get_shelf_name_from_tag(shelf_tag)
+    shelf_name = ShelfManager().get_album_shelf(album_id=shelf_tag)[0]
     if not shelf_name:
         return ""
     return shelf_name

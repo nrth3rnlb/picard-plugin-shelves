@@ -21,17 +21,14 @@ class ResetShelfActionTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment"""
         self.actions = ResetShelfAction.__new__(ResetShelfAction)
-        self.test_configuration: dict[
-            str,
-            str | list[str] | bool | int,
-        ] = {
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
-        }
+        # test_configuration gelöscht - wurde nie genutzt
 
-    @patch("shelves.manager.ShelfManager.clear_manual_override")
-    def test_callback(self, mock_clear_override):
+    @patch("shelves.actions.ShelfManager")
+    def test_callback(self, mock_shelf_manager):
         """Test the callback method"""
         # Arrange
+        mock_manager_instance = MagicMock()
+        mock_shelf_manager.return_value = mock_manager_instance
 
         file_mock = MagicMock()
         file_mock.filename = "test.mp3"
@@ -48,7 +45,7 @@ class ResetShelfActionTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], "Standard")
-        mock_clear_override.assert_called_once_with("album123")
+        mock_manager_instance.clear_manual_override.assert_called_once_with("album123")
 
 
 class SetShelfActionTest(unittest.TestCase):
@@ -57,7 +54,8 @@ class SetShelfActionTest(unittest.TestCase):
         self.actions = SetShelfAction.__new__(SetShelfAction)
         self.dialog = SetShelfDialog.__new__(SetShelfDialog)
 
-        self.config_setting = {
+        self.test_configuration = {
+            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/home/foobar/music",
             ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
             ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
             ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
@@ -68,22 +66,32 @@ class SetShelfActionTest(unittest.TestCase):
 
         self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
 
-    @patch("shelves.utils.ShelfUtils.validate_shelf_name", new_callable=MagicMock)
-    @patch("shelves.utils.ShelfUtils.validate_shelf_names", new_callable=MagicMock)
-    @patch("shelves.actions.SetShelfDialog", new_callable=MagicMock)
-    @patch("shelves.processors.config", new_callable=MagicMock)
+    @patch("shelves.actions.ShelfManager")
+    @patch("shelves.utils.ShelfUtils.validate_shelf_name")
+    @patch("shelves.utils.ShelfUtils.validate_shelf_names")
+    @patch(
+        "shelves.actions.SetShelfDialog",
+    )
     def test_callback(
-        self, mock_config, mock_dialog_cls, mock_get_configured_shelves, mock_validate
+        self,
+        mock_dialog_cls,
+        mock_get_configured_shelves,
+        mock_validate,
+        mock_shelf_manager,
     ):
-        """Callback test"""
         # Arrange
+        mock_manager_instance = MagicMock()
+        mock_shelf_manager.return_value = mock_manager_instance
+        mock_manager_instance.shelf_names = self.known_shelves
+        mock_manager_instance.base_path = Path(
+            str(self.test_configuration[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY])
+        )
         self.actions._set_shelf_recursive = MagicMock()
-        mock_config.setting = self.config_setting
-        mock_get_configured_shelves.return_value = self.config_setting[
+        mock_get_configured_shelves.return_value = self.test_configuration[
             ShelfConstants.CONFIG_KNOWN_SHELVES_KEY
         ]
         mock_validate.return_value = (True, None)
-        # Minimal initialization so that constructor-side dependencies do not occur
+        # # Minimal initialization so that constructor-side dependencies do not occur
         self.actions.tagger = MagicMock()
 
         # Mocked dialog class -> Provide _instance
@@ -102,7 +110,8 @@ class SetShelfDialogTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment"""
         self.dialog = SetShelfDialog.__new__(SetShelfDialog)
-        self.config_setting = {
+        self.test_configuration = {
+            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/home/foobar/music",
             ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
             ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
             ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
@@ -111,15 +120,18 @@ class SetShelfDialogTest(unittest.TestCase):
             ),
         }
 
-    @patch("shelves.utils.ShelfUtils.validate_shelf_names", new_callable=MagicMock)
-    @patch("shelves.processors.config", new_callable=MagicMock)
-    def test_ask_for_shelf_name(self, mock_config, mock_get_configured_shelves):
-        """Test the ask_for_shelf_name method"""
+    @patch("shelves.dialogs.ShelfManager")
+    def test_ask_for_shelf_name(
+        self,
+        mock_shelf_manager,
+    ):
         # Arrange
-        mock_config.setting = self.config_setting
-        mock_get_configured_shelves.return_value = self.config_setting[
+        mock_dialog_shelf_manager_instance = MagicMock()
+        mock_shelf_manager.return_value = mock_dialog_shelf_manager_instance
+        mock_dialog_shelf_manager_instance.shelf_names = self.test_configuration[
             ShelfConstants.CONFIG_KNOWN_SHELVES_KEY
         ]
+
         # Mock the dialog attributes and methods to simulate user input
         self.dialog.exec_ = MagicMock(return_value=True)  # Simulate dialog acceptance
         self.dialog.shelf_name_input = MagicMock()
@@ -143,27 +155,20 @@ class DetermineShelfActionTest(unittest.TestCase):
         """Set up the test environment"""
         self.actions = DetermineShelfAction.__new__(DetermineShelfAction)
         self.actions.tagger = MagicMock()
-        self.test_configuration: dict[
-            str,
-            str | list[str] | bool | int,
-        ] = {
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
+        self.test_configuration = {
+            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/home/foobar/music",
         }
 
-    @patch("shelves.manager.ShelfManager.add_shelf_names")
-    @patch("shelves.options.ShelfManager.base_path", new_callable=PropertyMock)
-    @patch("shelves.manager.config")
-    def test_callback(
-        self,
-        _mock_config,
-        mock_shelf_manager_base_path,
-        mock_add_shelf_names,
-    ):
+    @patch("shelves.actions.ShelfManager")
+    def test_callback(self, mock_shelf_manager):
         """Test the callback method"""
         # Arrange
-        mock_shelf_manager_base_path.return_value = Path(
+        mock_manager_instance = MagicMock()
+        mock_shelf_manager.return_value = mock_manager_instance
+        mock_manager_instance.base_path = Path(
             str(self.test_configuration[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY])
         )
+
         file_path = (
             Path(str(self.test_configuration[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]))
             / "Standard"
@@ -179,4 +184,4 @@ class DetermineShelfActionTest(unittest.TestCase):
         self.actions.callback([obj])
 
         # Assert
-        mock_add_shelf_names.assert_called_with("Standard")
+        mock_manager_instance.add_shelf_names.assert_called_with("Standard")

@@ -11,7 +11,7 @@ import traceback
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from picard import config, log
+from picard import log
 
 from .constants import ShelfConstants
 from .manager import ShelfManager
@@ -112,52 +112,6 @@ class ShelfProcessors:
             log.debug("Failed to set %s metadata for: %s; %s", label, filename, e)
 
     @staticmethod
-    def _apply_workflow_transition(shelf: Optional[str]) -> Optional[str]:
-        """
-        Applies the workflow transition to a shelf_name name if the workflow is enabled.
-        """
-        if not shelf:
-            return shelf
-
-        try:
-            if not config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]:  # type: ignore
-                return shelf
-
-            workflow_stage_1 = config.setting[
-                ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY  # type: ignore
-            ]  # type: ignore
-            workflow_stage_2 = config.setting[
-                ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY  # type: ignore
-            ]  # type: ignore
-            stage_1_includes_non_shelves = config.setting[
-                ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY  # type: ignore
-            ]
-
-            # Check for known shelf_names wildcard or direct match
-            apply_transition = shelf in workflow_stage_1 or stage_1_includes_non_shelves
-
-            if apply_transition and workflow_stage_2:
-                destination_shelf = workflow_stage_2[0]
-                # Avoid transitioning to the same shelf_name
-                if shelf != destination_shelf:
-                    log.debug(
-                        "Applying workflow transition: '%s' -> '%s'",
-                        shelf,
-                        destination_shelf,
-                    )
-                    return destination_shelf
-        except KeyError as e:
-            log.debug(
-                "Workflow configuration key not found (%s), skipping transition.",
-                e,
-            )
-        except (AttributeError, ValueError) as e:
-            log.debug("Failed to evaluate workflow transition: %s", e)
-            log.debug("Traceback: %s", traceback.format_exc())
-
-        return shelf
-
-    @staticmethod
     def file_post_removal_from_track_processor(_track: Any, file: Any) -> None:
         """
         Process a file after it has been removed from a track.
@@ -168,7 +122,7 @@ class ShelfProcessors:
         )
         album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
         if album_id:
-            ShelfManager.clear_album(album_id)
+            ShelfManager().clear_album(album_id)
 
     @staticmethod
     def file_post_addition_to_track_processor(track: Optional[Any], file: Any) -> None:
@@ -243,7 +197,7 @@ class ShelfProcessors:
             log.debug("Processing file: %s", file.filename)
             album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
             if album_id:
-                ShelfManager.clear_album(album_id)
+                ShelfManager().clear_album(album_id)
         except (KeyError, AttributeError, ValueError) as e:
             log.error("Error in file processor: %s", e)
             log.error("Traceback: %s", traceback.format_exc())
@@ -269,7 +223,7 @@ class ShelfProcessors:
         if not album_id:
             return
 
-        shelf_name, source = ShelfManager.get_album_shelf(album_id=album_id)
+        shelf_name, source = ShelfManager().get_album_shelf(album_id=album_id)
         if shelf_name is not None:
             log.debug(
                 "Setting shelf_name '%s' on track from source '%s'",

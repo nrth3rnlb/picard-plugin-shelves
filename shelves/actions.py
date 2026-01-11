@@ -55,7 +55,7 @@ class SetShelfAction(BaseAction):
         for obj in objs:
             self._set_shelf_recursive(obj, shelf_name, manual_shelf_tag)
 
-        ShelfManager().shelf_names.add(shelf_name)
+        ShelfManager().add_shelf_names(shelf_name)
         log.debug(
             "Manually set the shelf name to '%s' for %d object(s)",
             shelf_name,
@@ -67,7 +67,7 @@ class SetShelfAction(BaseAction):
         if hasattr(obj, "metadata"):
             album_id = obj.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
             if album_id:
-                ShelfManager.set_album_shelf(
+                ShelfManager().set_album_shelf(
                     album_id=album_id, shelf_name=shelf_name, lock=True
                 )
 
@@ -112,11 +112,10 @@ class ResetShelfAction(BaseAction):
                 for file in files:
                     metadata = file.metadata
                     album_id = metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
-                    print(f"DEBUG: Processing file {file}, album_id: {album_id}")
 
                     # Clear _lock in manager
                     if album_id:
-                        ShelfManager.clear_manual_override(album_id)
+                        ShelfManager().clear_manual_override(album_id)
 
                     # Clear tag in metadata
                     if ShelfConstants.TAG_KEY in metadata:

@@ -9,6 +9,7 @@ from __future__ import annotations
 from gettext import gettext as _
 from pathlib import Path
 from typing import Optional, Set, Tuple
+from warnings import deprecated
 
 from picard import log
 
@@ -45,12 +46,15 @@ class ShelfUtils:
         return valid_shelves
 
     @staticmethod
+    @deprecated("don't use")
     def get_shelf_name_from_tag(tag_value: Optional[str]) -> Optional[str]:
         """
         Extract the shelf name from a tag value.
 
-        :param tag_value:
-        :return:
+        :param tag_value: The tag value to extract the shelf name from.
+        :type tag_value: Optional[str]
+        :return: The extracted shelf name or None if not found.
+        :rtype: Optional[str]
         """
 
         if not isinstance(tag_value, str):

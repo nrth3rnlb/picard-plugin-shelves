@@ -5,7 +5,8 @@ Tests for the processor priority logic.
 """
 
 import unittest
-from copy import copy
+from copy import copy, deepcopy
+from pathlib import Path
 from typing import Set
 from unittest.mock import MagicMock, PropertyMock, patch
 
@@ -71,27 +72,27 @@ class ProcessorPriorityTest(unittest.TestCase):
     #     # Assert
     #     self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], shelf_sub_dir)
 
-    @patch("shelves.options.ShelfManager.base_path", new_callable=PropertyMock)
-    @patch("shelves.options.ShelfManager.shelf_names", new_callable=PropertyMock)
-    @patch("shelves.manager.ShelfManager.set_album_shelf", new_callable=MagicMock)
+    @patch("shelves.processors.ShelfManager")
     @patch(
-        "shelves.processors.ShelfProcessors._apply_workflow_transition",
+        "shelves.workflow.WorkflowEngine.apply_workflow_transition",
         new_callable=MagicMock,
     )
     def test_file_post_addition_to_track_processor_known_name_from_path(  # is_known_name_from_path
         self,
         mock_apply_workflow_transition,
-        mock_set_album_shelf,
-        mock_shelf_manager_shelf_names,
-        mock_shelf_manager_base_path,
+        mock_shelf_manager,
     ):
         # Arrange
-        mock_shelf_manager_shelf_names.return_value = self.known_shelves
+        mock_manager_instance = MagicMock()
+        mock_shelf_manager.return_value = mock_manager_instance
+        mock_manager_instance.base_path = Path(
+            str(self.test_configuration[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY])
+        )
+        mock_manager_instance.shelf_names = self.known_shelves
+
         shelf_sub_dir = copy(self.known_shelves).pop()
-        mock_shelf_manager_base_path.return_value = self.test_configuration[
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY
-        ]
         mock_apply_workflow_transition.return_value = shelf_sub_dir
+
         file_mock = MagicMock()
         file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
         file_mock.metadata = {
@@ -105,26 +106,21 @@ class ProcessorPriorityTest(unittest.TestCase):
         )
 
         # Assert
-        # self.assertTrue(mock_method.called)
-        mock_set_album_shelf.assert_called_with(
+        mock_manager_instance.set_album_shelf.assert_called_with(
             album_id="f62b3023-34e7-40cd-bd08-b183118cb1fd",
             shelf_name=shelf_sub_dir,
             lock=True,
         )
 
-    @patch("shelves.options.ShelfManager.base_path", new_callable=PropertyMock)
-    @patch("shelves.options.ShelfManager.shelf_names", new_callable=PropertyMock)
-    @patch("shelves.manager.ShelfManager.set_album_shelf", new_callable=MagicMock)
+    @patch("shelves.processors.ShelfManager")
     @patch(
-        "shelves.processors.ShelfProcessors._apply_workflow_transition",
+        "shelves.workflow.WorkflowEngine.apply_workflow_transition",
         new_callable=MagicMock,
     )
     def test_file_post_addition_to_track_processor_known_name_from_tag_and_manual(
         self,
         mock_apply_workflow_transition,
-        mock_set_album_shelf,
-        mock_shelf_manager_shelf_names,
-        mock_shelf_manager_base_path,
+        mock_shelf_manager,
     ):
         """
         Manually moved to another known shelf folder.
@@ -133,14 +129,18 @@ class ProcessorPriorityTest(unittest.TestCase):
         must adopt this shelf folder and ignore all previous manual markings.
         """
         # Arrange
-        mock_shelf_manager_shelf_names.return_value = self.known_shelves
+        mock_manager_instance = MagicMock()
+        mock_shelf_manager.return_value = mock_manager_instance
+        mock_manager_instance.shelf_names = self.known_shelves
+        mock_manager_instance.base_path = Path(
+            self.test_configuration[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]
+        )
+
         known_shelves_clone = copy(self.known_shelves)
         shelf_name = known_shelves_clone.pop()
         shelf_sub_dir = known_shelves_clone.pop()
-        mock_shelf_manager_base_path.return_value = self.test_configuration[
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY
-        ]
         mock_apply_workflow_transition.return_value = shelf_sub_dir
+
         file_mock = MagicMock()
         file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
         file_mock.metadata = {
@@ -156,34 +156,35 @@ class ProcessorPriorityTest(unittest.TestCase):
         # Assert
         # The name of the shelf determined from the path wins
         # The name of the shelf from the tag loses
-        mock_set_album_shelf.assert_called_with(
+        mock_manager_instance.set_album_shelf.assert_called_with(
             album_id="f62b3023-34e7-40cd-bd08-b183118cb1fd",
             shelf_name=shelf_sub_dir,
             lock=True,
         )
 
-    @patch("shelves.manager.ShelfManager.set_album_shelf")
-    @patch("shelves.options.ShelfManager.shelf_names", new_callable=PropertyMock)
-    @patch("shelves.processors.ShelfProcessors._apply_workflow_transition")
-    @patch("shelves.utils.ShelfUtils.get_shelf_name_from_path")
-    @patch("shelves.processors.config")
+    @patch("shelves.processors.ShelfManager")
+    @patch(
+        "shelves.workflow.WorkflowEngine.apply_workflow_transition",
+        new_callable=MagicMock,
+    )
     def test_file_post_addition_to_track_processor_priority_4(
         self,
-        mock_config,
-        mock_get_shelf_from_path,
         mock_apply_workflow_transition,
-        mock_shelf_manager_shelf_names,
-        mock_set_album_shelf,
+        mock_shelf_manager,
     ):
         """
         PRIORITY 3: The standard logic should be applied to a file without special properties
         """
         # Arrange
-        mock_config.settings = self.test_configuration
-        mock_shelf_manager_shelf_names.return_value = self.known_shelves
+        mock_manager_instance = MagicMock()
+        mock_shelf_manager.return_value = mock_manager_instance
+        mock_manager_instance.shelf_names = self.known_shelves
+        mock_manager_instance.base_path = Path(
+            self.test_configuration[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]
+        )
 
         shelf_sub_dir = copy(self.known_shelves).pop()
-        mock_get_shelf_from_path.return_value = shelf_sub_dir
+        mock_apply_workflow_transition.return_value = shelf_sub_dir
 
         file_mock = MagicMock()
         file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
@@ -198,7 +199,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         )
 
         # Assert
-        mock_set_album_shelf.assert_called_with(
+        mock_manager_instance.set_album_shelf.assert_called_with(
             album_id="album123", shelf_name=shelf_sub_dir, lock=True
         )
 

@@ -25,9 +25,7 @@ class ScriptFunctionsTest(unittest.TestCase):
         result = func_shelf(parser)
         self.assertEqual(result, "")
 
-    @patch(
-        "shelves.script_functions.ShelfUtils.get_shelf_name_from_tag", return_value=None
-    )
+    @patch("shelves.utils.ShelfUtils.get_shelf_name_from_tag", return_value=None)
     def test_func_shelf_returns_empty_when_no_shelf_name(self, mock_get_shelf_name):
         tag = "SomeTag"
         parser = MagicMock()

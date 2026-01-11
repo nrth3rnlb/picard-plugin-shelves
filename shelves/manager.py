@@ -17,6 +17,18 @@ from .constants import ShelfConstants
 from .utils import ShelfUtils
 
 
+class ShelfRegistry:
+    """Registry for shelf_name assignments and _shelf_state with conflict detection."""
+
+class ShelfAssignmentEngine:
+    """Engine for assigning shelf_name to albums."""
+
+class ShelfLockManager:
+    """Manager for shelf_name locks."""
+
+class ShelfValidator:
+    """Validator for shelf_name assignments."""
+
 class ShelfManager:
     """Manages shelf_name assignments and _shelf_state with conflict detection."""
 
@@ -207,6 +219,14 @@ class ShelfManager:
 
     @classmethod
     def _winner(cls, votes: List[Tuple[str, float, str]]) -> Optional[str]:
+        """
+        Determine the winning shelf based on votes, considering weight and conflicts.
+
+        :param votes: List of tuples containing shelf name, weight, and other metadata.
+        :type votes: List[Tuple[str, float, str]]
+        :return: The winning shelf name or None if no votes are provided.
+        :rtype: Optional[str]
+        """
         if not votes:
             return None
         agg: Dict[str, float] = {}
@@ -238,13 +258,12 @@ class ShelfManager:
     @classmethod
     def get_album_shelf(cls, album_id: str) -> tuple[Optional[str], str]:
         """
-        Read with priority:
-        1. Manual _lock or `shelf_source=='manual'` => return the current value.
-        2. Otherwise, weighted winner from `_shelf_votes_weighted`.
-        3. Fallback to the last observed winner (`_shelves_by_album`).
+        Determine the shelf for an album based on manual overrides, weighted votes, and fallback to last observed winner.
 
-        :param album_id:
-        :return:
+        :param album_id: The unique identifier of the album.
+        :type album_id: str
+        :return: A tuple containing the shelf name and the source of the decision.
+        :rtype: tuple[Optional[str], str]
         """
         # 1. Manual _lock
         manual_shelf = cls._get_manual_override(album_id=album_id)
