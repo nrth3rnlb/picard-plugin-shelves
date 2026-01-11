@@ -11,11 +11,11 @@ from collections import Counter, defaultdict, namedtuple
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from exceptions import ShelfNotFoundException
 from picard import config, log
 
 from . import utils
 from .constants import ShelfConstants
+from .exceptions import ShelfNotFoundException
 
 
 class ShelfRegistry:
