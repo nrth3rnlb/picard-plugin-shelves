@@ -4,22 +4,27 @@ Script functions for the Shelves plugin.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
+
+from picard import log
 
 from . import constants
+from .exceptions import ShelfNotFoundException
 from .manager import ShelfManager
 
 
-def func_shelf(parser: Any) -> str:
+def shelf(parser: Any) -> str:
     """
     Picard script function: `$shelf()`
-    Returns the clean shelf_name name from the file's metadata, removing any internal suffixes.
+    Returns the clean shelf name from the file's metadata, removing any internal suffixes.
     """
-    shelf_tag = parser.context[constants.TAG_KEY]
-    if not isinstance(shelf_tag, str):
+    album_id = parser.value_for_key(constants.MUSICBRAINZ_ALBUMID)
+    if album_id is None:
         return ""
 
-    shelf_name = ShelfManager().get_album_shelf(album_id=shelf_tag)[0]
-    if not shelf_name:
+    try:
+        shelf_info = ShelfManager().get_album_shelf(album_id=album_id)
+        return shelf_info[0]
+    except ShelfNotFoundException as e:
+        log.error("Error retrieving shelf name for album id '%s': %s", album_id, e)
         return ""
-    return shelf_name

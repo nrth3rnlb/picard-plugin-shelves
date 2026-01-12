@@ -30,7 +30,7 @@ from .actions import (
 )
 from .options import OptionsPage as _ShelvesOptionsPageBase
 from .processors import ShelfProcessors
-from .script_functions import func_shelf as _func_shelf_base
+from .script_functions import shelf as _func_shelf_base
 
 # Plugin metadata
 PLUGIN_NAME = "Shelves"
@@ -79,7 +79,7 @@ shelf_processors = ShelfProcessors()
 
 # Wrapper for script function
 def func_shelf(parser: Any) -> Optional[str]:
-    """Wrapper for func_shelf to ensure proper plugin registration."""
+    """Wrapper for shelf to ensure proper plugin registration."""
     return _func_shelf_base(parser)
 
 
