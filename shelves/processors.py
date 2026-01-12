@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 File processors for loading and saving shelf_name information.
 """

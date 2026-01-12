@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Script functions for the Shelves plugin.
 """

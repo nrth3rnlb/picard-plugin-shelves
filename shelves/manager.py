@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-
 """
-Shelf manager for tracking album shelf_name assignments.
+Shelf manager for tracking album shelf name assignments.
 """
 
 from __future__ import annotations

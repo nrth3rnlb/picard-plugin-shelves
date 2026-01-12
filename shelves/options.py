@@ -1,5 +1,5 @@
 """
-Options options_page for the Shelves plugin.
+Options page for the Shelves plugin.
 """
 
 from __future__ import annotations
