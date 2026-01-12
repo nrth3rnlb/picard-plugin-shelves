@@ -14,7 +14,7 @@ from PyQt5 import (
 )
 
 from . import utils
-from .constants import ShelfConstants
+from . import constants
 from .dialogs import SetShelfDialog
 from .manager import ShelfManager
 

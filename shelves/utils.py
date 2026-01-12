@@ -11,7 +11,7 @@ from warnings import deprecated
 
 from picard import log
 
-from .constants import ShelfConstants
+from . import constants
 
 
 def validate_shelf_names(shelf_names: set[str]) -> set[str]:

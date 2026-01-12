@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from picard import config, log
 
 from . import utils
-from .constants import ShelfConstants
+from . import constants
 from .exceptions import ShelfNotFoundException
 
 

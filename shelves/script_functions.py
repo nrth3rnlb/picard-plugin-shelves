@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .constants import ShelfConstants
+from . import constants
 from .manager import ShelfManager
 
 

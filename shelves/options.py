@@ -20,7 +20,7 @@ from PyQt5 import (
 )
 
 from . import utils
-from .constants import ShelfConstants
+from . import constants
 from .manager import ShelfManager
 from .widgets import QShelvesWidget
 

@@ -1,7 +1,8 @@
 import traceback
 
-from constants import ShelfConstants
 from picard import config, log
+
+from . import constants
 
 
 class WorkflowEngine:
