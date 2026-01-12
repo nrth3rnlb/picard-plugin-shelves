@@ -15,7 +15,7 @@ def func_shelf(parser: Any) -> str:
     Picard script function: `$shelf()`
     Returns the clean shelf_name name from the file's metadata, removing any internal suffixes.
     """
-    shelf_tag = parser.context[ShelfConstants.TAG_KEY]
+    shelf_tag = parser.context[constants.TAG_KEY]
     if not isinstance(shelf_tag, str):
         return ""
 

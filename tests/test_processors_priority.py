@@ -29,10 +29,10 @@ class ProcessorPriorityTest(unittest.TestCase):
             "Favorites",
         }
         self.test_configuration = {
-            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: False,
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
+            constants.CONFIG_WORKFLOW_ENABLED_KEY: False,
+            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
+            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
+            constants.CONFIG_MOVE_FILES_TO_KEY: "/music",
         }
 
     # @patch("shelves.utils.get_shelf_name_from_path")
@@ -50,7 +50,7 @@ class ProcessorPriorityTest(unittest.TestCase):
     #     """
     #     # Arrange
     #     mock_config.setting = self.test_configuration
-    #     mock_config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = False
+    #     mock_config.setting[constants.CONFIG_WORKFLOW_ENABLED_KEY] = False
     #
     #     mock_get_configured_shelves.return_value = self.test_known_shelves
     #
@@ -60,8 +60,8 @@ class ProcessorPriorityTest(unittest.TestCase):
     #     file_mock = MagicMock()
     #     file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
     #     file_mock.metadata = {
-    #         ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
-    #         ShelfConstants.TAG_KEY: f"{shelf_sub_dir} {ShelfConstants.MANUAL_SHELF_SUFFIX}",
+    #         constants.MUSICBRAINZ_ALBUMID: "album123",
+    #         constants.TAG_KEY: f"{shelf_sub_dir} {constants.MANUAL_SHELF_SUFFIX}",
     #     }
     #
     #     # Act
@@ -70,7 +70,7 @@ class ProcessorPriorityTest(unittest.TestCase):
     #     )
     #
     #     # Assert
-    #     self.assertEqual(file_mock.metadata[ShelfConstants.TAG_KEY], shelf_sub_dir)
+    #     self.assertEqual(file_mock.metadata[constants.TAG_KEY], shelf_sub_dir)
 
     @patch("shelves.processors.ShelfManager")
     @patch(
@@ -86,7 +86,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
         mock_manager_instance.base_path = Path(
-            str(self.test_configuration[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY])
+            str(self.test_configuration[constants.CONFIG_MOVE_FILES_TO_KEY])
         )
         mock_manager_instance.shelf_names = self.known_shelves
 
@@ -96,8 +96,8 @@ class ProcessorPriorityTest(unittest.TestCase):
         file_mock = MagicMock()
         file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
         file_mock.metadata = {
-            ShelfConstants.MUSICBRAINZ_ALBUMID: "f62b3023-34e7-40cd-bd08-b183118cb1fd",
-            ShelfConstants.TAG_KEY: "no_tag_set",
+            constants.MUSICBRAINZ_ALBUMID: "f62b3023-34e7-40cd-bd08-b183118cb1fd",
+            constants.TAG_KEY: "no_tag_set",
         }
 
         # Act
@@ -133,7 +133,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         mock_shelf_manager.return_value = mock_manager_instance
         mock_manager_instance.shelf_names = self.known_shelves
         mock_manager_instance.base_path = Path(
-            self.test_configuration[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]
+            self.test_configuration[constants.CONFIG_MOVE_FILES_TO_KEY]
         )
 
         known_shelves_clone = copy(self.known_shelves)
@@ -144,8 +144,8 @@ class ProcessorPriorityTest(unittest.TestCase):
         file_mock = MagicMock()
         file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
         file_mock.metadata = {
-            ShelfConstants.MUSICBRAINZ_ALBUMID: "f62b3023-34e7-40cd-bd08-b183118cb1fd",
-            ShelfConstants.TAG_KEY: f"{shelf_name}{ShelfConstants.MANUAL_SHELF_SUFFIX}",
+            constants.MUSICBRAINZ_ALBUMID: "f62b3023-34e7-40cd-bd08-b183118cb1fd",
+            constants.TAG_KEY: f"{shelf_name}{constants.MANUAL_SHELF_SUFFIX}",
         }
 
         # Act
@@ -180,7 +180,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         mock_shelf_manager.return_value = mock_manager_instance
         mock_manager_instance.shelf_names = self.known_shelves
         mock_manager_instance.base_path = Path(
-            self.test_configuration[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]
+            self.test_configuration[constants.CONFIG_MOVE_FILES_TO_KEY]
         )
 
         shelf_sub_dir = copy(self.known_shelves).pop()
@@ -189,8 +189,8 @@ class ProcessorPriorityTest(unittest.TestCase):
         file_mock = MagicMock()
         file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
         file_mock.metadata = {
-            ShelfConstants.MUSICBRAINZ_ALBUMID: "album123",
-            ShelfConstants.TAG_KEY: "",
+            constants.MUSICBRAINZ_ALBUMID: "album123",
+            constants.TAG_KEY: "",
         }
 
         # Act

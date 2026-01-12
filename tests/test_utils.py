@@ -29,10 +29,10 @@ class UtilsTest(unittest.TestCase):
         """Set up the test environment"""
         self.test_known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
         self.test_configuration = {
-            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: self.test_known_shelves,
+            constants.CONFIG_WORKFLOW_ENABLED_KEY: True,
+            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
+            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
+            constants.CONFIG_KNOWN_SHELVES_KEY: self.test_known_shelves,
         }
 
     @patch("shelves.utils.validate_shelf_name", new_callable=MagicMock)
@@ -92,7 +92,7 @@ class UtilsValidationTest(unittest.TestCase):
         self.assertEqual(message, "Shelf name cannot be empty")
 
     def test_validate_shelf_name_invalid_chars(self):
-        invalidations = ShelfConstants.INVALID_SHELF_NAME_CHARS
+        invalidations = constants.INVALID_SHELF_NAME_CHARS
         hr_invalidations = f"{', '.join(repr(c) for c in invalidations)}"
         for invalidation in invalidations:
             invalid_shelf_name = (
@@ -125,7 +125,7 @@ class UtilsValidationTest(unittest.TestCase):
                 )
 
     def test_validate_shelf_name_invalid_names(self):
-        invalidations = ShelfConstants.INVALID_SHELF_NAMES
+        invalidations = constants.INVALID_SHELF_NAMES
         hr_invalidations = f"{', '.join(repr(c) for c in invalidations)}"
         for invalidation in invalidations:
             invalid_shelf_name = f"{invalidation}"
@@ -151,7 +151,7 @@ class UtilsValidationTest(unittest.TestCase):
                 )
 
     def test_validate_shelf_name_tokens(self):
-        invalidations = ShelfConstants.ALBUM_INDICATORS
+        invalidations = constants.ALBUM_INDICATORS
         hr_invalidations = f"{', '.join(repr(c) for c in invalidations)}"
         for invalidation in invalidations:
             invalid_shelf_name = f"{invalidation}{chr(0x20)}{random.choice(list(self.test_known_shelf_names))}"
@@ -184,11 +184,11 @@ class UtilsValidationTest(unittest.TestCase):
     @skip("TODO(#15): See utils.py:168 - decide if max length should be enforced")
     def test_validate_shelf_name_too_long(self):
         """Test that a name exceeding the max length is invalid."""
-        invalidations = ShelfConstants.MAX_SHELF_NAME_LENGTH
+        invalidations = constants.MAX_SHELF_NAME_LENGTH
         hr_invalidations = f"{invalidations}"
         #
         factor = 1 + math.ceil(
-            ShelfConstants.MAX_SHELF_NAME_LENGTH
+            constants.MAX_SHELF_NAME_LENGTH
             / len(random.choice(list(self.test_known_shelf_names)))
         )
         invalid_shelf_name = (

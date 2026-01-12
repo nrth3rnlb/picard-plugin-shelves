@@ -50,8 +50,8 @@ def get_shelf_name_from_tag(tag_value: Optional[str]) -> Optional[str]:
     if not tag:
         return None
 
-    if tag.endswith(ShelfConstants.MANUAL_SHELF_SUFFIX):
-        return tag[: -len(ShelfConstants.MANUAL_SHELF_SUFFIX)].strip() or None
+    if tag.endswith(constants.MANUAL_SHELF_SUFFIX):
+        return tag[: -len(constants.MANUAL_SHELF_SUFFIX)].strip() or None
 
     return tag
 
@@ -102,12 +102,12 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
     invalid_names_used = [
         name_used
         for name_used in shelf_name.split()
-        if name_used in ShelfConstants.INVALID_SHELF_NAMES
+        if name_used in constants.INVALID_SHELF_NAMES
     ]
     if invalid_names_used:
         hr_invalid_names_used = f"{', '.join(repr(c) for c in set(invalid_names_used))}"
         hr_invalid_names = (
-            f"{', '.join(repr(c) for c in ShelfConstants.INVALID_SHELF_NAMES)}"
+            f"{', '.join(repr(c) for c in constants.INVALID_SHELF_NAMES)}"
         )
         return (
             False,
@@ -119,12 +119,12 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
     invalid_chars_used = [
         char_used
         for char_used in shelf_name
-        if char_used in ShelfConstants.INVALID_SHELF_NAME_CHARS
+        if char_used in constants.INVALID_SHELF_NAME_CHARS
     ]
     if invalid_chars_used:
         hr_invalid_chars_used = f"{', '.join(repr(c) for c in set(invalid_chars_used))}"
         hr_invalid_name_chars = (
-            f"{', '.join(repr(c) for c in ShelfConstants.INVALID_SHELF_NAME_CHARS)}"
+            f"{', '.join(repr(c) for c in constants.INVALID_SHELF_NAME_CHARS)}"
         )
         return (
             False,
@@ -136,8 +136,7 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
     invalid_tokens_used = [
         token_used
         for token_used in shelf_name.split()
-        if token_used.lower()
-        in [token.lower() for token in ShelfConstants.ALBUM_INDICATORS]
+        if token_used.lower() in [token.lower() for token in constants.ALBUM_INDICATORS]
     ]
 
     if invalid_tokens_used:
@@ -145,7 +144,7 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
             f"{', '.join(repr(c) for c in set(invalid_tokens_used))}"
         )
         hr_invalid_name_tokens = (
-            f"{', '.join(repr(c) for c in ShelfConstants.ALBUM_INDICATORS)}"
+            f"{', '.join(repr(c) for c in constants.ALBUM_INDICATORS)}"
         )
         return (
             False,
@@ -155,21 +154,21 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
         )
 
     # TODO(#15): Decide if max length validation should be enforced
-    # if len(shelf_name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
+    # if len(shelf_name) > constants.MAX_SHELF_NAME_LENGTH:
     #     return (
     #         False,
     #         f"Cannot use '{shelf_name}' as shelf name."
     #         f" The name is too long with {len(shelf_name)} characters."
-    #         f" Maximum allowed is {ShelfConstants.MAX_SHELF_NAME_LENGTH}.",
+    #         f" Maximum allowed is {constants.MAX_SHELF_NAME_LENGTH}.",
     #     )
 
     # TODO(#16): Decide if max word count validation should be enforced
-    # if len(shelf_name.split()) > ShelfConstants.MAX_WORD_COUNT:
+    # if len(shelf_name.split()) > constants.MAX_WORD_COUNT:
     #     return (
     #         False,
     #         f"Cannot use '{shelf_name}' as shelf name."
     #         f" Shelf name is too long with {len(shelf_name.split())} words."
-    #         f" Maximum allowed is {ShelfConstants.MAX_WORD_COUNT}.",
+    #         f" Maximum allowed is {constants.MAX_WORD_COUNT}.",
     #     )
 
     return True, "Valid shelf name"

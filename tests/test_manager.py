@@ -22,7 +22,7 @@ class ManagerTest(unittest.TestCase):
             str,
             str | list[str] | bool | int,
         ] = {
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
+            constants.CONFIG_MOVE_FILES_TO_KEY: "/music",
         }
 
     @patch("shelves.manager.config")

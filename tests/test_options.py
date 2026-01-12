@@ -55,52 +55,52 @@ class OptionsPageTest(unittest.TestCase):
             str,
             str | list[str] | bool | int,
         ] = {
-            ShelfConstants.CONFIG_ACTIVE_TAB: 1,
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: self.test_known_shelves,
-            ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: True,
-            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: self.test_known_shelves[
+            constants.CONFIG_ACTIVE_TAB: 1,
+            constants.CONFIG_KNOWN_SHELVES_KEY: self.test_known_shelves,
+            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: True,
+            constants.CONFIG_WORKFLOW_ENABLED_KEY: True,
+            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: self.test_known_shelves[
                 : self.test_number_known_shelves - 2
             ],
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: self.test_known_shelves[
+            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: self.test_known_shelves[
                 self.test_number_known_shelves - 1 :
             ],
-            ShelfConstants.CONFIG_ALBUM_SHELF_KEY: ShelfConstants.TAG_KEY,
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
+            constants.CONFIG_ALBUM_SHELF_KEY: constants.TAG_KEY,
+            constants.CONFIG_MOVE_FILES_TO_KEY: "/music",
         }
 
         self.widget_config = {
-            ShelfConstants.CONFIG_ACTIVE_TAB: {
+            constants.CONFIG_ACTIVE_TAB: {
                 "option_class": IntOption,
                 "widget": self.options_page.plugin_configuration,
                 "setter": "setCurrentIndex",
                 "getter": "currentIndex",
             },
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY: {
+            constants.CONFIG_KNOWN_SHELVES_KEY: {
                 "option_class": ListOption,
                 "widget": self.options_page.shelf_management_shelves,
                 "setter": "addItems",
                 "getter": None,
             },
-            ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: {
+            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: {
                 "option_class": BoolOption,
                 "widget": self.options_page.stage_1_includes_non_shelves,
                 "setter": "setChecked",
                 "getter": "isChecked",
             },
-            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: {
+            constants.CONFIG_WORKFLOW_ENABLED_KEY: {
                 "option_class": BoolOption,
                 "widget": self.options_page.workflow_enabled,
                 "setter": "setChecked",
                 "getter": "isChecked",
             },
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: {
+            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: {
                 "option_class": ListOption,
                 "widget": self.options_page.workflow_stage_1,
                 "setter": "addItems",
                 "getter": None,
             },
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: {
+            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: {
                 "option_class": ListOption,
                 "widget": self.options_page.workflow_stage_2,
                 "setter": "addItems",
@@ -158,9 +158,9 @@ class OptionsPageTest(unittest.TestCase):
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
         _test_configuration = deepcopy(self.test_configuration)
-        _test_configuration[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = []
-        _test_configuration[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = []
-        _test_configuration[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = []
+        _test_configuration[constants.CONFIG_KNOWN_SHELVES_KEY] = []
+        _test_configuration[constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = []
+        _test_configuration[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = []
 
         for option in OptionsPage.options:
             if option.name in self.widget_config:
@@ -220,7 +220,7 @@ class OptionsPageTest(unittest.TestCase):
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
         mock_manager_instance.base_path.return_value = self.test_configuration[
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY
+            constants.CONFIG_MOVE_FILES_TO_KEY
         ]
         mock_config.setting = self.test_configuration
         # Act
@@ -281,7 +281,7 @@ class OptionsPageTest(unittest.TestCase):
         "shelves.options.QtWidgets.QMessageBox.warning",
     )
     @unittest.skipUnless(
-        ShelfConstants.INVALID_SHELF_NAME_CHARS,
+        constants.INVALID_SHELF_NAME_CHARS,
         "No INVALID_SHELF_NAME_CHARS defined",
     )
     def test_add_invalid_shelf(
@@ -292,7 +292,7 @@ class OptionsPageTest(unittest.TestCase):
         _test_known_shelves = deepcopy(self.test_known_shelves)
         popped = _test_known_shelves.pop()
         mock_get_text.return_value = (
-            f"{popped}{ShelfConstants.INVALID_SHELF_NAME_CHARS.pop()}",
+            f"{popped}{constants.INVALID_SHELF_NAME_CHARS.pop()}",
             True,
         )
 

@@ -23,11 +23,11 @@ class WorkflowTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment for workflow."""
         self.config_setting = {
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
-            ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: False,
-            ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
+            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
+            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
+            constants.CONFIG_WORKFLOW_ENABLED_KEY: True,
+            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: False,
+            constants.CONFIG_MOVE_FILES_TO_KEY: "/music",
         }
         self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
 
@@ -41,7 +41,7 @@ class WorkflowTest(unittest.TestCase):
     def test_disabled_workflow_returns_same_shelf(self, mock_config):
         """Test that a disabled workflow never transitions the shelf_name."""
         mock_config.setting = self.config_setting
-        mock_config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = False
+        mock_config.setting[constants.CONFIG_WORKFLOW_ENABLED_KEY] = False
 
         self.assertEqual(
             WorkflowEngine.apply_workflow_transition("Incoming"), "Incoming"
@@ -75,7 +75,7 @@ class WorkflowTest(unittest.TestCase):
     def test_wildcard_in_stage1_transitions_any_shelf(self, mock_config):
         """Test that the wildcard in stage 1 transitions any shelf_name."""
         mock_config.setting = self.config_setting
-        self.config_setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (
+        self.config_setting[constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (
             True
         )
         self.assertEqual(
@@ -97,8 +97,8 @@ class WorkflowTest(unittest.TestCase):
     def test_missing_stage_keys_with_enabled_true_leaves_shelf(self, mock_config):
         """Test that missing stage keys with workflow enabled leaves the shelf_name unchanged."""
         mock_config.setting = {
-            ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
+            constants.CONFIG_WORKFLOW_ENABLED_KEY: True,
+            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
             # stage 2 missing
         }
         self.assertEqual(

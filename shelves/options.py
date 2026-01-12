@@ -19,8 +19,7 @@ from PyQt5 import (
     uic,
 )
 
-from . import utils
-from . import constants
+from . import constants, utils
 from .manager import ShelfManager
 from .widgets import QShelvesWidget
 
@@ -55,29 +54,29 @@ class OptionsPage(PicardOptions):
     options: list[Option] = [
         ListOption(
             "setting",
-            ShelfConstants.CONFIG_KNOWN_SHELVES_KEY,
+            constants.CONFIG_KNOWN_SHELVES_KEY,
             [],
         ),
         ListOption(
             "setting",
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY,
+            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY,
             [],
         ),
         ListOption(
             "setting",
-            ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY,
+            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY,
             [],
         ),
-        BoolOption("setting", ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY, True),
+        BoolOption("setting", constants.CONFIG_WORKFLOW_ENABLED_KEY, True),
         BoolOption(
             "setting",
-            ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY,
+            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY,
             False,
         ),
         TextOption(
-            "setting", ShelfConstants.CONFIG_ALBUM_SHELF_KEY, ShelfConstants.TAG_KEY
+            "setting", constants.CONFIG_ALBUM_SHELF_KEY, constants.TAG_KEY
         ),
-        IntOption("setting", ShelfConstants.CONFIG_ACTIVE_TAB, 0),
+        IntOption("setting", constants.CONFIG_ACTIVE_TAB, 0),
     ]
 
     # UI widget type hints
@@ -142,61 +141,61 @@ class OptionsPage(PicardOptions):
         :rtype:
         """
         self.shelf_management_shelves.addItems(
-            config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]
+            config.setting[constants.CONFIG_KNOWN_SHELVES_KEY]
         )
 
         self.workflow_stage_1.addItems(
-            config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
+            config.setting[constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
         )
 
         self.workflow_stage_2.addItems(
-            config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+            config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
         )
 
         self.stage_1_includes_non_shelves.setChecked(
-            config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY],
+            config.setting[constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY],
         )
 
         self.workflow_enabled.setChecked(
-            config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY],
+            config.setting[constants.CONFIG_WORKFLOW_ENABLED_KEY],
         )
 
-        self.naming_script_code.setPlainText(ShelfConstants.RENAME_SNIPPET)
+        self.naming_script_code.setPlainText(constants.RENAME_SNIPPET)
 
         self.plugin_configuration.setCurrentIndex(
-            config.setting[ShelfConstants.CONFIG_ACTIVE_TAB],
+            config.setting[constants.CONFIG_ACTIVE_TAB],
         )
 
     # noinspection PyTypeHints
     def save(self) -> None:
         """Save shelf_names list to config."""
-        config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY] = [
+        config.setting[constants.CONFIG_KNOWN_SHELVES_KEY] = [
             item.text()
             for i in range(self.shelf_management_shelves.count())
             if (item := self.shelf_management_shelves.item(i)) is not None
         ]
 
-        config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = [
+        config.setting[constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = [
             item.text()
             for i in range(self.workflow_stage_1.count())
             if (item := self.workflow_stage_1.item(i)) is not None
         ]
 
-        config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = [
+        config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = [
             item.text()
             for i in range(self.workflow_stage_2.count())
             if (item := self.workflow_stage_2.item(i)) is not None
         ]
 
-        config.setting[ShelfConstants.CONFIG_ALBUM_SHELF_KEY] = ShelfConstants.TAG_KEY
-        config.setting[ShelfConstants.CONFIG_ACTIVE_TAB] = (
+        config.setting[constants.CONFIG_ALBUM_SHELF_KEY] = constants.TAG_KEY
+        config.setting[constants.CONFIG_ACTIVE_TAB] = (
             self.plugin_configuration.currentIndex()
         )
 
-        config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY] = (
+        config.setting[constants.CONFIG_WORKFLOW_ENABLED_KEY] = (
             self.workflow_enabled.isChecked()
         )
-        config.setting[ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (
+        config.setting[constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (
             self.stage_1_includes_non_shelves.isChecked()
         )
 
@@ -456,10 +455,10 @@ class OptionsPage(PicardOptions):
         remaining_shelves = (
             ShelfManager()
             .shelf_names.difference(
-                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
+                config.setting[constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
             )
             .difference(
-                config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+                config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
             )
         )
         self.shelves_for_stages.clear()

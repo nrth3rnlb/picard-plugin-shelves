@@ -26,10 +26,10 @@ class ProcessorsTest(unittest.TestCase):
         """Set up the test environment."""
         self.config = {
             "settings": {
-                ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY: True,
-                ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
-                ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-                ShelfConstants.CONFIG_MOVE_FILES_TO_KEY: "/music",
+                constants.CONFIG_WORKFLOW_ENABLED_KEY: True,
+                constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
+                constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
+                constants.CONFIG_MOVE_FILES_TO_KEY: "/music",
             }
         }
 

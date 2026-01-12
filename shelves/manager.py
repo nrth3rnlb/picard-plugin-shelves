@@ -11,8 +11,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from picard import config, log
 
-from . import utils
-from . import constants
+from . import constants, utils
 from .exceptions import ShelfNotFoundException
 
 
@@ -61,10 +60,10 @@ class ShelfManager:
             self._shelves_by_album: Dict[str, str] = {}
 
             self.base_path: Path = Path(
-                config.setting[ShelfConstants.CONFIG_MOVE_FILES_TO_KEY]
+                config.setting[constants.CONFIG_MOVE_FILES_TO_KEY]
             )
             self.shelf_names: Set[str] = set(
-                config.setting[ShelfConstants.CONFIG_KNOWN_SHELVES_KEY]
+                config.setting[constants.CONFIG_KNOWN_SHELVES_KEY]
             )
 
     @property
@@ -243,7 +242,7 @@ class ShelfManager:
         state = ShelfManager()._shelf_state.get(album_id, {})
         if (
             state.get("shelf_locked")
-            or state.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL
+            or state.get("shelf_source") == constants.SHELF_SOURCE_MANUAL
         ):
             return state.get("shelf_name")
         return None
@@ -259,25 +258,26 @@ class ShelfManager:
     #     return None
 
     @classmethod
-    def get_album_shelf(cls, album_id: str) -> tuple[Optional[str], str]:
+    def get_album_shelf(cls, album_id: str) -> tuple[str, str]:
         """
         Determine the shelf for an album based on manual overrides, weighted votes, and fallback to last observed winner.
 
         :param album_id: The unique identifier of the album.
         :type album_id: str
         :return: A tuple containing the shelf name and the source of the decision.
-        :rtype: tuple[Optional[str], str]
+        :rtype: tuple[str, str]
+        :raises ShelfNotFoundException: If the album ID has no associated shelf.
         """
         # 1. Manual _lock
         manual_shelf = cls._get_manual_override(album_id=album_id)
         if manual_shelf:
-            return manual_shelf, ShelfConstants.SHELF_SOURCE_MANUAL
+            return manual_shelf, constants.SHELF_SOURCE_MANUAL
 
         # 2. Weighted decision
         # pylint: disable=protected-access
         chosen = cls._winner(ShelfManager()._shelf_votes_weighted.get(album_id, []))
         if chosen:
-            return chosen, ShelfConstants.SHELF_SOURCE_VOTES
+            return chosen, constants.SHELF_SOURCE_VOTES
 
         # 3. Fallback: simple majority winner from counter
         # pylint: disable=protected-access
@@ -289,7 +289,7 @@ class ShelfManager:
                     f"Album ID '{album_id}' has no associated shelf."
                 )
 
-            return shelf_name, ShelfConstants.SHELF_SOURCE_FALLBACK
+            return shelf_name, constants.SHELF_SOURCE_FALLBACK
 
     @classmethod
     def clear_album(cls, album_id: str) -> None:
@@ -330,16 +330,16 @@ class ShelfManager:
             )
 
         # Too long
-        if len(name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
+        if len(name) > constants.MAX_SHELF_NAME_LENGTH:
             suspicious_reasons.append(f"too long ({len(name)} chars)")
 
         # Too many words
         word_count = len(name.split())
-        if word_count > ShelfConstants.MAX_WORD_COUNT:
+        if word_count > constants.MAX_WORD_COUNT:
             suspicious_reasons.append(f"too many words ({word_count})")
 
         # Contains album indicators
-        if any(indicator in name for indicator in ShelfConstants.ALBUM_INDICATORS):
+        if any(indicator in name for indicator in constants.ALBUM_INDICATORS):
             suspicious_reasons.append("contains album indicator (Vol., Disc, etc.)")
 
         if suspicious_reasons:
@@ -352,7 +352,7 @@ class ShelfManager:
         cls,
         album_id: str,
         shelf_name: str,
-        source: str = ShelfConstants.SHELF_SOURCE_MANUAL,
+        source: str = constants.SHELF_SOURCE_MANUAL,
         lock: Optional[bool] = None,
     ) -> Optional[str]:
         """
@@ -366,17 +366,17 @@ class ShelfManager:
         # pylint: disable=protected-access
         state = ShelfManager()._shelf_state.setdefault(album_id, {})
         if lock is None:
-            lock = source == ShelfConstants.SHELF_SOURCE_MANUAL
+            lock = source == constants.SHELF_SOURCE_MANUAL
 
         # Manually locked => can only be overwritten manually
-        if state.get("shelf_locked") and source != ShelfConstants.SHELF_SOURCE_MANUAL:
+        if state.get("shelf_locked") and source != constants.SHELF_SOURCE_MANUAL:
             return state.get("shelf_name")
 
         state["shelf_name"] = shelf_name
         state["shelf_source"] = source
         state["shelf_locked"] = bool(lock)
 
-        if source == ShelfConstants.SHELF_SOURCE_MANUAL:
+        if source == constants.SHELF_SOURCE_MANUAL:
             # Register dominant decision (∞ weight)
             cls.vote_for_shelf(
                 album_id=album_id,
@@ -396,8 +396,8 @@ class ShelfManager:
         """
         state = ShelfManager()._shelf_state.setdefault(album_id, {})
         state["shelf_locked"] = False
-        if state.get("shelf_source") == ShelfConstants.SHELF_SOURCE_MANUAL:
-            state["shelf_source"] = ShelfConstants.SHELF_SOURCE_VOTES
+        if state.get("shelf_source") == constants.SHELF_SOURCE_MANUAL:
+            state["shelf_source"] = constants.SHELF_SOURCE_VOTES
 
     @classmethod
     def intersect_shelf_names(cls, names: Set[str] | str) -> None:

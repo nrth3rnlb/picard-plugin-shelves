@@ -11,8 +11,7 @@ from typing import Any, Dict, Optional
 
 from picard import log
 
-from . import utils
-from . import constants
+from . import constants, utils
 from .manager import ShelfManager
 
 
@@ -43,7 +42,7 @@ class ShelfProcessors:
             "(file_post_removal_from_track_processor) Processing file: %s",
             file.filename,
         )
-        album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+        album_id = file.metadata.get(constants.MUSICBRAINZ_ALBUMID)
         if album_id:
             ShelfManager().clear_album(album_id)
 
@@ -55,7 +54,7 @@ class ShelfProcessors:
         file_meta = getattr(file, "metadata", None)
         if not file_meta:
             return
-        album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+        album_id = file_meta.get(constants.MUSICBRAINZ_ALBUMID)
         if not album_id:
             return
 
@@ -64,9 +63,9 @@ class ShelfProcessors:
         ):
             name_from_path = name_from_path.strip()
 
-        name_from_tag: str = file_meta.get(ShelfConstants.TAG_KEY, "").strip()
+        name_from_tag: str = file_meta.get(constants.TAG_KEY, "").strip()
         name_from_tag_without_suffix: str = name_from_tag.replace(
-            ShelfConstants.MANUAL_SHELF_SUFFIX, ""
+            constants.MANUAL_SHELF_SUFFIX, ""
         ).strip()
         is_known_name_from_path = (
             name_from_path and name_from_path in ShelfManager().shelf_names
@@ -74,7 +73,7 @@ class ShelfProcessors:
         is_known_name_from_tag_and_manual = (
             name_from_tag
             and name_from_tag_without_suffix in ShelfManager().shelf_names
-            and ShelfConstants.MANUAL_SHELF_SUFFIX in name_from_tag
+            and constants.MANUAL_SHELF_SUFFIX in name_from_tag
         )
         is_known_name_from_tag = (
             name_from_tag and name_from_tag_without_suffix in ShelfManager().shelf_names
@@ -116,7 +115,7 @@ class ShelfProcessors:
         """
         try:
             log.debug("Processing file: %s", file.filename)
-            album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+            album_id = file.metadata.get(constants.MUSICBRAINZ_ALBUMID)
             if album_id:
                 ShelfManager().clear_album(album_id)
         except (KeyError, AttributeError, ValueError) as e:
@@ -140,7 +139,7 @@ class ShelfProcessors:
         """
         Set a shelf_name in track metadata from album assignment.
         """
-        album_id = metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+        album_id = metadata.get(constants.MUSICBRAINZ_ALBUMID)
         if not album_id:
             return
 
@@ -151,12 +150,12 @@ class ShelfProcessors:
                 shelf_name,
                 source,
             )
-            if source == ShelfConstants.SHELF_SOURCE_MANUAL:
-                metadata[ShelfConstants.TAG_KEY] = (
-                    f"{shelf_name}{ShelfConstants.MANUAL_SHELF_SUFFIX}"
+            if source == constants.SHELF_SOURCE_MANUAL:
+                metadata[constants.TAG_KEY] = (
+                    f"{shelf_name}{constants.MANUAL_SHELF_SUFFIX}"
                 )
             else:
-                metadata[ShelfConstants.TAG_KEY] = shelf_name
+                metadata[constants.TAG_KEY] = shelf_name
 
     @staticmethod
     def known_name_from_path(
@@ -167,7 +166,7 @@ class ShelfProcessors:
         shelf_name = name_from_path
         ShelfProcessors._set_metadata(
             file if file else track,
-            ShelfConstants.TAG_KEY,
+            constants.TAG_KEY,
             shelf_name,
             "file" if file else "track",
         )
@@ -185,7 +184,7 @@ class ShelfProcessors:
         shelf_name = name_from_tag
         ShelfProcessors._set_metadata(
             file if file else track,
-            ShelfConstants.TAG_KEY,
+            constants.TAG_KEY,
             shelf_name,
             "file" if file else "track",
         )
@@ -203,7 +202,7 @@ class ShelfProcessors:
         shelf_name = name_from_tag
         ShelfProcessors._set_metadata(
             file if file else track,
-            ShelfConstants.TAG_KEY,
+            constants.TAG_KEY,
             shelf_name,
             "file" if file else "track",
         )
@@ -221,7 +220,7 @@ class ShelfProcessors:
         shelf_name = name_from_path
         ShelfProcessors._set_metadata(
             file if file else track,
-            ShelfConstants.TAG_KEY,
+            constants.TAG_KEY,
             shelf_name,
             "file" if file else "track",
         )
@@ -240,7 +239,7 @@ class ShelfProcessors:
         shelf_name = name_from_path
         ShelfProcessors._set_metadata(
             file if file else track,
-            ShelfConstants.TAG_KEY,
+            constants.TAG_KEY,
             shelf_name,
             "file" if file else "track",
         )

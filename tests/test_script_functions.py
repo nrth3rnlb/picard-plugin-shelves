@@ -20,7 +20,7 @@ class ScriptFunctionsTest(unittest.TestCase):
 
     def test_func_shelf_returns_empty_for_non_string_tag(self):
         parser = MagicMock()
-        parser.context = {ShelfConstants.TAG_KEY: None}
+        parser.context = {constants.TAG_KEY: None}
 
         result = func_shelf(parser)
         self.assertEqual(result, "")
@@ -29,7 +29,7 @@ class ScriptFunctionsTest(unittest.TestCase):
     def test_func_shelf_returns_empty_when_no_shelf_name(self, mock_get_shelf_name):
         tag = "SomeTag"
         parser = MagicMock()
-        parser.context = {ShelfConstants.TAG_KEY: tag}
+        parser.context = {constants.TAG_KEY: tag}
 
         result = func_shelf(parser)
         self.assertEqual(result, "")

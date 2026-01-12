@@ -13,8 +13,7 @@ from PyQt5 import (
     QtWidgets,
 )
 
-from . import utils
-from . import constants
+from . import constants, utils
 from .dialogs import SetShelfDialog
 from .manager import ShelfManager
 
@@ -51,7 +50,7 @@ class SetShelfAction(BaseAction):
             )
             return
 
-        manual_shelf_tag = f"{shelf_name}{ShelfConstants.MANUAL_SHELF_SUFFIX}"
+        manual_shelf_tag = f"{shelf_name}{constants.MANUAL_SHELF_SUFFIX}"
         for obj in objs:
             self._set_shelf_recursive(obj, shelf_name, manual_shelf_tag)
 
@@ -65,13 +64,13 @@ class SetShelfAction(BaseAction):
     @staticmethod
     def _set_shelf_recursive(obj: Any, shelf_name: str, shelf_tag: str) -> None:
         if hasattr(obj, "metadata"):
-            album_id = obj.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+            album_id = obj.metadata.get(constants.MUSICBRAINZ_ALBUMID)
             if album_id:
                 ShelfManager().set_album_shelf(
                     album_id=album_id, shelf_name=shelf_name, lock=True
                 )
 
-            obj.metadata[ShelfConstants.TAG_KEY] = shelf_tag
+            obj.metadata[constants.TAG_KEY] = shelf_tag
             log.debug(
                 "Set shelf name tag '%s' on %s",
                 shelf_tag,
@@ -80,7 +79,7 @@ class SetShelfAction(BaseAction):
 
         if hasattr(obj, "iterfiles"):
             for file in obj.iterfiles():
-                file.metadata[ShelfConstants.TAG_KEY] = shelf_tag
+                file.metadata[constants.TAG_KEY] = shelf_tag
 
 
 class ResetShelfAction(BaseAction):
@@ -111,21 +110,21 @@ class ResetShelfAction(BaseAction):
                 files = list(obj.iterfiles())
                 for file in files:
                     metadata = file.metadata
-                    album_id = metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
+                    album_id = metadata.get(constants.MUSICBRAINZ_ALBUMID)
 
                     # Clear _lock in manager
                     if album_id:
                         ShelfManager().clear_manual_override(album_id)
 
                     # Clear tag in metadata
-                    if ShelfConstants.TAG_KEY in metadata:
-                        shelf_value = metadata.get(ShelfConstants.TAG_KEY, "")
+                    if constants.TAG_KEY in metadata:
+                        shelf_value = metadata.get(constants.TAG_KEY, "")
                         if (
                             isinstance(shelf_value, str)
-                            and ShelfConstants.MANUAL_SHELF_SUFFIX in shelf_value
+                            and constants.MANUAL_SHELF_SUFFIX in shelf_value
                         ):
-                            metadata[ShelfConstants.TAG_KEY] = shelf_value.replace(
-                                ShelfConstants.MANUAL_SHELF_SUFFIX,
+                            metadata[constants.TAG_KEY] = shelf_value.replace(
+                                constants.MANUAL_SHELF_SUFFIX,
                                 "",
                             )
                             log.debug(
@@ -169,7 +168,7 @@ class DetermineShelfAction(BaseAction):
                         base_path=base_path,
                     )
                     if shelf_name is not None:
-                        file.metadata[ShelfConstants.TAG_KEY] = shelf_name
+                        file.metadata[constants.TAG_KEY] = shelf_name
                         log.debug(
                             "Determined shelf name '%s' for file: %s",
                             shelf_name,

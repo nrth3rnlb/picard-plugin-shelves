@@ -41,19 +41,19 @@ class WorkflowEngine:
 
         try:
             # noinspection PyTypeHints
-            if not config.setting[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]:
+            if not config.setting[constants.CONFIG_WORKFLOW_ENABLED_KEY]:
                 return shelf_name
             # noinspection PyTypeHints
             workflow_stage_1 = config.setting[
-                ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY
+                constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY
             ]
             # noinspection PyTypeHints
             workflow_stage_2 = config.setting[
-                ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY
+                constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY
             ]
             # noinspection PyTypeHints
             stage_1_includes_non_shelves = config.setting[
-                ShelfConstants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
+                constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
             ]
 
             # Check for known shelf name wildcard or direct match
