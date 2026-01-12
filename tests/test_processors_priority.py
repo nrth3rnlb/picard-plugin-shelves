@@ -74,7 +74,7 @@ class ProcessorPriorityTest(unittest.TestCase):
 
     @patch("shelves.processors.ShelfManager")
     @patch(
-        "shelves.workflow.WorkflowEngine.apply_workflow_transition",
+        "shelves.workflow.WorkflowEngine.apply_transition",
         new_callable=MagicMock,
     )
     def test_file_post_addition_to_track_processor_known_name_from_path(  # is_known_name_from_path
@@ -114,7 +114,7 @@ class ProcessorPriorityTest(unittest.TestCase):
 
     @patch("shelves.processors.ShelfManager")
     @patch(
-        "shelves.workflow.WorkflowEngine.apply_workflow_transition",
+        "shelves.workflow.WorkflowEngine.apply_transition",
         new_callable=MagicMock,
     )
     def test_file_post_addition_to_track_processor_known_name_from_tag_and_manual(
@@ -164,7 +164,7 @@ class ProcessorPriorityTest(unittest.TestCase):
 
     @patch("shelves.processors.ShelfManager")
     @patch(
-        "shelves.workflow.WorkflowEngine.apply_workflow_transition",
+        "shelves.workflow.WorkflowEngine.apply_transition",
         new_callable=MagicMock,
     )
     def test_file_post_addition_to_track_processor_priority_4(

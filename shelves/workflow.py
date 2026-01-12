@@ -27,7 +27,7 @@ class WorkflowEngine:
     """
 
     @staticmethod
-    def apply_workflow_transition(shelf_name: str) -> str:
+    def apply_transition(shelf_name: str) -> str:
         """
         Applies the workflow transition to a shelf name if the workflow is enabled.
 
@@ -39,45 +39,34 @@ class WorkflowEngine:
         if not shelf_name:
             return shelf_name
 
-        try:
-            # noinspection PyTypeHints
-            if not config.setting[constants.CONFIG_WORKFLOW_ENABLED_KEY]:
-                return shelf_name
-            # noinspection PyTypeHints
-            workflow_stage_1 = config.setting[
-                constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY
-            ]
-            # noinspection PyTypeHints
-            workflow_stage_2 = config.setting[
-                constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY
-            ]
-            # noinspection PyTypeHints
-            stage_1_includes_non_shelves = config.setting[
-                constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
-            ]
+        # noinspection PyTypeHints
+        if not config.setting[constants.CONFIG_WORKFLOW_ENABLED_KEY]:
+            return shelf_name
+        # noinspection PyTypeHints
+        workflow_stage_1 = config.setting[constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
+        # noinspection PyTypeHints
+        workflow_stage_2 = config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+        # noinspection PyTypeHints
+        stage_1_includes_non_shelves = config.setting[
+            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
+        ]
 
-            # Check for known shelf name wildcard or direct match
-            apply_transition = (
-                shelf_name in workflow_stage_1 or stage_1_includes_non_shelves
-            )
+        if not workflow_stage_2:
+            return shelf_name
 
-            if apply_transition and workflow_stage_2:
-                destination_shelf = workflow_stage_2[0]
-                # Avoid transitioning to the same shelf name
-                if shelf_name != destination_shelf:
-                    log.debug(
-                        "Applying workflow transition: '%s' -> '%s'",
-                        shelf_name,
-                        destination_shelf,
-                    )
-                    return destination_shelf
-        except KeyError as e:
-            log.debug(
-                "Workflow configuration key not found (%s), skipping transition.",
-                e,
-            )
-        except (AttributeError, ValueError) as e:
-            log.debug("Failed to evaluate workflow transition: %s", e)
-            log.debug("Traceback: %s", traceback.format_exc())
+        # Check for known shelf name wildcard or direct match
+        to_apply = shelf_name in workflow_stage_1 or stage_1_includes_non_shelves
 
-        return shelf_name
+        if not to_apply:
+            return shelf_name
+
+        # Avoid transitioning to the same shelf name
+        if destination_shelf := workflow_stage_2[0] == shelf_name:
+            return shelf_name
+
+        log.debug(
+            "Applying workflow transition: '%s' -> '%s'",
+            shelf_name,
+            destination_shelf,
+        )
+        return destination_shelf
