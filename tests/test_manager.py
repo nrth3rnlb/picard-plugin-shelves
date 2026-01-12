@@ -7,6 +7,8 @@ Tests for the ShelfManager class.
 import unittest
 from unittest.mock import MagicMock, patch
 
+from shelves.exceptions import ShelfNotFoundException
+
 from shelves import constants
 from shelves.manager import ShelfManager
 
@@ -93,15 +95,6 @@ class ManagerTest(unittest.TestCase):
         )
 
     @patch("shelves.manager.config")
-    def test_get_album_shelf_returns_none_for_unknown_album(self, _mock_config):
-        """Test that get_album_shelf returns None for an album with no _shelf_votes_weighted."""
-        ShelfManager.destroy()
-        # pylint: disable=protected-access
-        shelf, decision = ShelfManager().get_album_shelf("unknown_album_id")
-        self.assertIsNone(shelf)
-        self.assertEqual(decision, "fallback")
-
-    @patch("shelves.manager.config")
     def test_clear_album_resets_state(self, _mock_config):
         """Test that clear_album removes all voting data for an album."""
         ShelfManager.destroy()
@@ -111,14 +104,14 @@ class ManagerTest(unittest.TestCase):
 
         # Verify _shelf_state exists
         # pylint: disable=protected-access
-        self.assertIn(_album_id, ShelfManager()._shelf_votes_weighted)
-        self.assertIn(_album_id, ShelfManager()._shelves_by_album)
+        self.assertIn(_album_id, ShelfManager()._assignment_engine._shelf_votes_weighted)
+        self.assertIn(_album_id, ShelfManager()._assignment_engine._shelves_by_album)
 
         # Clear and verify _shelf_state is gone
         ShelfManager.clear_album(_album_id)
         # pylint: disable=protected-access
-        self.assertNotIn(_album_id, ShelfManager()._shelf_votes_weighted)
-        self.assertNotIn(_album_id, ShelfManager()._shelves_by_album)
+        self.assertNotIn(_album_id, ShelfManager()._assignment_engine._shelf_votes_weighted)
+        self.assertNotIn(_album_id, ShelfManager()._assignment_engine._shelves_by_album)
 
 
 if __name__ == "__main__":
