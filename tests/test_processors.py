@@ -6,7 +6,7 @@ Tests for the processors module.
 
 import unittest
 
-from shelves.constants import ShelfConstants
+from shelves import constants
 
 
 class AttrDict(dict):

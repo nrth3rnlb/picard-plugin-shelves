@@ -5,7 +5,7 @@ Tests for the processors.py module.
 import unittest
 from unittest.mock import MagicMock, patch
 
-from shelves.constants import ShelfConstants
+from shelves import constants
 from shelves.workflow import WorkflowEngine
 
 

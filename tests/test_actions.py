@@ -6,8 +6,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock, patch
 
+from shelves import constants
 from shelves.actions import DetermineShelfAction, ResetShelfAction, SetShelfAction
-from shelves.constants import ShelfConstants
 from shelves.dialogs import SetShelfDialog
 
 

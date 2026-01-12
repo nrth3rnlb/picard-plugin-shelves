@@ -7,7 +7,7 @@ Tests for the ShelfManager class.
 import unittest
 from unittest.mock import MagicMock, patch
 
-from shelves.constants import ShelfConstants
+from shelves import constants
 from shelves.manager import ShelfManager
 
 

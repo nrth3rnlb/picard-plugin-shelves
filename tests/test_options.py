@@ -11,7 +11,7 @@ from picard.config import BoolOption, IntOption, ListOption
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication
 
-from shelves.constants import ShelfConstants
+from shelves import constants
 from shelves.options import OptionsPage
 
 

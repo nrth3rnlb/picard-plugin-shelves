@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from shelves.constants import ShelfConstants
+from shelves import constants
 from shelves.script_functions import func_shelf
 
 

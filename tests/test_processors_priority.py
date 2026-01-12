@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Set
 from unittest.mock import MagicMock, PropertyMock, patch
 
-from shelves.constants import ShelfConstants
+from shelves import constants
 from shelves.processors import ShelfProcessors
 
 

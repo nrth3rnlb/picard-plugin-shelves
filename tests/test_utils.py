@@ -11,8 +11,7 @@ from pathlib import Path
 from unittest import skip
 from unittest.mock import MagicMock, patch
 
-from shelves import utils
-from shelves.constants import ShelfConstants
+from shelves import constants, utils
 from shelves.manager import ShelfManager
 
 
