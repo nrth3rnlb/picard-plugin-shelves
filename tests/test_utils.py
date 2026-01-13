@@ -235,7 +235,7 @@ class UtilsLikelyShelfTest(unittest.TestCase):
 
     def test_is_likely_good_new_name(self):
         """A new, valid name is likely."""
-        is_likely, reason = ShelfManager.is_likely_shelf_name(
+        is_likely, reason = ShelfManager().is_likely_shelf_name(
             "New Shelf", self.known_shelves
         )
         self.assertTrue(is_likely)
@@ -243,7 +243,7 @@ class UtilsLikelyShelfTest(unittest.TestCase):
 
     def test_is_likely_known_shelf(self):
         """A known shelf_name is always likely."""
-        is_likely, reason = ShelfManager.is_likely_shelf_name(
+        is_likely, reason = ShelfManager().is_likely_shelf_name(
             "Soundtracks", self.known_shelves
         )
         self.assertTrue(is_likely)
@@ -251,13 +251,13 @@ class UtilsLikelyShelfTest(unittest.TestCase):
 
     def test_is_not_likely_album_indicator(self):
         """A name with 'Vol.' or 'Disc' is not likely."""
-        is_likely, reason = ShelfManager.is_likely_shelf_name(
+        is_likely, reason = ShelfManager().is_likely_shelf_name(
             "Greatest Hits Vol. 2", self.known_shelves
         )
         self.assertFalse(is_likely)
         self.assertIn("contains album indicator", reason)  # type: ignore[arg-type]
 
-        is_likely, reason = ShelfManager.is_likely_shelf_name(
+        is_likely, reason = ShelfManager().is_likely_shelf_name(
             "The Album (Disc 1)", self.known_shelves
         )
         self.assertFalse(is_likely)
@@ -265,7 +265,7 @@ class UtilsLikelyShelfTest(unittest.TestCase):
 
     def test_is_not_likely_artist_album_format(self):
         """A name with ' - ' is not likely."""
-        is_likely, reason = ShelfManager.is_likely_shelf_name(
+        is_likely, reason = ShelfManager().is_likely_shelf_name(
             "Artist - Album", self.known_shelves
         )
         self.assertFalse(is_likely)
@@ -274,7 +274,7 @@ class UtilsLikelyShelfTest(unittest.TestCase):
     def test_is_not_likely_too_long(self):
         """A very long name is not likely."""
         long_name = "This is a very long name that is probably an album title"
-        is_likely, reason = ShelfManager.is_likely_shelf_name(
+        is_likely, reason = ShelfManager().is_likely_shelf_name(
             long_name, self.known_shelves
         )
         self.assertFalse(is_likely)
@@ -282,7 +282,7 @@ class UtilsLikelyShelfTest(unittest.TestCase):
 
     def test_is_not_likely_too_many_words(self):
         """A name with many words is not likely."""
-        is_likely, reason = ShelfManager.is_likely_shelf_name(
+        is_likely, reason = ShelfManager().is_likely_shelf_name(
             "A Shelf With Too Many Words", self.known_shelves
         )
         self.assertFalse(is_likely)

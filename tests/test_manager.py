@@ -108,7 +108,7 @@ class ManagerTest(unittest.TestCase):
         self.assertIn(_album_id, ShelfManager()._assignment_engine._shelves_by_album)
 
         # Clear and verify _shelf_state is gone
-        ShelfManager.clear_album(_album_id)
+        ShelfManager().clear_album(_album_id)
         # pylint: disable=protected-access
         self.assertNotIn(_album_id, ShelfManager()._assignment_engine._shelf_votes_weighted)
         self.assertNotIn(_album_id, ShelfManager()._assignment_engine._shelves_by_album)

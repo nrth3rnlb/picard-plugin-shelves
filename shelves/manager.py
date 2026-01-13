@@ -103,7 +103,9 @@ class ShelfAssignmentEngine:
         :param registry: The shelf registry.
         """
         self.registry = registry
-        self._shelf_votes_weighted: Dict[str, List[Tuple[str, float, str]]] = defaultdict(list)
+        self._shelf_votes_weighted: Dict[str, List[Tuple[str, float, str]]] = (
+            defaultdict(list)
+        )
         self._shelf_votes_counted: Dict[str, Counter] = {}
         self._shelves_by_album: Dict[str, str] = {}
         self._lock = threading.Lock()
@@ -169,7 +171,9 @@ class ShelfAssignmentEngine:
             agg[shelf] = agg.get(shelf, 0.0) + float(weight)
         return max(agg.items(), key=lambda kv: kv[1])[0]
 
-    def get_album_shelf(self, album_id: str, lock_manager: 'ShelfLockManager') -> Tuple[str, str]:
+    def get_album_shelf(
+        self, album_id: str, lock_manager: "ShelfLockManager"
+    ) -> Tuple[str, str]:
         """
         Determine the shelf for an album based on priority rules.
 
@@ -303,7 +307,7 @@ class ShelfLockManager:
 class ShelfValidator:
     """Validator for shelf_name assignments."""
 
-    def __init__(self, registry: 'ShelfRegistry'):
+    def __init__(self, registry: "ShelfRegistry"):
         """
         Initialize the validator.
 
@@ -436,19 +440,17 @@ class ShelfManager:
 
     # ===== Delegation Methods =====
 
-    @classmethod
     def vote_for_shelf(
-        cls,
+        self,
         album_id: str,
         shelf_name: str,
         weight: float = 0.0,
         reason: str = "",
     ) -> None:
         """Register a vote for a shelf assignment - delegates to assignment engine."""
-        ShelfManager()._assignment_engine.vote_for_shelf(album_id, shelf_name, weight, reason)
+        self._assignment_engine.vote_for_shelf(album_id, shelf_name, weight, reason)
 
-    @classmethod
-    def get_album_shelf(cls, album_id: str) -> Tuple[str, str]:
+    def get_album_shelf(self, album_id: str) -> Tuple[str, str]:
         """
         Determine the shelf for an album.
 
@@ -456,18 +458,14 @@ class ShelfManager:
         :return: Tuple of (shelf_name, source).
         :raises ShelfNotFoundException: If no shelf can be determined.
         """
-        return ShelfManager()._assignment_engine.get_album_shelf(
-            album_id, ShelfManager()._lock_manager
-        )
+        return self._assignment_engine.get_album_shelf(album_id, self._lock_manager)
 
-    @classmethod
-    def clear_album(cls, album_id: str) -> None:
+    def clear_album(self, album_id: str) -> None:
         """Clear all votes and assignments for an album."""
-        ShelfManager()._assignment_engine.clear_album(album_id)
+        self._assignment_engine.clear_album(album_id)
 
-    @classmethod
     def set_album_shelf(
-        cls,
+        self,
         album_id: str,
         shelf_name: str,
         source: str = constants.SHELF_SOURCE_MANUAL,
@@ -482,16 +480,14 @@ class ShelfManager:
         :param lock: Whether to lock this assignment.
         :return: The shelf name that was set.
         """
-        return ShelfManager()._lock_manager.set_album_shelf(album_id, shelf_name, source, lock)
+        return self._lock_manager.set_album_shelf(album_id, shelf_name, source, lock)
 
-    @classmethod
-    def clear_manual_override(cls, album_id: str) -> None:
+    def clear_manual_override(self, album_id: str) -> None:
         """Clear the manual override for an album."""
-        ShelfManager()._lock_manager.clear_manual_override(album_id)
+        self._lock_manager.clear_manual_override(album_id)
 
-    @classmethod
     def is_likely_shelf_name(
-        cls,
+        self,
         name: str,
         known_shelves: Set[str],
     ) -> Tuple[bool, Optional[str]]:
@@ -503,19 +499,16 @@ class ShelfManager:
         :return: Tuple of (is_valid, reason_if_invalid).
         """
         # Note: known_shelves parameter kept for backward compatibility but not used
-        return ShelfManager()._validator.is_likely_shelf_name(name)
+        return self._validator.is_likely_shelf_name(name)
 
-    @classmethod
-    def add_shelf_names(cls, names: Set[str] | str) -> None:
+    def add_shelf_names(self, names: Set[str] | str) -> None:
         """Add shelf names to the registry."""
-        ShelfManager()._registry.add_shelf_names(names)
+        self._registry.add_shelf_names(names)
 
-    @classmethod
-    def remove_shelf_names(cls, names: Set[str] | str) -> None:
+    def remove_shelf_names(self, names: Set[str] | str) -> None:
         """Remove shelf names from the registry."""
-        ShelfManager()._registry.remove_shelf_names(names)
+        self._registry.remove_shelf_names(names)
 
-    @classmethod
-    def intersect_shelf_names(cls, names: Set[str] | str) -> None:
+    def intersect_shelf_names(self, names: Set[str] | str) -> None:
         """Intersect shelf names with the provided set."""
-        ShelfManager()._registry.intersect_shelf_names(names)
+        self._registry.intersect_shelf_names(names)
