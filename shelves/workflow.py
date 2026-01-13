@@ -1,5 +1,3 @@
-import traceback
-
 from picard import config, log
 
 from . import constants
@@ -42,21 +40,28 @@ class WorkflowEngine:
         # noinspection PyTypeHints
         if not config.setting[constants.CONFIG_WORKFLOW_ENABLED_KEY]:
             return shelf_name
+
+        # noinspection PyTypeHints
+        stage_1_includes_unknown = config.setting[
+            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
+        ]
+        # noinspection PyTypeHints
+        workflow_known_shelves = config.setting[constants.CONFIG_KNOWN_SHELVES_KEY]
         # noinspection PyTypeHints
         workflow_stage_1 = config.setting[constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
         # noinspection PyTypeHints
         workflow_stage_2 = config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
-        # noinspection PyTypeHints
-        stage_1_includes_non_shelves = config.setting[
-            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
-        ]
 
         if not workflow_stage_2:
             return shelf_name
 
-        # Check for known shelf name wildcard or direct match
-        to_apply = shelf_name in workflow_stage_1 or stage_1_includes_non_shelves
+        # Determine if the shelf name should be transitioned
+        is_unknown_shelf = shelf_name not in workflow_known_shelves
+        is_stage_1_shelf = shelf_name in workflow_stage_1
 
+        # Either the shelf name is a stage 1 name
+        # or it is unknown and stage 1 should also include unknown shelf names
+        to_apply = is_stage_1_shelf or is_unknown_shelf and stage_1_includes_unknown
         if not to_apply:
             return shelf_name
 
@@ -66,8 +71,8 @@ class WorkflowEngine:
             return shelf_name
 
         log.debug(
-            "Applying workflow transition: '%s' -> '%s'",
-            shelf_name,
-            destination_shelf,
+                "Applying workflow transition: '%s' -> '%s'",
+                shelf_name,
+                destination_shelf,
         )
         return destination_shelf

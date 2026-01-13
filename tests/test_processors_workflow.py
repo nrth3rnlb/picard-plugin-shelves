@@ -4,7 +4,7 @@ Tests for the processors.py module.
 
 import unittest
 from copy import deepcopy
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from shelves import constants
 from shelves.workflow import WorkflowEngine
@@ -16,13 +16,13 @@ class WorkflowTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment for workflow."""
         self.test_configuration = {
-            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
-            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-            constants.CONFIG_WORKFLOW_ENABLED_KEY: True,
+            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY    : ["Incoming"],
+            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY    : ["Standard"],
+            constants.CONFIG_WORKFLOW_ENABLED_KEY            : True,
             constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: False,
-            constants.CONFIG_MOVE_FILES_TO_KEY: "/music",
+            constants.CONFIG_MOVE_FILES_TO_KEY               : "/home/foobar/music",
+            constants.CONFIG_KNOWN_SHELVES_KEY               : ["Incoming", "Standard", "Stash", "Live"],
         }
-        self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
 
     @patch("shelves.workflow.config")
     def test_empty_shelf_is_not_transitioned(self, mock_config):
@@ -41,13 +41,9 @@ class WorkflowTest(unittest.TestCase):
     @patch("shelves.workflow.config")
     def test_no_workflow_keys_leaves_shelf(self, mock_config):
         """Test that missing config keys prevent transition."""
-        mock_config.setting = {
-            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: [],
-            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: [],
-            constants.CONFIG_WORKFLOW_ENABLED_KEY: True,
-            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: False,
-            constants.CONFIG_MOVE_FILES_TO_KEY: "/music",
-        }
+        mock_config.setting = deepcopy(self.test_configuration)
+        mock_config.setting[constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = []
+        mock_config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = []
         self.assertEqual(WorkflowEngine.apply_transition("Incoming"), "Incoming")
 
     @patch("shelves.workflow.config")
@@ -75,7 +71,7 @@ class WorkflowTest(unittest.TestCase):
         actual = WorkflowEngine.apply_transition(any_shelf)
         expected = mock_config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY][0]
         self.assertEqual(
-            actual, expected, f"Expected {expected} but got {actual} for {any_shelf}"
+                actual, expected, f"Expected {expected} but got {actual} for {any_shelf}",
         )
 
     @patch("shelves.workflow.config")
