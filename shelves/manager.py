@@ -50,7 +50,7 @@ class ShelfRegistry:
         :param names: Set of shelf names to register.
         """
         self._shelf_names = set(
-            filter(lambda name: utils.validate_shelf_name(name)[0], names)
+                filter(lambda name: utils.validate_shelf_name(name)[0], names),
         )
 
     @property
@@ -132,11 +132,11 @@ class ShelfAssignmentEngine:
         self._log_data: Optional[Tuple[str, Dict[str, int], str]] = None
 
     def vote_for_shelf(
-        self,
-        album_id: str,
-        shelf_name: str,
-        weight: float = 0.0,
-        reason: str = "",
+            self,
+            album_id: str,
+            shelf_name: str,
+            weight: float = 0.0,
+            reason: str = "",
     ) -> None:
         """
         Register a vote for a shelf assignment.
@@ -171,10 +171,10 @@ class ShelfAssignmentEngine:
 
         if self._log_data:
             log.warning(
-                "Album %s has files from different shelf_names. Votes: %s. Use: '%s'",
-                self._log_data[0],
-                self._log_data[1],
-                self._log_data[2],
+                    "Album %s has files from different shelf_names. Votes: %s. Use: '%s'",
+                    self._log_data[0],
+                    self._log_data[1],
+                    self._log_data[2],
             )
 
     def _winner(self, votes: List[Tuple[str, float, str]]) -> Optional[str]:
@@ -192,7 +192,7 @@ class ShelfAssignmentEngine:
         return max(agg.items(), key=lambda kv: kv[1])[0]
 
     def get_album_shelf(
-        self, album_id: str, lock_manager: "ShelfLockManager"
+            self, album_id: str, lock_manager: "ShelfLockManager",
     ) -> Tuple[str, str]:
         """
         Determine the shelf for an album based on priority rules.
@@ -217,7 +217,7 @@ class ShelfAssignmentEngine:
             shelf_name = self._shelves_by_album.get(album_id)
             if shelf_name is None:
                 raise ShelfNotFoundException(
-                    f"Album ID '{album_id}' has no associated shelf."
+                        f"Album ID '{album_id}' has no associated shelf.",
                 )
             return shelf_name, constants.SHELF_SOURCE_FALLBACK
 
@@ -264,18 +264,18 @@ class ShelfLockManager:
         """
         state = self._shelf_state.get(album_id, {})
         if (
-            state.get("shelf_locked")
-            or state.get("shelf_source") == constants.SHELF_SOURCE_MANUAL
+                state.get("shelf_locked")
+                or state.get("shelf_source") == constants.SHELF_SOURCE_MANUAL
         ):
             return state.get("shelf_name")
         return None
 
     def set_album_shelf(
-        self,
-        album_id: str,
-        shelf_name: str,
-        source: str = constants.SHELF_SOURCE_MANUAL,
-        lock: Optional[bool] = None,
+            self,
+            album_id: str,
+            shelf_name: str,
+            source: str = constants.SHELF_SOURCE_MANUAL,
+            lock: Optional[bool] = None,
     ) -> Optional[str]:
         """
         Set the shelf for an album with optional locking.
@@ -301,10 +301,10 @@ class ShelfLockManager:
         if source == constants.SHELF_SOURCE_MANUAL:
             # Register dominant decision (∞ weight)
             self.assignment_engine.vote_for_shelf(
-                album_id=album_id,
-                shelf_name=shelf_name,
-                weight=float("inf"),
-                reason="manual override",
+                    album_id=album_id,
+                    shelf_name=shelf_name,
+                    weight=float("inf"),
+                    reason="manual override",
             )
 
         return shelf_name
@@ -366,7 +366,7 @@ class ShelfValidator:
         # Contains ` - ` (typical for "Artist - Album")
         if " - " in name:
             suspicious_reasons.append(
-                "contains ' - ' (typical for 'Artist - Album' format)",
+                    "contains ' - ' (typical for 'Artist - Album' format)",
             )
 
         # Too long
@@ -408,11 +408,11 @@ class ShelfManager:
         return cls._instance
 
     def __init__(
-        self,
-        registry: Optional[ShelfRegistry] = None,
-        assignment_engine: Optional[ShelfAssignmentEngine] = None,
-        lock_manager: Optional[ShelfLockManager] = None,
-        validator: Optional[ShelfValidator] = None,
+            self,
+            registry: Optional[ShelfRegistry] = None,
+            assignment_engine: Optional[ShelfAssignmentEngine] = None,
+            lock_manager: Optional[ShelfLockManager] = None,
+            validator: Optional[ShelfValidator] = None,
     ):
         """
         Initialize ShelfManager with optional dependency injection.
@@ -429,20 +429,20 @@ class ShelfManager:
             # Initialize component hierarchy (use injected or create new)
             self._registry = registry or ShelfRegistry()
             self._assignment_engine = assignment_engine or ShelfAssignmentEngine(
-                self._registry
+                    self._registry,
             )
             self._lock_manager = lock_manager or ShelfLockManager(
-                self._assignment_engine
+                    self._assignment_engine,
             )
             self._validator = validator or ShelfValidator(self._registry)
 
             # Initialize from config only if using default components
             if registry is None:
                 self._registry.base_path = Path(
-                    config.setting[constants.CONFIG_MOVE_FILES_TO_KEY]
+                        config.setting[constants.CONFIG_MOVE_FILES_TO_KEY],
                 )
                 self._registry.shelf_names = set(
-                    config.setting[constants.CONFIG_KNOWN_SHELVES_KEY]
+                        config.setting[constants.CONFIG_KNOWN_SHELVES_KEY],
                 )
 
     # ===== Properties (delegate to components) =====
@@ -492,11 +492,11 @@ class ShelfManager:
     # ===== Delegation Methods =====
 
     def vote_for_shelf(
-        self,
-        album_id: str,
-        shelf_name: str,
-        weight: float = 0.0,
-        reason: str = "",
+            self,
+            album_id: str,
+            shelf_name: str,
+            weight: float = 0.0,
+            reason: str = "",
     ) -> None:
         """Register a vote for a shelf assignment - delegates to assignment engine."""
         self._assignment_engine.vote_for_shelf(album_id, shelf_name, weight, reason)
@@ -516,11 +516,11 @@ class ShelfManager:
         self._assignment_engine.clear_album(album_id)
 
     def set_album_shelf(
-        self,
-        album_id: str,
-        shelf_name: str,
-        source: str = constants.SHELF_SOURCE_MANUAL,
-        lock: Optional[bool] = None,
+            self,
+            album_id: str,
+            shelf_name: str,
+            source: str = constants.SHELF_SOURCE_MANUAL,
+            lock: Optional[bool] = None,
     ) -> Optional[str]:
         """
         Set the shelf for an album.
@@ -538,9 +538,9 @@ class ShelfManager:
         self._lock_manager.clear_manual_override(album_id)
 
     def is_likely_shelf_name(
-        self,
-        name: str,
-        known_shelves: Set[str],
+            self,
+            name: str,
+            known_shelves: Set[str],
     ) -> Tuple[bool, Optional[str]]:
         """
         Check if a name is likely a valid shelf name.
