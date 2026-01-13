@@ -1,5 +1,14 @@
 """
 Shelf manager for tracking album shelf name assignments.
+
+This module provides a component-based architecture for managing shelf assignments:
+- ShelfRegistry: Manages shelf names and base path configuration
+- ShelfAssignmentEngine: Handles voting logic and shelf determination
+- ShelfLockManager: Manages manual overrides and locks
+- ShelfValidator: Validates shelf names using heuristics
+- ShelfManager: Facade pattern providing a unified interface (singleton)
+
+The ShelfManager supports dependency injection for testing purposes.
 """
 
 from __future__ import annotations
@@ -16,10 +25,15 @@ from .exceptions import ShelfNotFoundException
 
 
 class ShelfRegistry:
-    """Registry for shelf_name assignments and _shelf_state with conflict detection."""
+    """
+    Registry for shelf names and base path configuration.
+
+    Manages the set of known shelf names and the base path for shelf directories.
+    Provides validation when setting shelf names.
+    """
 
     def __init__(self):
-        """Initialize the shelf registry."""
+        """Initialize the shelf registry with empty names and default base path."""
         self._shelf_names: Set[str] = set()
         self._base_path: Path = Path(".")
 
@@ -94,13 +108,19 @@ class ShelfRegistry:
 
 
 class ShelfAssignmentEngine:
-    """Engine for assigning shelf_name to albums."""
+    """
+    Engine for voting-based shelf assignment.
+
+    Manages weighted votes from different sources (file paths, tags, etc.)
+    and determines the winning shelf for each album based on vote counts.
+    Detects conflicts when files from the same album suggest different shelves.
+    """
 
     def __init__(self, registry: ShelfRegistry):
         """
         Initialize the assignment engine.
 
-        :param registry: The shelf registry.
+        :param registry: ShelfRegistry instance for accessing shelf names.
         """
         self.registry = registry
         self._shelf_votes_weighted: Dict[str, List[Tuple[str, float, str]]] = (
@@ -218,13 +238,19 @@ class ShelfAssignmentEngine:
 
 
 class ShelfLockManager:
-    """Manager for shelf_name locks."""
+    """
+    Manager for manual shelf overrides and locks.
+
+    Handles user-initiated shelf assignments and locked shelf states.
+    Locked shelves prevent automatic reassignment through voting.
+    Maintains shelf state including source and lock status for each album.
+    """
 
     def __init__(self, assignment_engine: ShelfAssignmentEngine):
         """
         Initialize the lock manager.
 
-        :param assignment_engine: The assignment engine to interact with.
+        :param assignment_engine: ShelfAssignmentEngine instance for vote clearing.
         """
         self.assignment_engine = assignment_engine
         self._shelf_state: Dict[str, Dict[str, Any]] = defaultdict(dict)
@@ -305,13 +331,19 @@ class ShelfLockManager:
 
 
 class ShelfValidator:
-    """Validator for shelf_name assignments."""
+    """
+    Validator for shelf names using heuristics.
+
+    Applies heuristics to detect whether a string is likely a valid shelf name
+    or an accidental album/artist name. Checks against known shelf names,
+    length limits, word counts, and suspicious patterns.
+    """
 
     def __init__(self, registry: "ShelfRegistry"):
         """
         Initialize the validator.
 
-        :param registry: The shelf registry to validate against.
+        :param registry: ShelfRegistry instance for checking known shelf names.
         """
         self.registry = registry
 
@@ -375,24 +407,43 @@ class ShelfManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(
+        self,
+        registry: Optional[ShelfRegistry] = None,
+        assignment_engine: Optional[ShelfAssignmentEngine] = None,
+        lock_manager: Optional[ShelfLockManager] = None,
+        validator: Optional[ShelfValidator] = None,
+    ):
+        """
+        Initialize ShelfManager with optional dependency injection.
+
+        :param registry: Optional ShelfRegistry instance (created if None)
+        :param assignment_engine: Optional ShelfAssignmentEngine instance (created if None)
+        :param lock_manager: Optional ShelfLockManager instance (created if None)
+        :param validator: Optional ShelfValidator instance (created if None)
+        """
         if not hasattr(self, "_initialized"):
             self._initialized = True
             self._test_value = None
 
-            # Initialize component hierarchy
-            self._registry = ShelfRegistry()
-            self._assignment_engine = ShelfAssignmentEngine(self._registry)
-            self._lock_manager = ShelfLockManager(self._assignment_engine)
-            self._validator = ShelfValidator(self._registry)
+            # Initialize component hierarchy (use injected or create new)
+            self._registry = registry or ShelfRegistry()
+            self._assignment_engine = assignment_engine or ShelfAssignmentEngine(
+                self._registry
+            )
+            self._lock_manager = lock_manager or ShelfLockManager(
+                self._assignment_engine
+            )
+            self._validator = validator or ShelfValidator(self._registry)
 
-            # Initialize from config
-            self._registry.base_path = Path(
-                config.setting[constants.CONFIG_MOVE_FILES_TO_KEY]
-            )
-            self._registry.shelf_names = set(
-                config.setting[constants.CONFIG_KNOWN_SHELVES_KEY]
-            )
+            # Initialize from config only if using default components
+            if registry is None:
+                self._registry.base_path = Path(
+                    config.setting[constants.CONFIG_MOVE_FILES_TO_KEY]
+                )
+                self._registry.shelf_names = set(
+                    config.setting[constants.CONFIG_KNOWN_SHELVES_KEY]
+                )
 
     # ===== Properties (delegate to components) =====
 
