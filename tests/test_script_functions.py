@@ -31,52 +31,17 @@ class ScriptFunctionsTest(unittest.TestCase):
         }
 
     @patch("shelves.workflow.config")
-    def test_func_shelf_returns_same_if_not_in_stage_1_and_not_includes(
-        self, mock_config
-    ):
-        """
-        Tests the behavior of the `shelf` function to ensure it returns the same value
-        when the shelf is not located in stage 1 and the parameter
-        `CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY` is set to `False`.
-
-        :param mock_config: Mocked configuration used to simulate external system settings.
-        :type mock_config: unittest.mock.MagicMock
-        :return: None
-        :rtype: None
-        """
-
-        # Arrange
-        # mock_manager_instance = MagicMock()
-        # mock_manager.return_value = mock_manager_instance
-        # mock_manager_instance.get_album_shelf.side_effect = ShelfNotFoundException()
-        unknown_shelf = "a0358a1e25eb978a5a5a8d4fd43864a1"
-        mock_config.setting = deepcopy(self.test_configuration)
-        mock_config.setting[constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = False
-        parser = MagicMock()
-        parser.file.metadata.get.return_value = unknown_shelf
-        parser.context = MagicMock()
-        parser.context.get.return_value = unknown_shelf
-
-        # Act
-        result = shelf(parser)
-
-        # Assert
-        expected = unknown_shelf
-        self.assertEqual(result, expected)
-
-    @patch("shelves.workflow.config")
     def test_func_shelf_returns_stage_2_if_not_in_stage_1_and_and_includes(
         self, mock_config
     ):
         """
-        Tests the behavior of the `shelf` function to ensure it returns the stage 2 shelf
-        when the shelf is not located in stage 1 and the parameter
-        `CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY` is set to `True`.
+        This function tests the behavior of the `shelf` function under different configurations
+        relating to stage inclusions. Specifically, it examines how the function behaves when
+        a shelf is not in stage 1 and the configuration includes or excludes unknown shelves
+        for stage 1 processing. The test ensures the correct shelf is returned in all cases.
 
-        :param mock_config: Mocked configuration used to simulate external system settings.
-        :type mock_config: unittest.mock.MagicMock
-        :return: None
-        :rtype: None
+        :param mock_config: Mock object providing configuration settings used within the test.
+        :type mock_config: MagicMock
         """
 
         # Arrange
@@ -96,7 +61,7 @@ class ScriptFunctionsTest(unittest.TestCase):
                 includes
             )
             with self.subTest(
-                msg="stage 1",
+                msg=constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY,
                 includes_unknown=mock_config.setting[
                     constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
                 ],
@@ -117,26 +82,28 @@ class ScriptFunctionsTest(unittest.TestCase):
         self, mock_config
     ):
         """
-        Test case for the `shelf` function to verify behavior when shelves are in
-        stage 1 and checks their inclusion in stage 2 shelves.
+        Test case to validate the behavior of the `shelf` function when the input is in
+        stage 1 of the workflow and conditionally includes non-shelves components.
 
-        This test ensures that if a shelf is part of the current configuration for
-        stage 1 but not included in stage 2 shelves, the function correctly returns
-        the expected stage 2 shelves.
+        This test ensures that the function returns a result from stage 2 shelves
+        if the input is in stage 1, properly handling the scenario where the stage 1
+        configuration includes or excludes non-shelf components.
 
-        :param mock_config: Mocked configuration object for testing.
-        :type mock_config: unittest.mock.Mock
-        :return: None
+        :param mock_config: A mock object that intercepts and simulates the
+            configuration used during the workflow process.
+        :type mock_config: MagicMock
+        :return: Validates if expected results from stage 2 shelves are returned for
+            specific scenarios. No direct return value.
         :rtype: None
         """
         mock_config.setting = deepcopy(self.test_configuration)
-        known_shelf = mock_config.setting[
-            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY
+        stage_1_shelf_name = mock_config.setting[
+            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY
         ][0]
         parser = MagicMock()
-        parser.file.metadata.get.return_value = known_shelf
+        parser.file.metadata.get.return_value = stage_1_shelf_name
         parser.context = MagicMock()
-        parser.context.get.return_value = known_shelf
+        parser.context.get.return_value = stage_1_shelf_name
 
         # Act
         for includes in [True, False]:
@@ -144,11 +111,11 @@ class ScriptFunctionsTest(unittest.TestCase):
                 includes
             )
             with self.subTest(
-                msg="stage 1",
+                msg=constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY,
+                stage_1_shelf_name=stage_1_shelf_name,
                 includes_unknown=mock_config.setting[
                     constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
                 ],
-                known_shelf=known_shelf,
             ):
                 result = shelf(parser)
 
@@ -156,7 +123,9 @@ class ScriptFunctionsTest(unittest.TestCase):
                 expected = mock_config.setting[
                     constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY
                 ]
-                self.assertEqual([result], expected)
+                self.assertEqual(
+                    expected, [result], f"Expected {expected} but got {result}"
+                )
 
 
 if __name__ == "__main__":
