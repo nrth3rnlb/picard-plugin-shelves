@@ -209,20 +209,61 @@ Make sure:
 
 ## Development
 
-The plugin has a modular structure:
+### Architecture
+
+The plugin uses a component-based architecture with the following key components:
+
+**Core Components (in `manager.py`):**
+
+- **ShelfRegistry**: Manages shelf names and base path configuration
+- **ShelfAssignmentEngine**: Handles voting logic and determines shelf assignments
+- **ShelfLockManager**: Manages manual overrides and locked shelf states
+- **ShelfValidator**: Validates shelf names using heuristics
+- **ShelfManager**: Facade pattern providing a unified interface (singleton with dependency injection support)
+
+**Supporting Modules:**
+
+- `processors.py`: File and metadata processors for automatic shelf detection
+- `workflow.py`: Workflow automation for shelf transitions
+- `actions.py`: Context menu actions (Set Shelf, Reset Shelf, Determine Shelf)
+- `options.py`: Options page UI and logic
+- `script_functions.py`: `$shelf()` script function implementation
+- `utils.py`: Utility functions for validation and file operations
+
+### Project Structure
 
 ```
 shelves/
 ├── __init__.py           # Plugin registration and setup
 ├── constants.py          # Constants and defaults
-├── validators.py         # Shelf name validation
-├── manager.py            # ShelfManager class
+├── exceptions.py         # Custom exceptions
+├── manager.py            # Core shelf management (4 components + facade)
 ├── utils.py              # Utility functions
 ├── processors.py         # File and metadata processors
+├── workflow.py           # Workflow engine
 ├── actions.py            # Context menu actions
 ├── options.py            # Options page
+├── dialogs.py            # UI dialogs
+├── widgets.py            # Custom widgets
 ├── script_functions.py   # $shelf() function
-└── ui_shelves_config.py  # Generated UI file
+└── ui/                   # Generated UI files
+```
+
+### Testing
+
+See [TESTING.md](TESTING.md) for comprehensive testing information.
+
+Quick start:
+
+```bash
+# Run all tests
+make test
+
+# Run with pytest
+make test-pytest
+
+# Run with coverage
+make coverage
 ```
 
 ## Requirements
@@ -232,41 +273,6 @@ shelves/
 - `discid/discid.h` for the installation of the development environment using `pip install -e '.[dev]`
     - Search for a package with a name like `libdiscid-dev`, `libdiscid-devel` or similar, depending on your Linux
       distribution.
-
-## Automated Release to MusicBrainz Picard Plugins
-
-This repository includes a GitHub Actions workflow that automatically creates pull requests to
-the [MusicBrainz Picard Plugins repository](https://github.com/metabrainz/picard-plugins).
-
-### How It Works
-
-The workflow (`.github/workflows/create-pr-to-picard-plugins.yml`) performs the following steps:
-
-1. **Clones the target repository** — Checks out the `2.0` branch of `metabrainz/picard-plugins`
-2. **Synchronizes with upstream** — Fetches the latest changes and ensures the local clone is up to date
-3. **Copies the plugin** — Copies the `shelves` directory to the `plugins/` folder
-4. **Creates a pull request** — Automatically opens a PR with the updated plugin code
-
-### Triggering the Workflow
-
-The workflow can be triggered in two ways:
-
-1. **Manually**: Navigate to Actions → "Create Pull Request to MusicBrainz Picard Plugins" → "Run workflow"
-2. **Automatically**: Any push to the `main` branch that modifies files in the `shelves/` directory
-
-### Prerequisites
-
-To use this workflow, you need to set up a Personal Access Token (PAT) with appropriate permissions:
-
-1. Create a [GitHub Personal Access Token](https://github.com/settings/tokens) with the scopes `repo` and `read:org`:
-    - [x] **repo** Full control of private repositories
-    - [ ] **admin.org**
-        - [x] **read:org**
-2. Add it as a repository secret named `PICARD_PLUGINS_PAT`
-    - Repository → Settings → Secrets and variables → Actions → New repository secret
-
-The workflow ensures that the target repository is always synchronized with the latest upstream changes before applying
-updates, preventing conflicts and ensuring a smooth integration process.
 
 ## License
 
