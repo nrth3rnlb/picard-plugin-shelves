@@ -61,7 +61,8 @@ class WorkflowEngine:
             return shelf_name
 
         # Avoid transitioning to the same shelf name
-        if destination_shelf := workflow_stage_2[0] == shelf_name:
+        destination_shelf = workflow_stage_2[0]
+        if shelf_name == destination_shelf:
             return shelf_name
 
         log.debug(
