@@ -11,11 +11,11 @@ class ShelfNotFoundException(Exception):
     """
 
     def __init__(
-        self,
-        album_id: Optional[str] = None,
-        message: Optional[str] = None,
-        *,
-        cause: Optional[BaseException] = None,
+            self,
+            album_id: Optional[str] = None,
+            message: Optional[str] = None,
+            *,
+            cause: Optional[BaseException] = None,
     ) -> None:
         if message is None:
             if album_id:
@@ -34,7 +34,7 @@ class ShelfNotFoundException(Exception):
 
     def to_dict(self) -> dict:
         return {
-            "message": str(self),
+            "message" : str(self),
             "album_id": self.album_id,
-            "cause": repr(self.cause) if self.cause else None,
+            "cause"   : repr(self.cause) if self.cause else None,
         }

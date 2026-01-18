@@ -4,11 +4,10 @@ Constants for the Shelves plugin.
 
 from __future__ import annotations
 
-
-# noinspection SpellCheckingInspection
 MUSICBRAINZ_ALBUMID = "musicbrainz_albumid"
-# noinspection SpellCheckingInspection
+
 TAG_KEY = "shelf"
+TAG_LOCKED_KEY = "shelf_locked"
 
 # Validation limits
 # TODO Make configurable
@@ -34,12 +33,12 @@ CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY = "shelves_workflow_stage_2_shelves"
 
 # The value set manually by the user is used
 SHELF_SOURCE_MANUAL = "manual"
-MANUAL_SHELF_SUFFIX = f"; {SHELF_SOURCE_MANUAL}"
 # Value determined by voting is used
-SHELF_SOURCE_VOTES = "_shelf_votes_weighted"
+SHELF_SOURCE_VOTES = "votes"
 # If nothing else works, use the value in TAG_KEY
 SHELF_SOURCE_FALLBACK = "fallback"
 
+# noinspection SpellCheckingInspection
 RENAME_SNIPPET = """$set(_shelffolder,$shelf())
 $set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from picard import log
 from picard.file import (
     register_file_post_addition_to_track_processor,
     register_file_post_load_processor,
@@ -20,13 +21,13 @@ from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
 from .actions import (
-    DetermineShelfAction as _DetermineShelfActionBase,
+    ShelfActionDetermine as _DetermineShelfActionBase,
 )
 from .actions import (
-    ResetShelfAction as _ResetShelfActionBase,
+    ShelfActionUnlock as _ResetShelfActionBase,
 )
 from .actions import (
-    SetShelfAction as _SetShelfActionBase,
+    ShelfActionSet as _SetShelfActionBase,
 )
 from .options import OptionsPage as _ShelvesOptionsPageBase
 from .processors import get_default_processors
@@ -70,16 +71,16 @@ class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the OptionsPage to ensure proper plugin registration."""
 
 
-class SetShelfAction(_SetShelfActionBase):
-    """Wrapper class for SetShelfAction to ensure proper plugin registration."""
+class ShelfActionSet(_SetShelfActionBase):
+    """Wrapper class for ShelfActionSet to ensure proper plugin registration."""
 
 
-class DetermineShelfAction(_DetermineShelfActionBase):
-    """Wrapper class for DetermineShelfAction to ensure proper plugin registration."""
+class ShelfActionDetermine(_DetermineShelfActionBase):
+    """Wrapper class for ShelfActionDetermine to ensure proper plugin registration."""
 
 
-class ResetShelfAction(_ResetShelfActionBase):
-    """Wrapper class for ResetShelfAction to ensure proper plugin registration."""
+class ShelfActionUnlock(_ResetShelfActionBase):
+    """Wrapper class for ShelfActionUnlock to ensure proper plugin registration."""
 
 
 # Lazy initialization to avoid import-time config access
@@ -97,11 +98,13 @@ def func_shelf(parser: Any) -> Optional[str]:
 # Wrapper functions that pass shelf_manager to processors
 def _file_post_load_processor_wrapper(file: Any) -> None:
     """Wrapper for file_post_load_processor."""
+    log.debug("PostLoadProcessor")
     _get_shelf_processors().file_post_load_processor(file=file)
 
 
 def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
+    log.debug("PostAdditionToTrackProcessor")
     _get_shelf_processors().file_post_addition_to_track_processor(track=track, file=file)
 
 
@@ -112,11 +115,13 @@ def _set_shelf_in_metadata_wrapper(
         release: Any,
 ) -> None:
     """Wrapper for set_shelf_in_metadata."""
+    log.debug("SetShelfInMetadata")
     _get_shelf_processors().set_shelf_in_metadata(album, metadata, track, release)
 
 
 def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
+    log.debug("PostRemovalFromTrackProcessor")
     _get_shelf_processors().file_post_removal_from_track_processor(_track=track, file=file)
 
 
@@ -129,9 +134,9 @@ register_file_post_addition_to_track_processor(_file_post_addition_to_track_proc
 register_file_post_removal_from_track_processor(_file_post_removal_from_track_processor)
 
 # Register context menu actions
-register_album_action(SetShelfAction())
-register_album_action(DetermineShelfAction())
-register_album_action(ResetShelfAction())
+register_album_action(ShelfActionSet())
+register_album_action(ShelfActionDetermine())
+register_album_action(ShelfActionUnlock())
 
 # Register options options_page
 register_options_page(ShelvesOptionsPage)

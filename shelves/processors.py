@@ -18,9 +18,10 @@ from typing import Any, Dict, Optional
 
 from picard import log
 
-from workflow import WorkflowEngine
+from .workflow import WorkflowEngine
 from . import constants, utils
 from .manager import ShelfManager
+from .exceptions import ShelfNotFoundException
 
 
 @dataclass
@@ -35,7 +36,6 @@ class ProcessingContext:
     track: Optional[Any]
     name_from_path: Optional[str]
     name_from_tag: str
-    name_from_tag_without_suffix: str
     is_manual: bool
 
     def is_known_name_from_path(self, shelf_names: set) -> bool:
@@ -106,12 +106,21 @@ class ShelfStrategy(ABC):
         :param context: Processing context with file/track data.
         :return: True if strategy was applied, False otherwise.
         """
+
         if not self.should_apply(context):
+            log.debug("Skipping strategy: %s", self.__class__.__name__)
             return False
+        log.debug("Applying strategy: %s", self.__class__.__name__)
 
         shelf_name = self.get_shelf_name(context)
         if not shelf_name:
+            log.debug("No shelf name found for strategy: %s", self.__class__.__name__)
             return False
+        log.debug("Shelf name found: %s", shelf_name)
+
+        # WorkflowEngine.apply_transition() returns the original shelf name if no transition is needed
+        shelf_name = WorkflowEngine.apply_transition(shelf_name=shelf_name)
+        log.debug("Transition applied, new shelf name: %s", shelf_name)
 
         # Set metadata
         obj = context.file if context.file else context.track
@@ -256,6 +265,7 @@ class ShelfProcessors:
         if not context:
             return
 
+        log.debug("Processing file: %s", file.filename)
         # Apply strategies in priority order
         for strategy in self.strategies:
             if strategy.process(context):
@@ -280,31 +290,30 @@ class ShelfProcessors:
             return None
 
         # Extract shelf name from path
-        name_from_path = utils.get_shelf_name_from_path(
+        name_from_path: Optional[str] = utils.get_shelf_name_from_path(
                 file_path=Path(file.filename), base_path=self.manager.base_path,
         )
         if name_from_path:
             name_from_path = name_from_path.strip()
 
         # Extract shelf name from tag
-        shelf_name_from_tag = file_meta.get(constants.TAG_KEY, "").strip()
+        name_from_tag: str = file_meta.get(constants.TAG_KEY, "").strip()
+        name_from_tag = utils.get_shelf_name_from_tag(name_from_tag)
 
-        is_manual = constants.MANUAL_SHELF_SUFFIX in shelf_name_from_tag
-
-        shelf_name_cleaned = shelf_name_from_tag.replace(
-                constants.MANUAL_SHELF_SUFFIX, "",
-        ).strip()
+        is_manual = file_meta.get(constants.TAG_LOCKED_KEY, False)
 
         # TODO: Hier geht es weiter
-        log.debug(f"Processing file: {file.filename}, album_id: {album_id}, is_manual: {is_manual}")
+        log.debug(
+                f"Processing file: {file.filename}, album_id: {album_id}, track: {track}, name_from_path: "
+                f"{name_from_path}, name_from_tag: {name_from_tag}, is_manual: {is_manual}"
+        )
 
         return ProcessingContext(
-                album_id=album_id,
                 file=file,
+                album_id=album_id,
                 track=track,
                 name_from_path=name_from_path,
-                name_from_tag=shelf_name_from_tag,
-                name_from_tag_without_suffix=shelf_name_cleaned,
+                name_from_tag=name_from_tag,
                 is_manual=is_manual,
         )
 
@@ -330,26 +339,19 @@ class ShelfProcessors:
             _track: Any,
             _release: Any,
     ) -> None:
-        """Set a shelf_name in track metadata from album assignment."""
+        """Set a shelf name in track metadata from album's shelf assignment."""
         album_id = metadata.get(constants.MUSICBRAINZ_ALBUMID)
         if not album_id:
             return
 
-        shelf_name, source = self.manager.get_album_shelf(album_id=album_id)
-        if shelf_name is not None:
-            log.debug(
-                    "Setting shelf_name '%s' on track from source '%s'",
-                    shelf_name,
-                    source,
-            )
-            log.debug("Applying shelf transition: '%s' -> '%s'", shelf_name, source)
-            if source == constants.SHELF_SOURCE_MANUAL:
-                metadata[constants.TAG_KEY] = (
-                    f"{shelf_name}{constants.MANUAL_SHELF_SUFFIX}"
-                )
-            else:
-                shelf_name = WorkflowEngine.apply_transition(shelf_name=shelf_name)
-                metadata[constants.TAG_KEY] = shelf_name
+        try:
+            shelf_name, source = self.manager.get_album_shelf(album_id=album_id)
+        except ShelfNotFoundException as e:
+            log.warning("Failed to determine shelf name for album ID '%s'", album_id)
+            return
+
+        metadata[constants.TAG_KEY] = WorkflowEngine.apply_transition(shelf_name=shelf_name)
+        metadata[constants.TAG_LOCKED_KEY] = self.manager.is_locked(album_id=album_id)
 
 
 # Global instance for backward compatibility with static method calls

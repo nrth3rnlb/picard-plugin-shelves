@@ -157,7 +157,8 @@ class ProcessorPriorityTest(unittest.TestCase):
         file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
         file_mock.metadata = {
             constants.MUSICBRAINZ_ALBUMID: "f62b3023-34e7-40cd-bd08-b183118cb1fd",
-            constants.TAG_KEY            : f"{shelf_name}{constants.MANUAL_SHELF_SUFFIX}",
+            constants.TAG_KEY            : f"{shelf_name}",
+            constants.TAG_LOCKED_KEY     : True
         }
 
         # Act

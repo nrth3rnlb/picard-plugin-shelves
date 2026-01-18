@@ -12,9 +12,9 @@ class QShelvesWidget(QtWidgets.QListWidget):
     _max_item_count: int = UNLIMITED
 
     def __init__(
-        self,
-        parent: Optional[QtWidgets.QWidget] = None,
-        max_count: int = UNLIMITED,
+            self,
+            parent: Optional[QtWidgets.QWidget] = None,
+            max_count: int = UNLIMITED,
     ):
         super().__init__(parent)
 
@@ -94,6 +94,6 @@ class QShelvesWidget(QtWidgets.QListWidget):
     def _update_drop_acceptance(self) -> None:
         # 0 means "unlimited"
         self.setAcceptDrops(
-            self.max_item_count <= self.UNLIMITED
-            or self.count() <= self.max_item_count,
+                self.max_item_count <= self.UNLIMITED
+                or self.count() <= self.max_item_count,
         )

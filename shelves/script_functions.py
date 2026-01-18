@@ -4,14 +4,10 @@ Script functions for the Shelves plugin.
 
 from __future__ import annotations
 
-from typing import Any, Optional
-
 from picard import log
 from picard.script import ScriptParser
 
-from . import constants
-from .exceptions import ShelfNotFoundException
-from .manager import ShelfManager
+from . import constants, utils
 from .workflow import WorkflowEngine
 
 
@@ -24,9 +20,11 @@ def shelf(parser: ScriptParser) -> str:
     context_shelf: str = ""
     if hasattr(parser.file, "metadata"):
         metadata_shelf = parser.file.metadata.get(constants.TAG_KEY)
+        metadata_shelf = utils.get_shelf_name_from_tag(metadata_shelf)
         log.debug("metadata_shelf = %s", metadata_shelf)
     if hasattr(parser, "context"):
         context_shelf = parser.context.get(constants.TAG_KEY)
+        context_shelf = utils.get_shelf_name_from_tag(context_shelf)
         log.debug("context_shelf = %s", context_shelf)
 
     if not metadata_shelf and not context_shelf:

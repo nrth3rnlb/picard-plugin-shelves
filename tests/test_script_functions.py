@@ -17,7 +17,7 @@ class AttrDict(dict):
 class ScriptFunctionsTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment"""
-        self.test_configuration: dict[str, str | list[str] | bool | int] = {
+        self.test_configuration = {
             constants.CONFIG_MOVE_FILES_TO_KEY               : "/home/foobar/music",
             constants.CONFIG_WORKFLOW_ENABLED_KEY            : True,
             constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: False,
@@ -71,7 +71,7 @@ class ScriptFunctionsTest(unittest.TestCase):
                     expected = mock_config.setting[
                         constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY
                     ].pop()
-                self.assertEqual(result, expected)
+                self.assertEqual(expected, result)
 
     @patch("shelves.workflow.config")
     def test_func_shelf(
@@ -119,8 +119,8 @@ class ScriptFunctionsTest(unittest.TestCase):
                 # Assert
                 invalid = deepcopy(mock_config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]).pop()
                 expected = known_shelf
-                self.assertNotEqual(result, invalid, f"Did not expect '{invalid}' but got it.")
-                self.assertEqual(result, expected, f"Expected '{expected}' but got '{result}'")
+                self.assertNotEqual(invalid, result, f"Did not expect '{invalid}' but got it.")
+                self.assertEqual(expected, result, f"Expected '{expected}' but got '{result}'")
 
     @patch("shelves.workflow.config")
     def test_func_shelf_returns_stage_2_if_in_stage_1_and_not_includes(

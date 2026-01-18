@@ -31,12 +31,12 @@ class SetShelfDialog(QtWidgets.QDialog):
         uic.loadUi(ui_file, self)
 
         self.validation_label: Optional[QtWidgets.QLabel] = self.findChild(
-            QtWidgets.QLabel,
-            LABEL_VALIDATION_NAME,
+                QtWidgets.QLabel,
+                LABEL_VALIDATION_NAME,
         )
         self.shelf_combo: Optional[QtWidgets.QComboBox] = self.findChild(
-            QtWidgets.QComboBox,
-            COMBO_SHELF_NAME,
+                QtWidgets.QComboBox,
+                COMBO_SHELF_NAME,
         )
 
         if self.shelf_combo is not None:

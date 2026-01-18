@@ -5,9 +5,7 @@ Tests for the ShelfManager class.
 """
 
 import unittest
-from unittest.mock import MagicMock, patch
-
-from shelves.exceptions import ShelfNotFoundException
+from unittest.mock import patch
 
 from shelves import constants
 from shelves.manager import ShelfManager
@@ -74,8 +72,8 @@ class ManagerTest(unittest.TestCase):
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
-            ShelfManager().get_album_shelf(_album_id),
-            ("ShelfA", "_shelf_votes_weighted"),
+                ShelfManager().get_album_shelf(_album_id),
+                ("ShelfA", constants.SHELF_SOURCE_VOTES),
         )
 
     @patch("shelves.manager.config")
@@ -90,8 +88,8 @@ class ManagerTest(unittest.TestCase):
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
-            ShelfManager().get_album_shelf(_album_id),
-            ("ShelfB", "_shelf_votes_weighted"),
+                ShelfManager().get_album_shelf(_album_id),
+                ("ShelfB", constants.SHELF_SOURCE_VOTES),
         )
 
     @patch("shelves.manager.config")

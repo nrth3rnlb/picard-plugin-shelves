@@ -23,6 +23,10 @@ from picard import config, log
 from . import constants, utils
 from .exceptions import ShelfNotFoundException
 
+SHELF_NAME = "shelf_name"
+SHELF_SOURCE = "shelf_source"
+SHELF_LOCKED = "shelf_locked"
+
 
 class ShelfRegistry:
     """
@@ -213,13 +217,12 @@ class ShelfAssignmentEngine:
             return chosen, constants.SHELF_SOURCE_VOTES
 
         # 3. Fallback: simple majority winner from counter
-        with self._lock:
-            shelf_name = self._shelves_by_album.get(album_id)
-            if shelf_name is None:
-                raise ShelfNotFoundException(
-                        f"Album ID '{album_id}' has no associated shelf.",
-                )
-            return shelf_name, constants.SHELF_SOURCE_FALLBACK
+        # with self._lock:
+        shelf_name = self._shelves_by_album.get(album_id)
+        if shelf_name is None:
+            raise ShelfNotFoundException(message=f"Album ID '{album_id}' has no shelf name.")
+
+        return shelf_name, constants.SHELF_SOURCE_FALLBACK
 
     def clear_album(self, album_id: str) -> None:
         """
@@ -264,10 +267,10 @@ class ShelfLockManager:
         """
         state = self._shelf_state.get(album_id, {})
         if (
-                state.get("shelf_locked")
-                or state.get("shelf_source") == constants.SHELF_SOURCE_MANUAL
+                state.get(SHELF_LOCKED)
+                or state.get(SHELF_SOURCE) == constants.SHELF_SOURCE_MANUAL
         ):
-            return state.get("shelf_name")
+            return state.get(SHELF_NAME)
         return None
 
     def set_album_shelf(
@@ -276,7 +279,7 @@ class ShelfLockManager:
             shelf_name: str,
             source: str = constants.SHELF_SOURCE_MANUAL,
             lock: Optional[bool] = None,
-    ) -> Optional[str]:
+    ) -> None:
         """
         Set the shelf for an album with optional locking.
 
@@ -291,12 +294,12 @@ class ShelfLockManager:
             lock = source == constants.SHELF_SOURCE_MANUAL
 
         # Manually locked => can only be overwritten manually
-        if state.get("shelf_locked") and source != constants.SHELF_SOURCE_MANUAL:
-            return state.get("shelf_name")
+        if state.get(SHELF_LOCKED) and source != constants.SHELF_SOURCE_MANUAL:
+            return
 
-        state["shelf_name"] = shelf_name
-        state["shelf_source"] = source
-        state["shelf_locked"] = bool(lock)
+        state[SHELF_NAME] = shelf_name
+        state[SHELF_SOURCE] = source
+        state[SHELF_LOCKED] = bool(lock)
 
         if source == constants.SHELF_SOURCE_MANUAL:
             # Register dominant decision (∞ weight)
@@ -304,30 +307,31 @@ class ShelfLockManager:
                     album_id=album_id,
                     shelf_name=shelf_name,
                     weight=float("inf"),
-                    reason="manual override",
+                    reason=constants.SHELF_SOURCE_MANUAL,
             )
 
-        return shelf_name
-
-    def clear_manual_override(self, album_id: str) -> None:
+    def lock(self, album_id: str) -> None:
         """
-        Clear the manual override/lock for an album.
-
-        :param album_id: The album identifier.
+        Set the manual override/lock for an album's shelf assignment.
         """
         state = self._shelf_state.setdefault(album_id, {})
-        state["shelf_locked"] = False
-        if state.get("shelf_source") == constants.SHELF_SOURCE_MANUAL:
-            state["shelf_source"] = constants.SHELF_SOURCE_VOTES
+        state[SHELF_LOCKED] = True
+        state[SHELF_SOURCE] = constants.SHELF_SOURCE_MANUAL
+
+    def unlock(self, album_id: str) -> None:
+        """
+        Clear the manual override/lock for an album's shelf assignment.
+        """
+        state = self._shelf_state.setdefault(album_id, {})
+        state[SHELF_LOCKED] = False
+        state[SHELF_SOURCE] = constants.SHELF_SOURCE_VOTES
 
     def is_locked(self, album_id: str) -> bool:
-        """
-        Check if an album's shelf assignment is locked.
-
-        :param album_id: The album identifier.
-        :return: True if locked, False otherwise.
-        """
-        return self._shelf_state.get(album_id, {}).get("shelf_locked", False)
+        """Check if an album's shelf assignment is locked."""
+        state = self._shelf_state.get(album_id, {})
+        if state is None:
+            return False
+        return state.get(SHELF_LOCKED, False)
 
 
 class ShelfValidator:
@@ -509,7 +513,10 @@ class ShelfManager:
         :return: Tuple of (shelf_name, source).
         :raises ShelfNotFoundException: If no shelf can be determined.
         """
-        return self._assignment_engine.get_album_shelf(album_id, self._lock_manager)
+        try:
+            return self._assignment_engine.get_album_shelf(album_id, self._lock_manager)
+        except ShelfNotFoundException as e:
+            raise
 
     def clear_album(self, album_id: str) -> None:
         """Clear all votes and assignments for an album."""
@@ -521,21 +528,23 @@ class ShelfManager:
             shelf_name: str,
             source: str = constants.SHELF_SOURCE_MANUAL,
             lock: Optional[bool] = None,
-    ) -> Optional[str]:
+    ) -> None:
         """
-        Set the shelf for an album.
-
-        :param album_id: The album identifier.
-        :param shelf_name: The shelf name to set.
-        :param source: Source of the assignment.
-        :param lock: Whether to lock this assignment.
-        :return: The shelf name that was set.
+        Set the shelf for an album with optional locking.
         """
-        return self._lock_manager.set_album_shelf(album_id, shelf_name, source, lock)
+        self._lock_manager.set_album_shelf(album_id, shelf_name, source, lock)
 
-    def clear_manual_override(self, album_id: str) -> None:
-        """Clear the manual override for an album."""
-        self._lock_manager.clear_manual_override(album_id)
+    def lock(self, album_id: str) -> None:
+        """Set the manual lock for an album's shelf assignment."""
+        self._lock_manager.lock(album_id)
+
+    def unlock(self, album_id: str) -> None:
+        """Clear the manual lock for an album's shelf assignment."""
+        self._lock_manager.unlock(album_id)
+
+    def is_locked(self, album_id: str) -> bool:
+        """Check if an album's shelf assignment is locked."""
+        return self._lock_manager.is_locked(album_id)
 
     def is_likely_shelf_name(
             self,
