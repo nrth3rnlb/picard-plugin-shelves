@@ -6,12 +6,13 @@ from __future__ import annotations
 
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional, Set, Tuple
+from typing import Set, Tuple
 from warnings import deprecated
 
 from picard import log
 
 from . import constants
+from .exceptions import ShelfNotDeterminableException
 
 
 def validate_shelf_names(shelf_names: set[str]) -> set[str]:
@@ -33,10 +34,17 @@ def validate_shelf_names(shelf_names: set[str]) -> set[str]:
     return valid_shelves
 
 
-@deprecated("Only useful to be able to process tags that were written up to version 1.7.0.")
+@deprecated(
+        "Is only mandatory until version 1.7.0. As of version 2, the use of the tag has changed. The "
+        " function is used from version 2 to continue processing existing tags and will be removed in a later "
+        "version will be removed."
+)
 def get_shelf_name_from_tag(tag_value: str) -> str:
     """
     Extract the shelf name from a tag value.
+
+    In addition to the name of the shelf, the tag can also contain the suffix "; manual",
+    This function removes this suffix.
     """
     MANUAL_SHELF_SUFFIX = "; manual"
     tag = tag_value.strip()
@@ -45,7 +53,7 @@ def get_shelf_name_from_tag(tag_value: str) -> str:
     return tag
 
 
-def get_shelf_name_from_path(file_path: Path, base_path: Path) -> Optional[str]:
+def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
     """
     Extract the shelf name from a file_path.
     :param file_path:
@@ -56,12 +64,12 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> Optional[str]:
     try:
         if not file_path.is_relative_to(base_path):
             log.warning(_("Path '%s' is not under base directory."), file_path)
-            return None
+            raise ShelfNotDeterminableException(filepath=file_path)
 
         relative_parts = file_path.relative_to(base_path).parts
         if not relative_parts or len(relative_parts) <= 1:
             log.warning(_("File is directly in base directory."))
-            return None
+            raise ShelfNotDeterminableException(filepath=file_path)
 
         potential_shelf = relative_parts[0]
         log.debug("Potential shelf name extracted: '%s'.", potential_shelf)
@@ -73,7 +81,7 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> Optional[str]:
                 file_path,
                 e,
         )
-        return None
+        raise ShelfNotDeterminableException(filepath=file_path, cause=e)
 
 
 def validate_shelf_name(name: str) -> Tuple[bool, str]:

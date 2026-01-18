@@ -1,14 +1,10 @@
+"""Module containing custom exceptions for the shelves package."""
+from pathlib import Path
 from typing import Optional
 
 
 class ShelfNotFoundException(Exception):
-    """
-    Represents an exception raised when a specific shelf_name cannot be found in a given context.
-
-    This exception is used to indicate that an operation requiring access to or information about a shelf_name
-    has failed because the shelf_name does not exist. Ensure that the shelf_name name or identifier provided
-    corresponds to an existing shelf_name.
-    """
+    """ Represents an exception raised when a specific shelf name cannot be found in a given context. """
 
     def __init__(
             self,
@@ -18,10 +14,7 @@ class ShelfNotFoundException(Exception):
             cause: Optional[BaseException] = None,
     ) -> None:
         if message is None:
-            if album_id:
-                message = f"Shelf for album '{album_id}' not found."
-            else:
-                message = "Shelf not found."
+            message = "Shelf for the album%s cannot be determined." % f" '{album_id}'" if album_id else ""
         super().__init__(message)
         self.album_id = album_id
         self.cause = cause
@@ -36,5 +29,35 @@ class ShelfNotFoundException(Exception):
         return {
             "message" : str(self),
             "album_id": self.album_id,
+            "cause"   : repr(self.cause) if self.cause else None,
+        }
+
+
+class ShelfNotDeterminableException(Exception):
+    """ Represents an exception raised when a shelf name cannot be determined from a given filepath. """
+
+    def __init__(
+            self,
+            filepath: Optional[str | Path] = None,
+            message: Optional[str] = None,
+            *,
+            cause: Optional[BaseException] = None,
+    ) -> None:
+        if message is None:
+            message = "No name for a shelf can be derived from the path%s." % f" '{filepath}'" if filepath else ""
+        super().__init__(message)
+        self.filepath = filepath
+        self.cause = cause
+
+    def __str__(self) -> str:
+        base = super().__str__()
+        if self.cause:
+            return f"{base} (Cause: {self.cause!r})"
+        return base
+
+    def to_dict(self) -> dict:
+        return {
+            "message" : str(self),
+            "filepath": self.filepath,
             "cause"   : repr(self.cause) if self.cause else None,
         }

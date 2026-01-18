@@ -24,7 +24,6 @@ from . import constants, utils
 from .exceptions import ShelfNotFoundException
 
 SHELF_NAME = "shelf_name"
-SHELF_SOURCE = "shelf_source"
 SHELF_LOCKED = "shelf_locked"
 
 
@@ -128,19 +127,13 @@ class ShelfAssignmentEngine:
         """
         self.registry = registry
 
-        self._shelf_votes_weighted: Dict[str, List[Tuple[str, float, str]]] = (
+        self._shelf_votes_weighted: Dict[str, List[Tuple[str, float]]] = (
             defaultdict(list)
         )
         self._shelf_votes_counted: Dict[str, Counter] = {}
         self._lock = threading.Lock()
 
-    def vote_for_shelf(
-            self,
-            album_id: str,
-            shelf_name: str,
-            weight: float = 0.0,
-            reason: str = "",
-    ) -> None:
+    def vote_for_shelf(self, album_id: str, shelf_name: str, weight: float = 0.0) -> None:
         """ Register a vote for a shelf assignment. """
         if not shelf_name:
             return
@@ -154,13 +147,13 @@ class ShelfAssignmentEngine:
             self._shelf_votes_counted[album_id][shelf_name] += 1
 
             # For weighted decisions
-            self._shelf_votes_weighted[album_id].append((shelf_name, weight, reason))
+            self._shelf_votes_weighted[album_id].append((shelf_name, weight))
 
     def _get_weighted_shelf_name(self, album_id) -> Optional[str]:
         """ Determine the winning shelf based on weighted votes. """
         votes = self._shelf_votes_weighted.get(album_id, [])
         agg: Dict[str, float] = {}
-        for shelf, weight, _ in votes:
+        for shelf, weight in votes:
             agg[shelf] = agg.get(shelf, 0.0) + float(weight)
         return max(agg.items(), key=lambda kv: kv[1])[0]
 
@@ -171,25 +164,19 @@ class ShelfAssignmentEngine:
 
     def get_album_shelf(
             self, album_id: str, lock_manager: "ShelfLockManager",
-    ) -> Tuple[str, str]:
+    ) -> str:
         """
-        Retrieves the shelf name and its source type for a given album.
+        Retrieves the shelf name for a given album.
 
         This method determines the shelf name for an album based on the weighted or counted shelf
-        name computation. If a weighted shelf name exists and the album is locked using the given
-        lock manager, the shelf is classified as a manual shelf. Otherwise, it checks for a counted
-        shelf name. If neither a weighted nor counted shelf name can be identified, the method raises
+        name computation. If neither a weighted nor counted shelf name can be identified, the method raises
         a `ShelfNotFoundException`.
         """
         if shelf_name := self._get_weighted_shelf_name(album_id):
-            if lock_manager.is_locked(album_id):
-                return shelf_name, constants.SHELF_SOURCE_MANUAL
-            return shelf_name, constants.SHELF_SOURCE_VOTES
-
+            return shelf_name
         # with self._lock:
         if shelf_name := self._get_counted_shelf_name(album_id):
-            return shelf_name, constants.SHELF_SOURCE_QUANTITY
-
+            return shelf_name
         raise ShelfNotFoundException(message=f"Album ID '{album_id}' has no shelf name.")
 
     def clear_album(self, album_id: str) -> None:
@@ -221,34 +208,16 @@ class ShelfLockManager:
         self.assignment_engine = assignment_engine
         self._shelf_state: Dict[str, Dict[str, Any]] = defaultdict(dict)
 
-    def set_album_shelf(
-            self,
-            album_id: str,
-            shelf_name: str,
-            source: str = constants.SHELF_SOURCE_MANUAL,
-            lock: Optional[bool] = None,
-    ) -> None:
+    def set_album_shelf(self, album_id: str, shelf_name: str, lock: bool = False) -> None:
         """ Set the shelf for an album with optional locking. """
         state = self._shelf_state.setdefault(album_id, {})
-        if lock is None:
-            lock = source == constants.SHELF_SOURCE_MANUAL
 
         # Manually locked => can only be overwritten manually
-        if state.get(SHELF_LOCKED) and source != constants.SHELF_SOURCE_MANUAL:
+        if state.get(SHELF_LOCKED):
             return
-
         state[SHELF_NAME] = shelf_name
-        state[SHELF_SOURCE] = source
-        state[SHELF_LOCKED] = bool(lock)
-
-        if source == constants.SHELF_SOURCE_MANUAL:
-            # Register dominant decision (∞ weight)
-            self.assignment_engine.vote_for_shelf(
-                    album_id=album_id,
-                    shelf_name=shelf_name,
-                    weight=float("inf"),
-                    reason=constants.SHELF_SOURCE_MANUAL,
-            )
+        if lock:
+            self.lock(album_id)
 
     def lock(self, album_id: str) -> None:
         """
@@ -256,7 +225,9 @@ class ShelfLockManager:
         """
         state = self._shelf_state.setdefault(album_id, {})
         state[SHELF_LOCKED] = True
-        state[SHELF_SOURCE] = constants.SHELF_SOURCE_MANUAL
+
+        # Register dominant decision (∞ weight)
+        self.assignment_engine.vote_for_shelf(album_id=album_id, shelf_name=state[SHELF_NAME], weight=float("inf"))
 
     def unlock(self, album_id: str) -> None:
         """
@@ -264,7 +235,7 @@ class ShelfLockManager:
         """
         state = self._shelf_state.setdefault(album_id, {})
         state[SHELF_LOCKED] = False
-        state[SHELF_SOURCE] = constants.SHELF_SOURCE_VOTES
+        self.assignment_engine.clear_album(album_id=album_id)
 
     def is_locked(self, album_id: str) -> bool:
         """Check if an album's shelf assignment is locked."""
@@ -443,16 +414,10 @@ class ShelfManager:
             reason: str = "",
     ) -> None:
         """Register a vote for a shelf assignment - delegates to assignment engine."""
-        self._assignment_engine.vote_for_shelf(album_id, shelf_name, weight, reason)
+        self._assignment_engine.vote_for_shelf(album_id, shelf_name, weight)
 
-    def get_album_shelf(self, album_id: str) -> Tuple[str, str]:
-        """
-        Determine the shelf for an album.
-
-        :param album_id: The album identifier.
-        :return: Tuple of (shelf_name, source).
-        :raises ShelfNotFoundException: If no shelf can be determined.
-        """
+    def get_album_shelf(self, album_id: str) -> str:
+        """ Determine the shelf for an album. """
         try:
             return self._assignment_engine.get_album_shelf(album_id, self._lock_manager)
         except ShelfNotFoundException as e:
@@ -466,13 +431,12 @@ class ShelfManager:
             self,
             album_id: str,
             shelf_name: str,
-            source: str = constants.SHELF_SOURCE_MANUAL,
-            lock: Optional[bool] = None,
+            lock: bool = False
     ) -> None:
         """
         Set the shelf for an album with optional locking.
         """
-        self._lock_manager.set_album_shelf(album_id, shelf_name, source, lock)
+        self._lock_manager.set_album_shelf(album_id, shelf_name, lock)
 
     def lock(self, album_id: str) -> None:
         """Set the manual lock for an album's shelf assignment."""

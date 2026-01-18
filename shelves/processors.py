@@ -34,25 +34,25 @@ class ProcessingContext:
     album_id: str
     file: Any
     track: Optional[Any]
-    name_from_path: Optional[str]
+    name_from_path: str
     name_from_tag: str
     is_manual: bool
 
     def is_known_name_from_path(self, shelf_names: set) -> bool:
         """Check if path contains a known shelf name."""
-        return self.name_from_path and self.name_from_path in shelf_names
+        return self.name_from_path in shelf_names
 
     def is_known_name_from_tag(self, shelf_names: set) -> bool:
         """Check if tag contains a known shelf name."""
-        return self.name_from_tag and self.name_from_tag_without_suffix in shelf_names
+        return self.name_from_tag in shelf_names
 
     def is_unknown_name_from_path(self, shelf_names: set) -> bool:
         """Check if path contains an unknown shelf name."""
-        return self.name_from_path is not None and self.name_from_path not in shelf_names
+        return self.name_from_path not in shelf_names
 
     def is_unknown_name_from_tag(self, shelf_names: set) -> bool:
         """Check if tag contains an unknown shelf name."""
-        return self.name_from_tag and self.name_from_tag_without_suffix not in shelf_names
+        return self.name_from_tag not in shelf_names
 
 
 class ShelfStrategy(ABC):
@@ -213,7 +213,7 @@ class UnknownNameFromPathStrategy(ShelfStrategy):
 
 class ShelfProcessors:
     """
-    File processors for loading and saving shelf_name information.
+    File processors for loading and saving shelf name information.
 
     Supports dependency injection for testing. Uses strategy pattern
     for processing shelf assignments based on file paths and tags.
@@ -238,7 +238,7 @@ class ShelfProcessors:
     def set_metadata(obj: Any, key: str, value: Any, label: str) -> None:
         """Safely sets metadata on a Picard object."""
         meta = getattr(obj, "metadata", None)
-        filename = getattr(obj, "filename", "<unknown>")
+        filename = getattr(obj, "filename", "")
         if meta is None:
             log.debug("%s metadata missing for: %s", label, filename)
             return
@@ -290,14 +290,13 @@ class ShelfProcessors:
             return None
 
         # Extract shelf name from path
-        name_from_path: Optional[str] = utils.get_shelf_name_from_path(
+        name_from_path = utils.get_shelf_name_from_path(
                 file_path=Path(file.filename), base_path=self.manager.base_path,
         )
-        if name_from_path:
-            name_from_path = name_from_path.strip()
+        name_from_path = name_from_path.strip()
 
         # Extract shelf name from tag
-        name_from_tag: str = file_meta.get(constants.TAG_KEY, "").strip()
+        name_from_tag = file_meta.get(constants.TAG_KEY, "").strip()
         name_from_tag = utils.get_shelf_name_from_tag(name_from_tag)
 
         is_manual = file_meta.get(constants.TAG_LOCKED_KEY, False)
@@ -345,7 +344,7 @@ class ShelfProcessors:
             return
 
         try:
-            shelf_name, source = self.manager.get_album_shelf(album_id=album_id)
+            shelf_name = self.manager.get_album_shelf(album_id=album_id)
         except ShelfNotFoundException as e:
             log.warning("Failed to determine shelf name for album ID '%s'", album_id)
             return

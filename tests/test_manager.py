@@ -73,7 +73,7 @@ class ManagerTest(unittest.TestCase):
         # The internal winner should be 'ShelfA'
         self.assertEqual(
                 ShelfManager().get_album_shelf(_album_id),
-                ("ShelfA", constants.SHELF_SOURCE_VOTES),
+                "ShelfA",
         )
 
     @patch("shelves.manager.config")
@@ -89,7 +89,7 @@ class ManagerTest(unittest.TestCase):
         # The internal winner should be 'ShelfA'
         self.assertEqual(
                 ShelfManager().get_album_shelf(_album_id),
-                ("ShelfB", constants.SHELF_SOURCE_VOTES),
+                "ShelfB",
         )
 
     @patch("shelves.manager.config")

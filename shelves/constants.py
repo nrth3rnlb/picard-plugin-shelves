@@ -31,9 +31,9 @@ CONFIG_WORKFLOW_ENABLED_KEY = "shelves_workflow_enabled"
 CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY = "shelves_workflow_stage_1_shelves"
 CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY = "shelves_workflow_stage_2_shelves"
 
-SHELF_SOURCE_MANUAL = "manual"
-SHELF_SOURCE_VOTES = "votes"
-SHELF_SOURCE_QUANTITY = "quantity"
+# SHELF_SOURCE_MANUAL = "manual"
+# SHELF_SOURCE_VOTES = "votes"
+# SHELF_SOURCE_QUANTITY = "quantity"
 
 # noinspection SpellCheckingInspection
 RENAME_SNIPPET = """$set(_shelffolder,$shelf())
