@@ -33,26 +33,15 @@ def validate_shelf_names(shelf_names: set[str]) -> set[str]:
     return valid_shelves
 
 
-@deprecated("don't use")
-def get_shelf_name_from_tag(tag_value: Optional[str]) -> Optional[str]:
+@deprecated("Only useful to be able to process tags that were written up to version 1.7.0.")
+def get_shelf_name_from_tag(tag_value: str) -> str:
     """
     Extract the shelf name from a tag value.
-
-    :param tag_value: The tag value to extract the shelf name from.
-    :type tag_value: Optional[str]
-    :return: The extracted shelf name or None if not found.
-    :rtype: Optional[str]
     """
-
-    if not isinstance(tag_value, str):
-        return None
+    MANUAL_SHELF_SUFFIX = "; manual"
     tag = tag_value.strip()
-    if not tag:
-        return None
-
-    if tag.endswith(constants.MANUAL_SHELF_SUFFIX):
-        return tag[: -len(constants.MANUAL_SHELF_SUFFIX)].strip() or None
-
+    if tag.endswith(MANUAL_SHELF_SUFFIX):
+        return tag[: -len(MANUAL_SHELF_SUFFIX)].strip()
     return tag
 
 
@@ -80,9 +69,9 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> Optional[str]:
 
     except (KeyError, ValueError, OSError) as e:
         log.error(
-            _("Error extracting shelf_name from file_path_str '%s': %s."),
-            file_path,
-            e,
+                _("Error extracting shelf_name from file_path_str '%s': %s."),
+                file_path,
+                e,
         )
         return None
 
@@ -181,9 +170,7 @@ def get_shelf_dirs(base_path: Path) -> Set[str]:
     """
     shelf_sub_dirs: Set[str] = set()
     try:
-        shelf_sub_dirs = set(
-            entry.name for entry in base_path.iterdir() if entry.is_dir()
-        )
+        shelf_sub_dirs = set(entry.name for entry in base_path.iterdir() if entry.is_dir())
 
     except (OSError, PermissionError) as e:
         log.error("Error scanning directory: %s", e)
