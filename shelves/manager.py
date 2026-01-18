@@ -14,7 +14,7 @@ The ShelfManager supports dependency injection for testing purposes.
 from __future__ import annotations
 
 import threading
-from collections import Counter, defaultdict, namedtuple
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -127,13 +127,12 @@ class ShelfAssignmentEngine:
         :param registry: ShelfRegistry instance for accessing shelf names.
         """
         self.registry = registry
+
         self._shelf_votes_weighted: Dict[str, List[Tuple[str, float, str]]] = (
             defaultdict(list)
         )
         self._shelf_votes_counted: Dict[str, Counter] = {}
-        self._shelves_by_album: Dict[str, str] = {}
         self._lock = threading.Lock()
-        self._log_data: Optional[Tuple[str, Dict[str, int], str]] = None
 
     def vote_for_shelf(
             self,
@@ -142,14 +141,7 @@ class ShelfAssignmentEngine:
             weight: float = 0.0,
             reason: str = "",
     ) -> None:
-        """
-        Register a vote for a shelf assignment.
-
-        :param album_id: The album identifier.
-        :param shelf_name: The shelf name to vote for.
-        :param weight: Weight of this vote (higher = more important).
-        :param reason: Reason for this vote (for logging).
-        """
+        """ Register a vote for a shelf assignment. """
         if not shelf_name:
             return
 
@@ -161,76 +153,47 @@ class ShelfAssignmentEngine:
                 self._shelf_votes_counted[album_id] = Counter()
             self._shelf_votes_counted[album_id][shelf_name] += 1
 
-            winner = self._shelf_votes_counted[album_id].most_common(1)[0][0]
-            LogData = namedtuple("LogData", ["album_id", "votes", "winner"])
-
-            if len(self._shelf_votes_counted[album_id]) > 1:
-                all_votes = self._shelf_votes_counted[album_id].most_common()
-                self._log_data = LogData(album_id, dict(all_votes), winner)
-
-            self._shelves_by_album[album_id] = winner
-
             # For weighted decisions
             self._shelf_votes_weighted[album_id].append((shelf_name, weight, reason))
 
-        if self._log_data:
-            log.warning(
-                    "Album %s has files from different shelf_names. Votes: %s. Use: '%s'",
-                    self._log_data[0],
-                    self._log_data[1],
-                    self._log_data[2],
-            )
-
-    def _winner(self, votes: List[Tuple[str, float, str]]) -> Optional[str]:
-        """
-        Determine the winning shelf based on weighted votes.
-
-        :param votes: List of (shelf_name, weight, reason) tuples.
-        :return: The winning shelf name or None.
-        """
-        if not votes:
-            return None
+    def _get_weighted_shelf_name(self, album_id) -> Optional[str]:
+        """ Determine the winning shelf based on weighted votes. """
+        votes = self._shelf_votes_weighted.get(album_id, [])
         agg: Dict[str, float] = {}
         for shelf, weight, _ in votes:
             agg[shelf] = agg.get(shelf, 0.0) + float(weight)
         return max(agg.items(), key=lambda kv: kv[1])[0]
 
+    def _get_counted_shelf_name(self, album_id) -> Optional[str]:
+        """ Determine the winning shelf based on vote counts. """
+        votes = self._shelf_votes_counted.get(album_id, Counter())
+        return votes.most_common(1)[0][0]
+
     def get_album_shelf(
             self, album_id: str, lock_manager: "ShelfLockManager",
     ) -> Tuple[str, str]:
         """
-        Determine the shelf for an album based on priority rules.
+        Retrieves the shelf name and its source type for a given album.
 
-        :param album_id: The album identifier.
-        :param lock_manager: The lock manager to check for overrides.
-        :return: Tuple of (shelf_name, source).
-        :raises ShelfNotFoundException: If no shelf can be determined.
+        This method determines the shelf name for an album based on the weighted or counted shelf
+        name computation. If a weighted shelf name exists and the album is locked using the given
+        lock manager, the shelf is classified as a manual shelf. Otherwise, it checks for a counted
+        shelf name. If neither a weighted nor counted shelf name can be identified, the method raises
+        a `ShelfNotFoundException`.
         """
-        # 1. Manual lock has highest priority
-        manual_shelf = lock_manager.get_manual_override(album_id)
-        if manual_shelf:
-            return manual_shelf, constants.SHELF_SOURCE_MANUAL
+        if shelf_name := self._get_weighted_shelf_name(album_id):
+            if lock_manager.is_locked(album_id):
+                return shelf_name, constants.SHELF_SOURCE_MANUAL
+            return shelf_name, constants.SHELF_SOURCE_VOTES
 
-        # 2. Weighted decision
-        chosen = self._winner(self._shelf_votes_weighted.get(album_id, []))
-        if chosen:
-            return chosen, constants.SHELF_SOURCE_VOTES
-
-        # 3. Fallback: simple majority winner from counter
         # with self._lock:
-        shelf_name = self._shelves_by_album.get(album_id)
-        if shelf_name is None:
-            raise ShelfNotFoundException(message=f"Album ID '{album_id}' has no shelf name.")
+        if shelf_name := self._get_counted_shelf_name(album_id):
+            return shelf_name, constants.SHELF_SOURCE_QUANTITY
 
-        return shelf_name, constants.SHELF_SOURCE_FALLBACK
+        raise ShelfNotFoundException(message=f"Album ID '{album_id}' has no shelf name.")
 
     def clear_album(self, album_id: str) -> None:
-        """
-        Clear all votes and assignments for an album.
-
-        :param album_id: The album identifier.
-        """
-        self._shelves_by_album.pop(album_id, None)
+        """ Clear all votes and assignments for an album. """
         self._shelf_votes_weighted.pop(album_id, None)
         self._shelf_votes_counted.pop(album_id, None)
 
@@ -258,21 +221,6 @@ class ShelfLockManager:
         self.assignment_engine = assignment_engine
         self._shelf_state: Dict[str, Dict[str, Any]] = defaultdict(dict)
 
-    def get_manual_override(self, album_id: str) -> Optional[str]:
-        """
-        Get the manually set shelf for an album if locked or manually assigned.
-
-        :param album_id: The album identifier.
-        :return: The shelf name if manually set, None otherwise.
-        """
-        state = self._shelf_state.get(album_id, {})
-        if (
-                state.get(SHELF_LOCKED)
-                or state.get(SHELF_SOURCE) == constants.SHELF_SOURCE_MANUAL
-        ):
-            return state.get(SHELF_NAME)
-        return None
-
     def set_album_shelf(
             self,
             album_id: str,
@@ -280,15 +228,7 @@ class ShelfLockManager:
             source: str = constants.SHELF_SOURCE_MANUAL,
             lock: Optional[bool] = None,
     ) -> None:
-        """
-        Set the shelf for an album with optional locking.
-
-        :param album_id: The album identifier.
-        :param shelf_name: The shelf name to set.
-        :param source: Source of the assignment (manual, votes, etc.).
-        :param lock: Whether to lock this assignment. Defaults to True for manual sources.
-        :return: The shelf name that was set, or the existing shelf if locked.
-        """
+        """ Set the shelf for an album with optional locking. """
         state = self._shelf_state.setdefault(album_id, {})
         if lock is None:
             lock = source == constants.SHELF_SOURCE_MANUAL

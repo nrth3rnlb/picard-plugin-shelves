@@ -31,12 +31,9 @@ CONFIG_WORKFLOW_ENABLED_KEY = "shelves_workflow_enabled"
 CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY = "shelves_workflow_stage_1_shelves"
 CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY = "shelves_workflow_stage_2_shelves"
 
-# The value set manually by the user is used
 SHELF_SOURCE_MANUAL = "manual"
-# Value determined by voting is used
 SHELF_SOURCE_VOTES = "votes"
-# If nothing else works, use the value in TAG_KEY
-SHELF_SOURCE_FALLBACK = "fallback"
+SHELF_SOURCE_QUANTITY = "quantity"
 
 # noinspection SpellCheckingInspection
 RENAME_SNIPPET = """$set(_shelffolder,$shelf())
