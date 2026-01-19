@@ -46,6 +46,8 @@ def get_shelf_name_from_tag(tag_value: str) -> str:
     In addition to the name of the shelf, the tag can also contain the suffix "; manual",
     This function removes this suffix.
     """
+    if not tag_value:
+        return ""
     MANUAL_SHELF_SUFFIX = "; manual"
     tag = tag_value.strip()
     if tag.endswith(MANUAL_SHELF_SUFFIX):

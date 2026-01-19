@@ -152,14 +152,23 @@ class ShelfAssignmentEngine:
     def _get_weighted_shelf_name(self, album_id) -> Optional[str]:
         """ Determine the winning shelf based on weighted votes. """
         votes = self._shelf_votes_weighted.get(album_id, [])
+        if not votes:
+            return None
+
         agg: Dict[str, float] = {}
         for shelf, weight in votes:
             agg[shelf] = agg.get(shelf, 0.0) + float(weight)
+
+        log.debug("Aggregated weighted votes: %s", agg)
         return max(agg.items(), key=lambda kv: kv[1])[0]
 
     def _get_counted_shelf_name(self, album_id) -> Optional[str]:
         """ Determine the winning shelf based on vote counts. """
         votes = self._shelf_votes_counted.get(album_id, Counter())
+        if not votes:
+            return None
+
+        log.debug("Counted votes: %s", votes)
         return votes.most_common(1)[0][0]
 
     def get_album_shelf(
@@ -177,7 +186,8 @@ class ShelfAssignmentEngine:
         # with self._lock:
         if shelf_name := self._get_counted_shelf_name(album_id):
             return shelf_name
-        raise ShelfNotFoundException(message=f"Album ID '{album_id}' has no shelf name.")
+
+        raise ShelfNotFoundException(album_id=album_id)
 
     def clear_album(self, album_id: str) -> None:
         """ Clear all votes and assignments for an album. """
@@ -214,28 +224,28 @@ class ShelfLockManager:
 
         # Manually locked => can only be overwritten manually
         if state.get(SHELF_LOCKED):
+            log.warning("Album %s is locked, skipping shelf assignment", album_id)
             return
+
         state[SHELF_NAME] = shelf_name
         if lock:
             self.lock(album_id)
+        else:
+            self.unlock(album_id)
 
     def lock(self, album_id: str) -> None:
-        """
-        Set the manual override/lock for an album's shelf assignment.
-        """
+        """ Set the manual override/lock for an album's shelf assignment. """
         state = self._shelf_state.setdefault(album_id, {})
         state[SHELF_LOCKED] = True
-
-        # Register dominant decision (∞ weight)
         self.assignment_engine.vote_for_shelf(album_id=album_id, shelf_name=state[SHELF_NAME], weight=float("inf"))
 
+        # Register dominant decision (∞ weight)
+
     def unlock(self, album_id: str) -> None:
-        """
-        Clear the manual override/lock for an album's shelf assignment.
-        """
+        """ Clear the manual override/lock for an album's shelf assignment. """
         state = self._shelf_state.setdefault(album_id, {})
         state[SHELF_LOCKED] = False
-        self.assignment_engine.clear_album(album_id=album_id)
+        self.assignment_engine.vote_for_shelf(album_id=album_id, shelf_name=state[SHELF_NAME])
 
     def is_locked(self, album_id: str) -> bool:
         """Check if an album's shelf assignment is locked."""
@@ -420,7 +430,7 @@ class ShelfManager:
         """ Determine the shelf for an album. """
         try:
             return self._assignment_engine.get_album_shelf(album_id, self._lock_manager)
-        except ShelfNotFoundException as e:
+        except ShelfNotFoundException:
             raise
 
     def clear_album(self, album_id: str) -> None:

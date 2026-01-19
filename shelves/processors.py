@@ -152,11 +152,14 @@ class KnownNameFromPathStrategy(ShelfStrategy):
     def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_path
 
+    def should_vote(self) -> bool:
+        return False
+
     def should_lock(self) -> bool:
-        return True
+        return False
 
 
-class KnownNameFromTagAndManualStrategy(ShelfStrategy):
+class KnownNameFromTagAndLockedStrategy(ShelfStrategy):
     """Strategy: Known shelf name from tag with manual suffix."""
 
     def should_apply(self, context: ProcessingContext) -> bool:
@@ -168,8 +171,11 @@ class KnownNameFromTagAndManualStrategy(ShelfStrategy):
     def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_tag
 
+    def should_vote(self) -> bool:
+        return False
+
     def should_lock(self) -> bool:
-        return True
+        return False
 
 
 class KnownNameFromTagStrategy(ShelfStrategy):
@@ -181,8 +187,11 @@ class KnownNameFromTagStrategy(ShelfStrategy):
     def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_tag
 
+    def should_vote(self) -> bool:
+        return False
+
     def should_lock(self) -> bool:
-        return True
+        return False
 
 
 class UnknownNameFromTagStrategy(ShelfStrategy):
@@ -197,6 +206,9 @@ class UnknownNameFromTagStrategy(ShelfStrategy):
     def should_vote(self) -> bool:
         return True
 
+    def should_lock(self) -> bool:
+        return False
+
 
 class UnknownNameFromPathStrategy(ShelfStrategy):
     """Strategy: Unknown shelf name from path (voting mode)."""
@@ -209,6 +221,9 @@ class UnknownNameFromPathStrategy(ShelfStrategy):
 
     def should_vote(self) -> bool:
         return True
+
+    def should_lock(self) -> bool:
+        return False
 
 
 class ShelfProcessors:
@@ -228,7 +243,7 @@ class ShelfProcessors:
         self.manager = manager or ShelfManager()
         self.strategies = [
             KnownNameFromPathStrategy(self.manager),
-            KnownNameFromTagAndManualStrategy(self.manager),
+            KnownNameFromTagAndLockedStrategy(self.manager),
             KnownNameFromTagStrategy(self.manager),
             UnknownNameFromTagStrategy(self.manager),
             UnknownNameFromPathStrategy(self.manager),
@@ -282,6 +297,9 @@ class ShelfProcessors:
         :return: ProcessingContext or None if missing required data.
         """
         file_meta = getattr(file, "metadata", None)
+
+        log.debug(f"file_meta: {file_meta}")
+
         if not file_meta:
             return None
 
@@ -300,7 +318,7 @@ class ShelfProcessors:
         name_from_tag = utils.get_shelf_name_from_tag(name_from_tag)
 
         is_manual = file_meta.get(constants.TAG_LOCKED_KEY, False)
-
+        log.debug("is_manual: %s", is_manual)
         # TODO: Hier geht es weiter
         log.debug(
                 f"Processing file: {file.filename}, album_id: {album_id}, track: {track}, name_from_path: "
@@ -351,6 +369,8 @@ class ShelfProcessors:
 
         metadata[constants.TAG_KEY] = WorkflowEngine.apply_transition(shelf_name=shelf_name)
         metadata[constants.TAG_LOCKED_KEY] = self.manager.is_locked(album_id=album_id)
+
+        log.debug("Set shelf name: %s, locked: %s", metadata[constants.TAG_KEY], metadata[constants.TAG_LOCKED_KEY])
 
 
 # Global instance for backward compatibility with static method calls

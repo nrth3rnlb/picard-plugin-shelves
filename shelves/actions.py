@@ -83,9 +83,7 @@ class ShelfActionSet(BaseAction):
 
 
 class ShelfActionLock(BaseAction):
-    """
-
-    """
+    """ Lock album's shelf assignment """
 
     # noinspection PyUnusedName
     NAME = "Lock album's shelf assignment"
@@ -98,13 +96,9 @@ class ShelfActionLock(BaseAction):
                 for file in list(obj.iterfiles()):
                     metadata = file.metadata
                     album_id = metadata.get(constants.MUSICBRAINZ_ALBUMID)
-
-                    log.debug("Lock shelf name: %s", metadata[constants.TAG_KEY])
                     if not album_id:
                         continue
-
-                    ShelfManager().lock(album_id)
-                    metadata[constants.TAG_KEY] = ShelfManager().get_album_shelf(album_id)[0]
+                    ShelfManager().set_album_shelf(album_id, metadata[constants.TAG_KEY], lock=True)
                     metadata[constants.TAG_LOCKED_KEY] = ShelfManager().is_locked(album_id)
                     self.tagger.window.set_statusbar_message(f"Lock album's shelf assignment {album_id}")
 
@@ -142,18 +136,13 @@ class ShelfActionUnlock(BaseAction):
                 for file in list(obj.iterfiles()):
                     metadata = file.metadata
                     album_id = metadata.get(constants.MUSICBRAINZ_ALBUMID)
-
-                    log.debug("Unlock shelf name: %s", metadata[constants.TAG_KEY])
                     if not album_id:
                         continue
 
-                    # Clear lock in manager
                     ShelfManager().unlock(album_id)
-                    # Set shelf name in metadata
-                    metadata[constants.TAG_KEY] = ShelfManager().get_album_shelf(album_id)[0]
+                    metadata[constants.TAG_LOCKED_KEY] = ShelfManager().is_locked(album_id)
 
                     self.tagger.window.set_statusbar_message(f"Cleared manual shelf override for album {album_id}")
-                    log.debug("Unlocked shelf name: %s", metadata[constants.TAG_KEY])
 
         # # Re-run the determination logic
         # determine_action = ShelfActionDetermine()

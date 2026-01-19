@@ -21,13 +21,16 @@ from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
 from .actions import (
-    ShelfActionDetermine as _DetermineShelfActionBase,
+    ShelfActionDetermine as _ShelfActionDetermine,
 )
 from .actions import (
-    ShelfActionUnlock as _ResetShelfActionBase,
+    ShelfActionUnlock as _ShelfActionUnlock,
 )
 from .actions import (
-    ShelfActionSet as _SetShelfActionBase,
+    ShelfActionLock as _ShelfActionLock,
+)
+from .actions import (
+    ShelfActionSet as _ShelfActionSet,
 )
 from .options import OptionsPage as _ShelvesOptionsPageBase
 from .processors import get_default_processors
@@ -71,16 +74,20 @@ class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the OptionsPage to ensure proper plugin registration."""
 
 
-class ShelfActionSet(_SetShelfActionBase):
+class ShelfActionSet(_ShelfActionSet):
     """Wrapper class for ShelfActionSet to ensure proper plugin registration."""
 
 
-class ShelfActionDetermine(_DetermineShelfActionBase):
+class ShelfActionDetermine(_ShelfActionDetermine):
     """Wrapper class for ShelfActionDetermine to ensure proper plugin registration."""
 
 
-class ShelfActionUnlock(_ResetShelfActionBase):
+class ShelfActionUnlock(_ShelfActionUnlock):
     """Wrapper class for ShelfActionUnlock to ensure proper plugin registration."""
+
+
+class ShelfActionLock(_ShelfActionLock):
+    """Wrapper class for ShelfActionLock to ensure proper plugin registration."""
 
 
 # Lazy initialization to avoid import-time config access
@@ -137,6 +144,7 @@ register_file_post_removal_from_track_processor(_file_post_removal_from_track_pr
 register_album_action(ShelfActionSet())
 register_album_action(ShelfActionDetermine())
 register_album_action(ShelfActionUnlock())
+register_album_action(ShelfActionLock())
 
 # Register options options_page
 register_options_page(ShelvesOptionsPage)
