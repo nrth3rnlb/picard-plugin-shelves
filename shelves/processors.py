@@ -36,7 +36,7 @@ class ProcessingContext:
     track: Optional[Any]
     name_from_path: str
     name_from_tag: str
-    is_manual: bool
+    is_locked: bool
 
     def is_known_name_from_path(self, shelf_names: set) -> bool:
         """Check if path contains a known shelf name."""
@@ -156,6 +156,31 @@ class KnownNameFromPathStrategy(ShelfStrategy):
         return False
 
     def should_lock(self) -> bool:
+        return True
+
+
+class IdenticalNameAndPathStrategy(ShelfStrategy):
+    """
+    Strategy: Known and identical shelf name from path and tag.
+
+    Der Name des Regals im Pfad und der Name des Regals im Tag sind identisch.
+    Wen das der Fall ist, dann muss nichts weiter entschieden werden.
+    """
+
+    def should_apply(self, context: ProcessingContext) -> bool:
+        return (
+                context.is_known_name_from_tag(self.manager.shelf_names) and
+                context.is_known_name_from_path(self.manager.shelf_names)
+                and context.name_from_tag == context.name_from_path
+        )
+
+    def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
+        return context.name_from_tag
+
+    def should_vote(self) -> bool:
+        return False
+
+    def should_lock(self) -> bool:
         return False
 
 
@@ -165,7 +190,7 @@ class KnownNameFromTagAndLockedStrategy(ShelfStrategy):
     def should_apply(self, context: ProcessingContext) -> bool:
         return (
                 context.is_known_name_from_tag(self.manager.shelf_names)
-                and context.is_manual
+                and context.is_locked
         )
 
     def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
@@ -242,6 +267,7 @@ class ShelfProcessors:
         """
         self.manager = manager or ShelfManager()
         self.strategies = [
+            IdenticalNameAndPathStrategy(self.manager),
             KnownNameFromPathStrategy(self.manager),
             KnownNameFromTagAndLockedStrategy(self.manager),
             KnownNameFromTagStrategy(self.manager),
@@ -280,11 +306,57 @@ class ShelfProcessors:
         if not context:
             return
 
-        log.debug("Processing file: %s", file.filename)
+        log.debug("Post addition to track processing file: %s, track: %s", file.filename, track)
         # Apply strategies in priority order
         for strategy in self.strategies:
             if strategy.process(context):
                 break
+
+    def file_post_save_processor(self, file: Any) -> None:
+        """Process a file after it has been saved."""
+        try:
+            log.debug("Processing file: %s", file.filename)
+            album_id = file.metadata.get(constants.MUSICBRAINZ_ALBUMID)
+            if album_id:
+                self.manager.clear_album(album_id)
+        except (KeyError, AttributeError, ValueError) as e:
+            log.error("Error in file processor: %s", e)
+            log.error("Traceback: %s", traceback.format_exc())
+
+    def file_post_load_processor(self, file: Any) -> None:
+        """Process a file after Picard has scanned it."""
+        context = self.build_processing_context(file=file, track=None)
+        if not context:
+            return
+
+        log.debug("Post load processing file: %s", file.filename)
+        # Apply strategies in priority order
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
+    def set_shelf_in_metadata(
+            self,
+            _album: Any,
+            metadata: Dict[str, Any],
+            _track: Any,
+            _release: Any,
+    ) -> None:
+        """Set a shelf name in track metadata from album's shelf assignment."""
+        album_id = metadata.get(constants.MUSICBRAINZ_ALBUMID)
+        if not album_id:
+            return
+
+        try:
+            shelf_name = self.manager.get_album_shelf(album_id=album_id)
+        except ShelfNotFoundException as e:
+            log.warning("Failed to determine shelf name for album ID '%s'", album_id)
+            return
+
+        metadata[constants.TAG_KEY] = WorkflowEngine.apply_transition(shelf_name=shelf_name)
+        metadata[constants.TAG_LOCKED_KEY] = self.manager.is_locked(album_id=album_id)
+
+        log.debug("Set shelf name: %s, locked: %s", metadata[constants.TAG_KEY], metadata[constants.TAG_LOCKED_KEY])
 
     def build_processing_context(
             self, file: Any, track: Optional[Any],
@@ -317,12 +389,12 @@ class ShelfProcessors:
         name_from_tag = file_meta.get(constants.TAG_KEY, "").strip()
         name_from_tag = utils.get_shelf_name_from_tag(name_from_tag)
 
-        is_manual = file_meta.get(constants.TAG_LOCKED_KEY, False)
-        log.debug("is_manual: %s", is_manual)
+        is_locked = file_meta.get(constants.TAG_LOCKED_KEY, False)
+        log.debug("is_locked: %s", is_locked)
         # TODO: Hier geht es weiter
         log.debug(
                 f"Processing file: {file.filename}, album_id: {album_id}, track: {track}, name_from_path: "
-                f"{name_from_path}, name_from_tag: {name_from_tag}, is_manual: {is_manual}"
+                f"{name_from_path}, name_from_tag: {name_from_tag}, is_locked: {is_locked}"
         )
 
         return ProcessingContext(
@@ -331,46 +403,8 @@ class ShelfProcessors:
                 track=track,
                 name_from_path=name_from_path,
                 name_from_tag=name_from_tag,
-                is_manual=is_manual,
+                is_locked=is_locked,
         )
-
-    def file_post_save_processor(self, file: Any) -> None:
-        """Process a file after it has been saved."""
-        try:
-            log.debug("Processing file: %s", file.filename)
-            album_id = file.metadata.get(constants.MUSICBRAINZ_ALBUMID)
-            if album_id:
-                self.manager.clear_album(album_id)
-        except (KeyError, AttributeError, ValueError) as e:
-            log.error("Error in file processor: %s", e)
-            log.error("Traceback: %s", traceback.format_exc())
-
-    def file_post_load_processor(self, file: Any) -> None:
-        """Process a file after Picard has scanned it."""
-        self.file_post_addition_to_track_processor(file=file, track=None)
-
-    def set_shelf_in_metadata(
-            self,
-            _album: Any,
-            metadata: Dict[str, Any],
-            _track: Any,
-            _release: Any,
-    ) -> None:
-        """Set a shelf name in track metadata from album's shelf assignment."""
-        album_id = metadata.get(constants.MUSICBRAINZ_ALBUMID)
-        if not album_id:
-            return
-
-        try:
-            shelf_name = self.manager.get_album_shelf(album_id=album_id)
-        except ShelfNotFoundException as e:
-            log.warning("Failed to determine shelf name for album ID '%s'", album_id)
-            return
-
-        metadata[constants.TAG_KEY] = WorkflowEngine.apply_transition(shelf_name=shelf_name)
-        metadata[constants.TAG_LOCKED_KEY] = self.manager.is_locked(album_id=album_id)
-
-        log.debug("Set shelf name: %s, locked: %s", metadata[constants.TAG_KEY], metadata[constants.TAG_LOCKED_KEY])
 
 
 # Global instance for backward compatibility with static method calls

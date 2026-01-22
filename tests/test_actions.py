@@ -7,15 +7,27 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from shelves import constants
-from shelves.actions import ShelfActionDetermine, ShelfActionSet, ShelfActionUnlock
+from shelves.actions import ShelfActionDetermine, ShelfActionSet, ShelfActionToggleLock
 from shelves.dialogs import SetShelfDialog
 
 
 class ResetShelfActionTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment"""
-        self.actions = ShelfActionUnlock.__new__(ShelfActionUnlock)
+        self.actions = ShelfActionToggleLock.__new__(ShelfActionToggleLock)
         self.actions.tagger = MagicMock()
+
+        self.test_configuration = {
+            constants.CONFIG_MOVE_FILES_TO_KEY           : "/home/foobar/music",
+            constants.CONFIG_WORKFLOW_ENABLED_KEY        : True,
+            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
+            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
+            constants.CONFIG_KNOWN_SHELVES_KEY           : sorted(
+                    ["Incoming", "Standard", "Stash", "Live"]
+            ),
+        }
+
+        self.known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
 
     @patch("shelves.actions.ShelfManager")
     def test_callback(self, mock_shelf_manager):
@@ -23,12 +35,16 @@ class ResetShelfActionTest(unittest.TestCase):
         # Arrange
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
-
+        mock_manager_instance.base_path = Path(
+                str(self.test_configuration[constants.CONFIG_MOVE_FILES_TO_KEY])
+        )
+        album_id = "e653893a-ac0e-4246-9389-3aac0e7246f9"
+        shelf_name = "Standard"
         file_mock = MagicMock()
-        file_mock.filename = "test.mp3"
+        file_mock.filename = f"/home/foobar/music/{shelf_name}/test.mp3"
         file_mock.metadata = {
-            constants.MUSICBRAINZ_ALBUMID: "album123",
-            constants.TAG_KEY            : "Standard",
+            constants.MUSICBRAINZ_ALBUMID: album_id,
+            constants.TAG_KEY            : shelf_name,
             constants.TAG_LOCKED_KEY     : True
         }
 
@@ -39,7 +55,7 @@ class ResetShelfActionTest(unittest.TestCase):
         self.actions.callback([obj])
 
         # Assert
-        mock_manager_instance.unlock.assert_called_once_with("album123")
+        mock_manager_instance.unlock.assert_called_once_with(album_id)
 
 
 class SetShelfActionTest(unittest.TestCase):
@@ -80,7 +96,7 @@ class SetShelfActionTest(unittest.TestCase):
         self.actions.dialog.ask_for_shelf_name.return_value = shelf_name
 
         file_mock = MagicMock()
-        file_mock.filename = "test.mp3"
+        file_mock.filename = f"/home/foobar/music/{shelf_name}/test.mp3"
         file_mock.metadata = {
             constants.MUSICBRAINZ_ALBUMID: album_id,
             constants.TAG_KEY            : shelf_name,

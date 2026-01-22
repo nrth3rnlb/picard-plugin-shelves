@@ -87,6 +87,48 @@ class ProcessorPriorityTest(unittest.TestCase):
             "shelves.workflow.WorkflowEngine.apply_transition",
             new_callable=MagicMock,
     )
+    def test_file_post_addition_to_track_processor_identical_name_and_path_and_tag(  # is_known_name_from_path
+            self,
+            mock_apply_workflow_transition,
+            mock_shelf_manager,
+    ):
+        # Arrange
+        mock_manager_instance = MagicMock()
+        mock_shelf_manager.return_value = mock_manager_instance
+        mock_manager_instance.base_path = Path(
+                str(self.test_configuration[constants.CONFIG_MOVE_FILES_TO_KEY]),
+        )
+        mock_manager_instance.shelf_names = self.known_shelves
+
+        shelf_sub_dir = copy(self.known_shelves).pop()
+        mock_apply_workflow_transition.return_value = shelf_sub_dir
+
+        file_mock = MagicMock()
+        file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
+        file_mock.metadata = {
+            constants.MUSICBRAINZ_ALBUMID: "f62b3023-34e7-40cd-bd08-b183118cb1fd",
+            constants.TAG_KEY            : shelf_sub_dir
+        }
+
+        # Act
+        # Create processor with mocked manager
+        processors = ShelfProcessors(manager=mock_manager_instance)
+        processors.file_post_addition_to_track_processor(
+                track=None, file=file_mock,
+        )
+
+        # Assert
+        mock_manager_instance.set_album_shelf.assert_called_with(
+                album_id="f62b3023-34e7-40cd-bd08-b183118cb1fd",
+                shelf_name=shelf_sub_dir,
+                lock=False,
+        )
+
+    @patch("shelves.processors.ShelfManager")
+    @patch(
+            "shelves.workflow.WorkflowEngine.apply_transition",
+            new_callable=MagicMock,
+    )
     def test_file_post_addition_to_track_processor_known_name_from_path(  # is_known_name_from_path
             self,
             mock_apply_workflow_transition,

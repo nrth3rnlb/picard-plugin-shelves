@@ -78,59 +78,25 @@ class ShelfActionSet(BaseAction):
                     )
 
         # # Re-run the determination logic
-        # determine_action = ShelfActionDetermine()
-        # determine_action.tagger = self.tagger
+        determine_action = ShelfActionDetermine()
+        determine_action.tagger = self.tagger
+        determine_action.callback(objs)
 
 
-class ShelfActionLock(BaseAction):
-    """ Lock album's shelf assignment """
-
-    # noinspection PyUnusedName
-    NAME = "Lock album's shelf assignment"
-
-    tagger: Any
-
-    def callback(self, objs: List[Any]) -> None:
-        for obj in objs:
-            if hasattr(obj, "iterfiles"):
-                for file in list(obj.iterfiles()):
-                    metadata = file.metadata
-                    album_id = metadata.get(constants.MUSICBRAINZ_ALBUMID)
-                    if not album_id:
-                        continue
-                    ShelfManager().set_album_shelf(album_id, metadata[constants.TAG_KEY], lock=True)
-                    metadata[constants.TAG_LOCKED_KEY] = ShelfManager().is_locked(album_id)
-                    self.tagger.window.set_statusbar_message(f"Lock album's shelf assignment {album_id}")
-
-        # # Re-run the determination logic
-        # determine_action = ShelfActionDetermine()
-        # determine_action.tagger = self.tagger
-        # determine_action.callback(objs)
-
-
-class ShelfActionUnlock(BaseAction):
+class ShelfActionToggleLock(BaseAction):
     """
     Restore automatic shelf_name
     """
 
     # noinspection PyUnusedName
-    NAME = "Unlock album's shelf assignment"
+    NAME = "Lock/Unlock album's shelf assignment."
 
     tagger: Any
 
     def callback(self, objs: List[Any]) -> None:
-        """
-        Processes a list of objects to perform metadata cleanup operations. Specifically,
-        clears manually set metadata flags in music file metadata and optionally re-runs
-        determination logic.
+        """ Toggle lock state of albums."""
+        _locked: dict[str, bool] = {}
 
-        :param objs: A list of objects, each potentially containing music files with
-        metadata to be processed.
-        :type objs: List[Any]
-
-        :return: This method does not return any value.
-        :rtype: None
-        """
         for obj in objs:
             if hasattr(obj, "iterfiles"):
                 for file in list(obj.iterfiles()):
@@ -138,16 +104,26 @@ class ShelfActionUnlock(BaseAction):
                     album_id = metadata.get(constants.MUSICBRAINZ_ALBUMID)
                     if not album_id:
                         continue
-
-                    ShelfManager().unlock(album_id)
+                    if not album_id in _locked:
+                        _locked[album_id] = ShelfManager().is_locked(album_id)
+                    if _locked[album_id]:
+                        ShelfManager().unlock(album_id)
+                    else:
+                        ShelfManager().lock(album_id)
                     metadata[constants.TAG_LOCKED_KEY] = ShelfManager().is_locked(album_id)
 
-                    self.tagger.window.set_statusbar_message(f"Cleared manual shelf override for album {album_id}")
+                    self.tagger.window.set_statusbar_message(
+                            "Lock state of album %s is now %s." % (
+                                album_id, "locked" if ShelfManager().is_locked(
+                                    album_id
+                            ) else "unlocked"
+                            )
+                    )
 
         # # Re-run the determination logic
-        # determine_action = ShelfActionDetermine()
-        # determine_action.tagger = self.tagger
-        # determine_action.callback(objs)
+        determine_action = ShelfActionDetermine()
+        determine_action.tagger = self.tagger
+        determine_action.callback(objs)
 
 
 class ShelfActionDetermine(BaseAction):

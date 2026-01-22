@@ -24,10 +24,7 @@ from .actions import (
     ShelfActionDetermine as _ShelfActionDetermine,
 )
 from .actions import (
-    ShelfActionUnlock as _ShelfActionUnlock,
-)
-from .actions import (
-    ShelfActionLock as _ShelfActionLock,
+    ShelfActionToggleLock as _ShelfActionToggleLock,
 )
 from .actions import (
     ShelfActionSet as _ShelfActionSet,
@@ -82,12 +79,8 @@ class ShelfActionDetermine(_ShelfActionDetermine):
     """Wrapper class for ShelfActionDetermine to ensure proper plugin registration."""
 
 
-class ShelfActionUnlock(_ShelfActionUnlock):
-    """Wrapper class for ShelfActionUnlock to ensure proper plugin registration."""
-
-
-class ShelfActionLock(_ShelfActionLock):
-    """Wrapper class for ShelfActionLock to ensure proper plugin registration."""
+class ShelfActionToggleLock(_ShelfActionToggleLock):
+    """Wrapper class for ShelfActionToggleLock to ensure proper plugin registration."""
 
 
 # Lazy initialization to avoid import-time config access
@@ -143,8 +136,7 @@ register_file_post_removal_from_track_processor(_file_post_removal_from_track_pr
 # Register context menu actions
 register_album_action(ShelfActionSet())
 register_album_action(ShelfActionDetermine())
-register_album_action(ShelfActionUnlock())
-register_album_action(ShelfActionLock())
+register_album_action(ShelfActionToggleLock())
 
 # Register options options_page
 register_options_page(ShelvesOptionsPage)
