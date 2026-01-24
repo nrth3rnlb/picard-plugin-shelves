@@ -251,7 +251,8 @@ class UnknownNameFromPathStrategy(ShelfStrategy):
     """Strategy: Unknown shelf name from path (voting mode)."""
 
     def should_apply(self, context: ProcessingContext) -> bool:
-        return context.is_unknown_name_from_path(self.manager.shelf_names)
+        # Since an empty name is not a name, it is neither known nor unknown.
+        return self.manager.shelf_names != "" and context.is_unknown_name_from_path(self.manager.shelf_names)
 
     def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_path
