@@ -6,10 +6,12 @@ from __future__ import annotations
 
 from gettext import gettext as _
 from pathlib import Path
-from typing import Set, Tuple
+from typing import Any, Set, Tuple
 from warnings import deprecated
+import logging
 
 from picard import log
+from picard.script import ScriptParser
 
 from . import constants
 from .exceptions import ShelfNotDeterminableException
@@ -185,3 +187,92 @@ def get_shelf_dirs(base_path: Path) -> Set[str]:
     except (OSError, PermissionError) as e:
         log.error("Error scanning directory: %s", e)
     return shelf_sub_dirs
+
+
+def debug_track(track: Any):
+    if log.get_effective_level() != logging.DEBUG:
+        return
+
+    log.debug("=" * 60)
+    log.debug("TRACK DEBUG START")
+
+    log.debug("track = %s", track)
+
+    if hasattr(track, "metadata"):
+        log.debug("✓ track HAS metadata")
+        log.debug("  Keys: %s", list(track.metadata.keys()))
+
+    log.debug("TRACK DEBUG END")
+    log.debug("=" * 60)
+
+
+def debug_file(file: Any):
+    if log.get_effective_level() != logging.DEBUG:
+        return
+
+    log.debug("=" * 60)
+    log.debug("FILE DEBUG START")
+
+    log.debug("file = %s", file)
+
+    if hasattr(file, "metadata"):
+        log.debug("✓ file HAS metadata")
+        log.debug("  Keys: %s", list(file.metadata.keys()))
+
+    log.debug("FILE DEBUG END")
+    log.debug("=" * 60)
+
+
+def debug_parser(parser: ScriptParser):
+    """
+    Debugs the internal state of a `ScriptParser` object and retrieves relevant
+    information about its attributes and context. Outputs debug logs about the
+    state and structure of the passed `parser` object.
+
+    :param parser: The `ScriptParser` object to debug.
+    :type parser: ScriptParser
+    :return: A debug status message.
+    :rtype: str
+    """
+    if log.get_effective_level() != logging.DEBUG:
+        return
+
+    log.debug("=" * 60)
+    log.debug("PARSER DEBUG START")
+
+    # What is parser.file?
+    log.debug("parser.file = %s", parser.file)
+    log.debug("parser.file type = %s", type(parser.file))
+
+    # Does it have .metadata?
+    if hasattr(parser.file, "metadata"):
+        log.debug("✓ parser.file HAS metadata")
+        log.debug("  Keys: %s", list(parser.file.metadata.keys()))
+
+    # What is parser.context?
+    if hasattr(parser, "context"):
+        log.debug("✓ parser HAS context")
+        log.debug("  Keys: %s", list(parser.context.keys()))
+
+    log.debug("PARSER DEBUG END")
+    log.debug("=" * 60)
+
+
+def squeeze_the_parser(parser: ScriptParser) -> tuple[str, str]:
+    """
+    Extracts and processes the metadata and context tags from the given parser and
+    returns their corresponding shelf names. If the required attributes are not
+    present in the parser, the corresponding shelf name will be an empty string.
+    """
+    debug_parser(parser)
+    metadata_shelf: str = ""
+    context_shelf: str = ""
+    if hasattr(parser.file, "metadata"):
+        metadata_shelf = parser.file.metadata.get(constants.TAG_KEY)
+        metadata_shelf = get_shelf_name_from_tag(metadata_shelf)
+        log.debug("metadata_shelf = %s", metadata_shelf)
+    if hasattr(parser, "context"):
+        context_shelf = parser.context.get(constants.TAG_KEY)
+        context_shelf = get_shelf_name_from_tag(context_shelf)
+        log.debug("context_shelf = %s", context_shelf)
+    return context_shelf, metadata_shelf

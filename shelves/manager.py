@@ -13,10 +13,10 @@ The ShelfManager supports dependency injection for testing purposes.
 
 from __future__ import annotations
 
-import threading
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
+import threading
 
 from picard import config, log
 
@@ -119,21 +119,46 @@ class ShelfAssignmentEngine:
     Detects conflicts when files from the same album suggest different shelves.
     """
 
-    def __init__(self, registry: ShelfRegistry):
+    def __init__(self, registry: ShelfRegistry, debug_interval: int = 5):
         """
         Initialize the assignment engine.
 
         :param registry: ShelfRegistry instance for accessing shelf names.
         """
         self.registry = registry
-
-        self._shelf_votes_weighted: Dict[str, List[Tuple[str, float]]] = (
-            defaultdict(list)
-        )
         self._shelf_votes_counted: Dict[str, Counter] = {}
         self._lock = threading.Lock()
 
-    def vote_for_shelf(self, album_id: str, shelf_name: str, weight: float = 0.0) -> None:
+        self._debug_thread = None
+        self._debug_stop_event = threading.Event()
+        if debug_interval > 0:
+            self._start_debug_thread(debug_interval)
+
+    def _start_debug_thread(self, interval: int):
+        """Start background thread for periodic vote logging."""
+
+        def debug_loop():
+            while not self._debug_stop_event.wait(interval):
+                with self._lock:
+                    if self._shelf_votes_counted:
+                        log.info("=== Shelf Votes Status ===")
+                        for album_id, votes in self._shelf_votes_counted.items():
+                            log.info("  Album %s: %s", album_id, dict(votes))
+                    else:
+                        log.debug("No shelf votes recorded yet")
+
+        self._debug_thread = threading.Thread(target=debug_loop, daemon=True)
+        self._debug_thread.start()
+        log.info("Started debug monitoring thread (interval: %ds)", interval)
+
+    def stop_debug_thread(self):
+        """Stop the debug monitoring thread."""
+        if self._debug_thread:
+            self._debug_stop_event.set()
+            self._debug_thread.join(timeout=5)
+            log.info("Stopped debug monitoring thread")
+
+    def vote_for_shelf(self, album_id: str, shelf_name: str) -> None:
         """ Register a vote for a shelf assignment. """
         if not shelf_name:
             return
@@ -146,23 +171,12 @@ class ShelfAssignmentEngine:
                 self._shelf_votes_counted[album_id] = Counter()
             self._shelf_votes_counted[album_id][shelf_name] += 1
 
-            # For weighted decisions
-            self._shelf_votes_weighted[album_id].append((shelf_name, weight))
+        log.debug(
+                "Vote registered: album=%s, shelf=%s, votes=%s",
+                album_id, shelf_name, dict(self._shelf_votes_counted[album_id])
+        )
 
-    def _get_weighted_shelf_name(self, album_id) -> Optional[str]:
-        """ Determine the winning shelf based on weighted votes. """
-        votes = self._shelf_votes_weighted.get(album_id, [])
-        if not votes:
-            return None
-
-        agg: Dict[str, float] = {}
-        for shelf, weight in votes:
-            agg[shelf] = agg.get(shelf, 0.0) + float(weight)
-
-        log.debug("Aggregated weighted votes: %s", agg)
-        return max(agg.items(), key=lambda kv: kv[1])[0]
-
-    def _get_counted_shelf_name(self, album_id) -> Optional[str]:
+    def _get_shelf_name_by_votes(self, album_id) -> Optional[str]:
         """ Determine the winning shelf based on vote counts. """
         votes = self._shelf_votes_counted.get(album_id, Counter())
         if not votes:
@@ -181,23 +195,20 @@ class ShelfAssignmentEngine:
         name computation. If neither a weighted nor counted shelf name can be identified, the method raises
         a `ShelfNotFoundException`.
         """
-        if shelf_name := self._get_weighted_shelf_name(album_id):
-            return shelf_name
-        # with self._lock:
-        if shelf_name := self._get_counted_shelf_name(album_id):
-            return shelf_name
+        with self._lock:
+            if shelf_name := self._get_shelf_name_by_votes(album_id):
+                return shelf_name
 
         raise ShelfNotFoundException(album_id=album_id)
 
     def clear_album(self, album_id: str) -> None:
         """ Clear all votes and assignments for an album. """
-        self._shelf_votes_weighted.pop(album_id, None)
         self._shelf_votes_counted.pop(album_id, None)
 
     @property
     def shelf_votes(self):
         """Get the weighted votes dictionary."""
-        return self._shelf_votes_weighted
+        return self._shelf_votes_counted
 
 
 class ShelfLockManager:
@@ -237,7 +248,7 @@ class ShelfLockManager:
         """ Set the manual override/lock for an album's shelf assignment. """
         state = self._shelf_state.setdefault(album_id, {})
         state[SHELF_LOCKED] = True
-        self.assignment_engine.vote_for_shelf(album_id=album_id, shelf_name=state[SHELF_NAME], weight=float("inf"))
+        self.assignment_engine.vote_for_shelf(album_id=album_id, shelf_name=state[SHELF_NAME])
 
         # Register dominant decision (∞ weight)
 
@@ -424,7 +435,7 @@ class ShelfManager:
             reason: str = "",
     ) -> None:
         """Register a vote for a shelf assignment - delegates to assignment engine."""
-        self._assignment_engine.vote_for_shelf(album_id, shelf_name, weight)
+        self._assignment_engine.vote_for_shelf(album_id, shelf_name)
 
     def get_album_shelf(self, album_id: str) -> str:
         """ Determine the shelf for an album. """
