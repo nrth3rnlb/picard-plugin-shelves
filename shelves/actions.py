@@ -62,11 +62,11 @@ class ShelfActionSet(BaseAction):
                     if not album_id:
                         continue
 
-                    ShelfManager().set_album_shelf(
+                    ShelfManager().set_shelf_name(
                             album_id=album_id, shelf_name=shelf_name, lock=True,
                     )
                     # Set shelf name in metadata
-                    shelf_name = ShelfManager().get_album_shelf(album_id)[0]
+                    shelf_name = ShelfManager().get_shelf_name(album_id)[0]
                     log.debug("Set shelf name: %s", shelf_name)
 
                     metadata[constants.TAG_KEY] = shelf_name

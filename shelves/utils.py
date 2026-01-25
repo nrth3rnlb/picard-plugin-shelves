@@ -74,10 +74,7 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
         if not relative_parts or len(relative_parts) <= 1:
             log.warning(_("File is directly in base directory."))
             raise ShelfNotDeterminableException(filepath=file_path)
-
-        potential_shelf = relative_parts[0]
-        log.debug("Potential shelf name extracted: '%s'.", potential_shelf)
-        return potential_shelf
+        return relative_parts[0]
 
     except (KeyError, ValueError, OSError) as e:
         log.error(
@@ -199,8 +196,10 @@ def debug_track(track: Any):
     log.debug("track = %s", track)
 
     if hasattr(track, "metadata"):
-        log.debug("✓ track HAS metadata")
-        log.debug("  Keys: %s", list(track.metadata.keys()))
+        log.debug("✓\ttrack HAS metadata")
+        log.debug("\tKeys: %s", sorted(list(track.metadata.keys())))
+        log.debug("\tconstants.TAG_KEY: %s", track.metadata.get(constants.TAG_KEY, "(not set)"))
+        log.debug("\tconstants.TAG_LOCKED_KEY: %s", track.metadata.get(constants.TAG_LOCKED_KEY, "(not set)"))
 
     log.debug("TRACK DEBUG END")
     log.debug("=" * 60)
@@ -216,8 +215,10 @@ def debug_file(file: Any):
     log.debug("file = %s", file)
 
     if hasattr(file, "metadata"):
-        log.debug("✓ file HAS metadata")
-        log.debug("  Keys: %s", list(file.metadata.keys()))
+        log.debug("✓\tfile HAS metadata")
+        log.debug("\tKeys: %s", sorted(list(file.metadata.keys())))
+        log.debug("\tconstants.TAG_KEY: %s", file.metadata.get(constants.TAG_KEY, "(not set)"))
+        log.debug("\tconstants.TAG_LOCKED_KEY: %s", file.metadata.get(constants.TAG_LOCKED_KEY, "(not set)"))
 
     log.debug("FILE DEBUG END")
     log.debug("=" * 60)
@@ -246,13 +247,17 @@ def debug_parser(parser: ScriptParser):
 
     # Does it have .metadata?
     if hasattr(parser.file, "metadata"):
-        log.debug("✓ parser.file HAS metadata")
-        log.debug("  Keys: %s", list(parser.file.metadata.keys()))
+        log.debug("✓\tparser.file HAS metadata")
+        log.debug("\tKeys: %s", sorted(list(parser.file.metadata.keys())))
+        log.debug("\tconstants.TAG_KEY: %s", parser.file.metadata.get(constants.TAG_KEY, "(not set)"))
+        log.debug("\tconstants.TAG_LOCKED_KEY: %s", parser.file.metadata.get(constants.TAG_LOCKED_KEY, "(not set)"))
 
     # What is parser.context?
     if hasattr(parser, "context"):
-        log.debug("✓ parser HAS context")
-        log.debug("  Keys: %s", list(parser.context.keys()))
+        log.debug("✓\tparser HAS context")
+        log.debug("\tKeys: %s", sorted(list(parser.context.keys())))
+        log.debug("\tconstants.TAG_KEY: %s", parser.context.get(constants.TAG_KEY, "(not set)"))
+        log.debug("\tconstants.TAG_LOCKED_KEY: %s", parser.context.get(constants.TAG_LOCKED_KEY, "(not set)"))
 
     log.debug("PARSER DEBUG END")
     log.debug("=" * 60)

@@ -67,6 +67,16 @@ PLUGIN_LICENSE = "GPL-2.0-or-later"
 PLUGIN_LICENSE_URL = "https://www.gnu.org/licenses/gpl-2.0.html"
 
 
+class Shelf():
+    """Represents a music shelf with a name and lock status."""
+    name: str
+    locked: bool = False
+
+    def __init__(self, name: str, locked: bool = False):
+        self.name = name
+        self.locked = locked
+
+
 class ShelvesOptionsPage(_ShelvesOptionsPageBase):
     """Wrapper class for the OptionsPage to ensure proper plugin registration."""
 
@@ -106,25 +116,25 @@ def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     _get_shelf_processors().file_post_addition_to_track_processor(track=track, file=file)
 
 
-def _set_shelf_in_metadata_wrapper(
+def _track_metadata_processor_wrapper(
         album: Any,
         metadata: Dict[str, Any],
         track: Any,
         release: Any,
 ) -> None:
-    """Wrapper for set_shelf_in_metadata."""
-    log.debug("SetShelfInMetadata")
-    _get_shelf_processors().set_shelf_in_metadata(album=album, metadata=metadata, track=track, release=release)
+    """Wrapper for track_metadata_processor."""
+    log.debug("TrackMetadataProcessor:")
+    _get_shelf_processors().track_metadata_processor(album=album, metadata=metadata, track=track, release=release)
 
 
 def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
     log.debug("PostRemovalFromTrackProcessor")
-    _get_shelf_processors().file_post_removal_from_track_processor(_track=track, file=file)
+    _get_shelf_processors().file_post_removal_from_track_processor(track=track, file=file)
 
 
 # Register metadata processors
-register_track_metadata_processor(_set_shelf_in_metadata_wrapper)
+register_track_metadata_processor(_track_metadata_processor_wrapper)
 
 # Register file processors
 register_file_post_load_processor(_file_post_load_processor_wrapper)

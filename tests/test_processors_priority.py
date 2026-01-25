@@ -118,7 +118,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         )
 
         # Assert
-        mock_manager_instance.set_album_shelf.assert_called_with(
+        mock_manager_instance.set_shelf_name.assert_called_with(
                 album_id="f62b3023-34e7-40cd-bd08-b183118cb1fd",
                 shelf_name=shelf_sub_dir,
                 lock=False,
@@ -160,7 +160,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         )
 
         # Assert
-        mock_manager_instance.set_album_shelf.assert_called_with(
+        mock_manager_instance.set_shelf_name.assert_called_with(
                 album_id="f62b3023-34e7-40cd-bd08-b183118cb1fd",
                 shelf_name=shelf_sub_dir,
                 lock=True,
@@ -211,7 +211,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         # Assert
         # The name of the shelf determined from the path wins
         # The name of the shelf from the tag loses
-        mock_manager_instance.set_album_shelf.assert_called_with(
+        mock_manager_instance.set_shelf_name.assert_called_with(
                 album_id="f62b3023-34e7-40cd-bd08-b183118cb1fd",
                 shelf_name=shelf_sub_dir,
                 lock=True,
@@ -254,7 +254,7 @@ class ProcessorPriorityTest(unittest.TestCase):
         )
 
         # Assert
-        mock_manager_instance.set_album_shelf.assert_called_with(
+        mock_manager_instance.set_shelf_name.assert_called_with(
                 album_id="album123", shelf_name=shelf_sub_dir, lock=True,
         )
 

@@ -43,7 +43,7 @@ class ScriptFunctionsTest(unittest.TestCase):
         # Arrange
         # mock_manager_instance = MagicMock()
         # mock_manager.return_value = mock_manager_instance
-        # mock_manager_instance.get_album_shelf.side_effect = ShelfNotFoundException()
+        # mock_manager_instance.get_shelf_name.side_effect = ShelfNotFoundException()
         unknown_shelf = "Possim laboris accusam"
         mock_config.setting = deepcopy(self.test_configuration)
         parser = MagicMock()

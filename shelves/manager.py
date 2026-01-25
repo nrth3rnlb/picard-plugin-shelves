@@ -119,73 +119,57 @@ class ShelfAssignmentEngine:
     Detects conflicts when files from the same album suggest different shelves.
     """
 
-    def __init__(self, registry: ShelfRegistry, debug_interval: int = 5):
+    def __init__(self, registry: ShelfRegistry):
         """
         Initialize the assignment engine.
 
         :param registry: ShelfRegistry instance for accessing shelf names.
         """
         self.registry = registry
-        self._shelf_votes_counted: Dict[str, Counter] = {}
+        self._shelf_votes: Dict[str, Counter] = {}
+        self._shelf_processor: Dict[str, int] = {}
         self._lock = threading.Lock()
 
-        self._debug_thread = None
-        self._debug_stop_event = threading.Event()
-        if debug_interval > 0:
-            self._start_debug_thread(debug_interval)
-
-    def _start_debug_thread(self, interval: int):
-        """Start background thread for periodic vote logging."""
-
-        def debug_loop():
-            while not self._debug_stop_event.wait(interval):
-                with self._lock:
-                    if self._shelf_votes_counted:
-                        log.info("=== Shelf Votes Status ===")
-                        for album_id, votes in self._shelf_votes_counted.items():
-                            log.info("  Album %s: %s", album_id, dict(votes))
-                    else:
-                        log.debug("No shelf votes recorded yet")
-
-        self._debug_thread = threading.Thread(target=debug_loop, daemon=True)
-        self._debug_thread.start()
-        log.info("Started debug monitoring thread (interval: %ds)", interval)
-
-    def stop_debug_thread(self):
-        """Stop the debug monitoring thread."""
-        if self._debug_thread:
-            self._debug_stop_event.set()
-            self._debug_thread.join(timeout=5)
-            log.info("Stopped debug monitoring thread")
-
-    def vote_for_shelf(self, album_id: str, shelf_name: str) -> None:
+    def upvote(self, album_id: str, shelf_name: str, processor_type: int) -> None:
         """ Register a vote for a shelf assignment. """
-        if not shelf_name:
-            return
-
-        shelf_name = shelf_name.strip()
-
         with self._lock:
             # Counter for majority decisions
-            if album_id not in self._shelf_votes_counted:
-                self._shelf_votes_counted[album_id] = Counter()
-            self._shelf_votes_counted[album_id][shelf_name] += 1
+            if album_id not in self._shelf_votes:
+                self._shelf_votes[album_id] = Counter()
+            self._shelf_votes[album_id][shelf_name] += 1
+            self._shelf_processor[album_id] = processor_type
 
         log.debug(
-                "Vote registered: album=%s, shelf=%s, votes=%s",
-                album_id, shelf_name, dict(self._shelf_votes_counted[album_id])
+                "album=%s, shelf=%s, votes=%s",
+                album_id, shelf_name, dict(self._shelf_votes[album_id])
         )
 
-    def _get_shelf_name_by_votes(self, album_id) -> Optional[str]:
+    def downvote(self, album_id: str, shelf_name: str, processor_type: int) -> None:
+        """ Unregister a vote for a shelf assignment. """
+        with self._lock:
+            if album_id in self._shelf_votes and shelf_name in self._shelf_votes[album_id]:
+                self._shelf_votes[album_id][shelf_name] -= 1
+            self._shelf_processor[album_id] = processor_type
+
+        log.debug(
+                "album=%s, shelf=%s, votes=%s",
+                album_id, shelf_name, dict(self._shelf_votes[album_id])
+        )
+
+    def get_shelf_name_by_votes(self, album_id) -> Optional[str]:
         """ Determine the winning shelf based on vote counts. """
-        votes = self._shelf_votes_counted.get(album_id, Counter())
+        votes: Counter = self._shelf_votes.get(album_id, Counter())
         if not votes:
             return None
+        result = votes.most_common(1)
+        log.debug("%s, %s", album_id, result)
+        return result[0][0]
 
-        log.debug("Counted votes: %s", votes)
-        return votes.most_common(1)[0][0]
+    def get_processor_type(self, album_id) -> Optional[int]:
+        """ Determine the processor type based on vote counts. """
+        return self._shelf_processor.get(album_id, None)
 
-    def get_album_shelf(
+    def get_shelf_name(
             self, album_id: str, lock_manager: "ShelfLockManager",
     ) -> str:
         """
@@ -196,19 +180,14 @@ class ShelfAssignmentEngine:
         a `ShelfNotFoundException`.
         """
         with self._lock:
-            if shelf_name := self._get_shelf_name_by_votes(album_id):
+            if shelf_name := self.get_shelf_name_by_votes(album_id):
                 return shelf_name
 
         raise ShelfNotFoundException(album_id=album_id)
 
     def clear_album(self, album_id: str) -> None:
         """ Clear all votes and assignments for an album. """
-        self._shelf_votes_counted.pop(album_id, None)
-
-    @property
-    def shelf_votes(self):
-        """Get the weighted votes dictionary."""
-        return self._shelf_votes_counted
+        self._shelf_votes.pop(album_id, None)
 
 
 class ShelfLockManager:
@@ -229,7 +208,7 @@ class ShelfLockManager:
         self.assignment_engine = assignment_engine
         self._shelf_state: Dict[str, Dict[str, Any]] = defaultdict(dict)
 
-    def set_album_shelf(self, album_id: str, shelf_name: str, lock: bool = False) -> None:
+    def set_shelf_name(self, album_id: str, shelf_name: str, lock: bool = False, vote: bool = False) -> None:
         """ Set the shelf for an album with optional locking. """
         state = self._shelf_state.setdefault(album_id, {})
 
@@ -248,15 +227,11 @@ class ShelfLockManager:
         """ Set the manual override/lock for an album's shelf assignment. """
         state = self._shelf_state.setdefault(album_id, {})
         state[SHELF_LOCKED] = True
-        self.assignment_engine.vote_for_shelf(album_id=album_id, shelf_name=state[SHELF_NAME])
-
-        # Register dominant decision (∞ weight)
 
     def unlock(self, album_id: str) -> None:
         """ Clear the manual override/lock for an album's shelf assignment. """
         state = self._shelf_state.setdefault(album_id, {})
         state[SHELF_LOCKED] = False
-        self.assignment_engine.vote_for_shelf(album_id=album_id, shelf_name=state[SHELF_NAME])
 
     def is_locked(self, album_id: str) -> bool:
         """Check if an album's shelf assignment is locked."""
@@ -404,11 +379,6 @@ class ShelfManager:
         self._registry.base_path = value
 
     @property
-    def shelf_votes(self):
-        """Get the weighted votes."""
-        return self._assignment_engine.shelf_votes
-
-    @property
     def test_value(self):
         """Test value for testing purposes."""
         return self._test_value
@@ -418,29 +388,32 @@ class ShelfManager:
         """Set test value."""
         self._test_value = value
 
-    # ===== Static/Class Methods =====
-
-    @classmethod
-    def destroy(cls):
-        """Destroy the singleton instance."""
-        cls._instance = None
-
     # ===== Delegation Methods =====
 
-    def vote_for_shelf(
+    def downvote(
             self,
             album_id: str,
             shelf_name: str,
+            type: int,
+    ) -> None:
+        """Register a vote for a shelf assignment - delegates to assignment engine."""
+        self._assignment_engine.downvote(album_id, shelf_name, type)
+
+    def upvote(
+            self,
+            album_id: str,
+            shelf_name: str,
+            type: int,
             weight: float = 0.0,
             reason: str = "",
     ) -> None:
         """Register a vote for a shelf assignment - delegates to assignment engine."""
-        self._assignment_engine.vote_for_shelf(album_id, shelf_name)
+        self._assignment_engine.upvote(album_id, shelf_name, type)
 
-    def get_album_shelf(self, album_id: str) -> str:
+    def get_shelf_name(self, album_id: str) -> str:
         """ Determine the shelf for an album. """
         try:
-            return self._assignment_engine.get_album_shelf(album_id, self._lock_manager)
+            return self._assignment_engine.get_shelf_name(album_id, self._lock_manager)
         except ShelfNotFoundException:
             raise
 
@@ -448,16 +421,21 @@ class ShelfManager:
         """Clear all votes and assignments for an album."""
         self._assignment_engine.clear_album(album_id)
 
-    def set_album_shelf(
+    def get_processor_type(self, album_id) -> Optional[int]:
+        """ Determine the processor type based on vote counts. """
+        return self._assignment_engine.get_processor_type(album_id)
+
+    def set_shelf_name(
             self,
             album_id: str,
             shelf_name: str,
-            lock: bool = False
+            lock: bool = False,
+            vote: bool = False,
     ) -> None:
         """
         Set the shelf for an album with optional locking.
         """
-        self._lock_manager.set_album_shelf(album_id, shelf_name, lock)
+        self._lock_manager.set_shelf_name(album_id, shelf_name, lock, vote)
 
     def lock(self, album_id: str) -> None:
         """Set the manual lock for an album's shelf assignment."""

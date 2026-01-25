@@ -110,7 +110,7 @@ class SetShelfActionTest(unittest.TestCase):
         self.actions.callback([obj])
 
         # Assert
-        mock_manager_instance.set_album_shelf.assert_called_with(
+        mock_manager_instance.set_shelf_name.assert_called_with(
                 album_id=album_id, shelf_name=shelf_name, lock=True,
         )
 

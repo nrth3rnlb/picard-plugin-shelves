@@ -70,9 +70,5 @@ class WorkflowEngine:
         if shelf_name == destination_shelf:
             return shelf_name
 
-        log.debug(
-                "Applying workflow transition: '%s' -> '%s'",
-                shelf_name,
-                destination_shelf,
-        )
+        log.debug("%s -> %s", shelf_name, destination_shelf)
         return destination_shelf
