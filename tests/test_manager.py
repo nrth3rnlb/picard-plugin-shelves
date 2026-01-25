@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from shelves import constants
 from shelves.manager import ShelfManager
+from shelves.processors import ProcessingType
 
 
 class ManagerTest(unittest.TestCase):
@@ -45,9 +46,9 @@ class ManagerTest(unittest.TestCase):
         # Arrange
         _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
         # pylint: disable=protected-access
-        ShelfManager().upvote(_album_id, "ShelfA", 1)
-        ShelfManager().upvote(_album_id, "ShelfB", 1)
-        ShelfManager().upvote(_album_id, "ShelfA", 1)
+        ShelfManager().upvote(_album_id, "ShelfA", ProcessingType.LOAD)
+        ShelfManager().upvote(_album_id, "ShelfB", ProcessingType.LOAD)
+        ShelfManager().upvote(_album_id, "ShelfA", ProcessingType.LOAD)
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
@@ -60,9 +61,9 @@ class ManagerTest(unittest.TestCase):
         """Test that get_shelf_name returns the correct winner."""
         _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
         # pylint: disable=protected-access
-        ShelfManager().upvote(_album_id, "ShelfB", 1)
-        ShelfManager().upvote(_album_id, "ShelfB", 1)
-        ShelfManager().upvote(_album_id, "ShelfA", 1)
+        ShelfManager().upvote(_album_id, "ShelfB", ProcessingType.LOAD)
+        ShelfManager().upvote(_album_id, "ShelfB", ProcessingType.ADD)
+        ShelfManager().upvote(_album_id, "ShelfA", ProcessingType.LOAD)
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
@@ -75,7 +76,7 @@ class ManagerTest(unittest.TestCase):
         """Test that clear_album removes all voting data for an album."""
         # mock_config.setting = self.test_configuration
         _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
-        ShelfManager().upvote(_album_id, "ShelfA", 1)
+        ShelfManager().upvote(_album_id, "ShelfA", ProcessingType.LOAD)
 
         # Verify _shelf_state exists
         # pylint: disable=protected-access

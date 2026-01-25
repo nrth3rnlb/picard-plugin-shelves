@@ -1,20 +1,25 @@
 """Module containing custom exceptions for the shelves package."""
+
 from pathlib import Path
 from typing import Optional
 
 
 class ShelfNotFoundException(Exception):
-    """ Represents an exception raised when a specific shelf name cannot be found in a given context. """
+    """Represents an exception raised when a specific shelf name cannot be found in a given context."""
 
     def __init__(
-            self,
-            album_id: Optional[str] = None,
-            message: Optional[str] = None,
-            *,
-            cause: Optional[BaseException] = None,
+        self,
+        album_id: Optional[str] = None,
+        message: Optional[str] = None,
+        *,
+        cause: Optional[BaseException] = None,
     ) -> None:
         if message is None:
-            message = "Shelf for the album%s cannot be determined." % f" '{album_id}'" if album_id else ""
+            message = (
+                "Shelf for the album%s cannot be determined." % f" '{album_id}'"
+                if album_id
+                else ""
+            )
         super().__init__(message)
         self.album_id = album_id
         self.cause = cause
@@ -25,26 +30,23 @@ class ShelfNotFoundException(Exception):
             return f"{base} (Cause: {self.cause!r})"
         return base
 
-    def to_dict(self) -> dict:
-        return {
-            "message" : str(self),
-            "album_id": self.album_id,
-            "cause"   : repr(self.cause) if self.cause else None,
-        }
-
 
 class ShelfNotDeterminableException(Exception):
-    """ Represents an exception raised when a shelf name cannot be determined from a given filepath. """
+    """Represents an exception raised when a shelf name cannot be determined from a given filepath."""
 
     def __init__(
-            self,
-            filepath: Optional[str | Path] = None,
-            message: Optional[str] = None,
-            *,
-            cause: Optional[BaseException] = None,
+        self,
+        filepath: Optional[str | Path] = None,
+        message: Optional[str] = None,
+        *,
+        cause: Optional[BaseException] = None,
     ) -> None:
         if message is None:
-            message = "No name for a shelf can be derived from the path%s." % f" '{filepath}'" if filepath else ""
+            message = (
+                "No name for a shelf can be derived from the path%s." % f" '{filepath}'"
+                if filepath
+                else ""
+            )
         super().__init__(message)
         self.filepath = filepath
         self.cause = cause
@@ -54,10 +56,3 @@ class ShelfNotDeterminableException(Exception):
         if self.cause:
             return f"{base} (Cause: {self.cause!r})"
         return base
-
-    def to_dict(self) -> dict:
-        return {
-            "message" : str(self),
-            "filepath": self.filepath,
-            "cause"   : repr(self.cause) if self.cause else None,
-        }

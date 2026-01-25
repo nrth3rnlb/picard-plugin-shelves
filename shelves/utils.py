@@ -4,16 +4,21 @@ Utility functions
 
 from __future__ import annotations
 
+import logging
 from gettext import gettext as _
 from pathlib import Path
 from typing import Any, Set, Tuple
 from warnings import deprecated
-import logging
 
 from picard import log
 from picard.script import ScriptParser
 
-from . import constants
+from .constants import (
+    ALBUM_INDICATORS,
+    INVALID_SHELF_NAME_CHARS,
+    INVALID_SHELF_NAMES,
+    TagKey,
+)
 from .exceptions import ShelfNotDeterminableException
 
 
@@ -37,9 +42,9 @@ def validate_shelf_names(shelf_names: set[str]) -> set[str]:
 
 
 @deprecated(
-        "Is only mandatory until version 1.7.0. As of version 2, the use of the tag has changed. The "
-        " function is used from version 2 to continue processing existing tags and will be removed in a later "
-        "version will be removed."
+    "Is only mandatory until version 1.7.0. As of version 2, the use of the tag has changed. The function is  "
+    "used from version 2 to continue processing existing tags and will be removed in a later version will be "
+    "removed."
 )
 def get_shelf_name_from_tag(tag_value: str) -> str:
     """
@@ -58,13 +63,7 @@ def get_shelf_name_from_tag(tag_value: str) -> str:
 
 
 def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
-    """
-    Extract the shelf name from a file_path.
-    :param file_path:
-    :param base_path:
-    :return:
-    """
-
+    """Extract the shelf name from a file_path."""
     try:
         if not file_path.is_relative_to(base_path):
             log.warning(_("Path '%s' is not under base directory."), file_path)
@@ -78,20 +77,15 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
 
     except (KeyError, ValueError, OSError) as e:
         log.error(
-                _("Error extracting shelf_name from file_path_str '%s': %s."),
-                file_path,
-                e,
+            _("Error extracting shelf_name from file_path_str '%s': %s."),
+            file_path,
+            e,
         )
         raise ShelfNotDeterminableException(filepath=file_path, cause=e)
 
 
 def validate_shelf_name(name: str) -> Tuple[bool, str]:
-    """
-    Validate a shelf name.
-
-    :param name:
-    :return:
-    """
+    """Validate a shelf name."""
     if not isinstance(name, str) or not name.strip():
         return False, _("Shelf name cannot be empty")
 
@@ -100,13 +94,11 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
     invalid_names_used = [
         name_used
         for name_used in shelf_name.split()
-        if name_used in constants.INVALID_SHELF_NAMES
+        if name_used in INVALID_SHELF_NAMES
     ]
     if invalid_names_used:
         hr_invalid_names_used = f"{', '.join(repr(c) for c in set(invalid_names_used))}"
-        hr_invalid_names = (
-            f"{', '.join(repr(c) for c in constants.INVALID_SHELF_NAMES)}"
-        )
+        hr_invalid_names = f"{', '.join(repr(c) for c in INVALID_SHELF_NAMES)}"
         return (
             False,
             f"Cannot use '{shelf_name}' as shelf name."
@@ -115,14 +107,12 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
         )
 
     invalid_chars_used = [
-        char_used
-        for char_used in shelf_name
-        if char_used in constants.INVALID_SHELF_NAME_CHARS
+        char_used for char_used in shelf_name if char_used in INVALID_SHELF_NAME_CHARS
     ]
     if invalid_chars_used:
         hr_invalid_chars_used = f"{', '.join(repr(c) for c in set(invalid_chars_used))}"
         hr_invalid_name_chars = (
-            f"{', '.join(repr(c) for c in constants.INVALID_SHELF_NAME_CHARS)}"
+            f"{', '.join(repr(c) for c in INVALID_SHELF_NAME_CHARS)}"
         )
         return (
             False,
@@ -134,16 +124,14 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
     invalid_tokens_used = [
         token_used
         for token_used in shelf_name.split()
-        if token_used.lower() in [token.lower() for token in constants.ALBUM_INDICATORS]
+        if token_used.lower() in [token.lower() for token in ALBUM_INDICATORS]
     ]
 
     if invalid_tokens_used:
         hr_invalid_tokens_used = (
             f"{', '.join(repr(c) for c in set(invalid_tokens_used))}"
         )
-        hr_invalid_name_tokens = (
-            f"{', '.join(repr(c) for c in constants.ALBUM_INDICATORS)}"
-        )
+        hr_invalid_name_tokens = f"{', '.join(repr(c) for c in ALBUM_INDICATORS)}"
         return (
             False,
             f"Cannot use '{shelf_name}' as shelf name."
@@ -152,34 +140,33 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
         )
 
     # TODO(#15): Decide if max length validation should be enforced
-    # if len(shelf_name) > constants.MAX_SHELF_NAME_LENGTH:
+    # if len(shelf_name) > MAX_SHELF_NAME_LENGTH:
     #     return (
     #         False,
     #         f"Cannot use '{shelf_name}' as shelf name."
     #         f" The name is too long with {len(shelf_name)} characters."
-    #         f" Maximum allowed is {constants.MAX_SHELF_NAME_LENGTH}.",
+    #         f" Maximum allowed is {MAX_SHELF_NAME_LENGTH}.",
     #     )
 
     # TODO(#16): Decide if max word count validation should be enforced
-    # if len(shelf_name.split()) > constants.MAX_WORD_COUNT:
+    # if len(shelf_name.split()) > MAX_WORD_COUNT:
     #     return (
     #         False,
     #         f"Cannot use '{shelf_name}' as shelf name."
     #         f" Shelf name is too long with {len(shelf_name.split())} words."
-    #         f" Maximum allowed is {constants.MAX_WORD_COUNT}.",
+    #         f" Maximum allowed is {MAX_WORD_COUNT}.",
     #     )
 
     return True, "Valid shelf name"
 
 
 def get_shelf_dirs(base_path: Path) -> Set[str]:
-    """
-
-    :return:
-    """
+    """Get a set of subdirectories in the given base path."""
     shelf_sub_dirs: Set[str] = set()
     try:
-        shelf_sub_dirs = set(entry.name for entry in base_path.iterdir() if entry.is_dir())
+        shelf_sub_dirs = set(
+            entry.name for entry in base_path.iterdir() if entry.is_dir()
+        )
 
     except (OSError, PermissionError) as e:
         log.error("Error scanning directory: %s", e)
@@ -187,7 +174,8 @@ def get_shelf_dirs(base_path: Path) -> Set[str]:
 
 
 def debug_track(track: Any):
-    if log.get_effective_level() != logging.DEBUG:
+    """Debug track object for logging."""
+    if log.get_effective_level() > logging.DEBUG:
         return
 
     log.debug("=" * 60)
@@ -198,15 +186,22 @@ def debug_track(track: Any):
     if hasattr(track, "metadata"):
         log.debug("✓\ttrack HAS metadata")
         log.debug("\tKeys: %s", sorted(list(track.metadata.keys())))
-        log.debug("\tconstants.TAG_KEY: %s", track.metadata.get(constants.TAG_KEY, "(not set)"))
-        log.debug("\tconstants.TAG_LOCKED_KEY: %s", track.metadata.get(constants.TAG_LOCKED_KEY, "(not set)"))
+        log.debug(
+            "\tTagKey.SHELF: %s",
+            track.metadata.get(TagKey.SHELF, "(not set)"),
+        )
+        log.debug(
+            "\tTagKey.SHELF_LOCKED: %s",
+            track.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
+        )
 
     log.debug("TRACK DEBUG END")
     log.debug("=" * 60)
 
 
 def debug_file(file: Any):
-    if log.get_effective_level() != logging.DEBUG:
+    """Debug file object for logging."""
+    if log.get_effective_level() > logging.DEBUG:
         return
 
     log.debug("=" * 60)
@@ -217,25 +212,19 @@ def debug_file(file: Any):
     if hasattr(file, "metadata"):
         log.debug("✓\tfile HAS metadata")
         log.debug("\tKeys: %s", sorted(list(file.metadata.keys())))
-        log.debug("\tconstants.TAG_KEY: %s", file.metadata.get(constants.TAG_KEY, "(not set)"))
-        log.debug("\tconstants.TAG_LOCKED_KEY: %s", file.metadata.get(constants.TAG_LOCKED_KEY, "(not set)"))
+        log.debug("\tTagKey.SHELF: %s", file.metadata.get(TagKey.SHELF, "(not set)"))
+        log.debug(
+            "\tTagKey.SHELF_LOCKED: %s",
+            file.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
+        )
 
     log.debug("FILE DEBUG END")
     log.debug("=" * 60)
 
 
 def debug_parser(parser: ScriptParser):
-    """
-    Debugs the internal state of a `ScriptParser` object and retrieves relevant
-    information about its attributes and context. Outputs debug logs about the
-    state and structure of the passed `parser` object.
-
-    :param parser: The `ScriptParser` object to debug.
-    :type parser: ScriptParser
-    :return: A debug status message.
-    :rtype: str
-    """
-    if log.get_effective_level() != logging.DEBUG:
+    """Debugs the internal state of a `ScriptParser` object."""
+    if log.get_effective_level() > logging.DEBUG:
         return
 
     log.debug("=" * 60)
@@ -249,15 +238,27 @@ def debug_parser(parser: ScriptParser):
     if hasattr(parser.file, "metadata"):
         log.debug("✓\tparser.file HAS metadata")
         log.debug("\tKeys: %s", sorted(list(parser.file.metadata.keys())))
-        log.debug("\tconstants.TAG_KEY: %s", parser.file.metadata.get(constants.TAG_KEY, "(not set)"))
-        log.debug("\tconstants.TAG_LOCKED_KEY: %s", parser.file.metadata.get(constants.TAG_LOCKED_KEY, "(not set)"))
+        log.debug(
+            "\tTagKey.SHELF: %s",
+            parser.file.metadata.get(TagKey.SHELF, "(not set)"),
+        )
+        log.debug(
+            "\tTagKey.SHELF_LOCKED: %s",
+            parser.file.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
+        )
 
     # What is parser.context?
     if hasattr(parser, "context"):
         log.debug("✓\tparser HAS context")
         log.debug("\tKeys: %s", sorted(list(parser.context.keys())))
-        log.debug("\tconstants.TAG_KEY: %s", parser.context.get(constants.TAG_KEY, "(not set)"))
-        log.debug("\tconstants.TAG_LOCKED_KEY: %s", parser.context.get(constants.TAG_LOCKED_KEY, "(not set)"))
+        log.debug(
+            "\tTagKey.SHELF: %s",
+            parser.context.get(TagKey.SHELF, "(not set)"),
+        )
+        log.debug(
+            "\tTagKey.SHELF_LOCKED: %s",
+            parser.context.get(TagKey.SHELF_LOCKED, "(not set)"),
+        )
 
     log.debug("PARSER DEBUG END")
     log.debug("=" * 60)
@@ -273,11 +274,11 @@ def squeeze_the_parser(parser: ScriptParser) -> tuple[str, str]:
     metadata_shelf: str = ""
     context_shelf: str = ""
     if hasattr(parser.file, "metadata"):
-        metadata_shelf = parser.file.metadata.get(constants.TAG_KEY)
+        metadata_shelf = parser.file.metadata.get(TagKey.SHELF)
         metadata_shelf = get_shelf_name_from_tag(metadata_shelf)
         log.debug("metadata_shelf = %s", metadata_shelf)
     if hasattr(parser, "context"):
-        context_shelf = parser.context.get(constants.TAG_KEY)
+        context_shelf = parser.context.get(TagKey.SHELF)
         context_shelf = get_shelf_name_from_tag(context_shelf)
         log.debug("context_shelf = %s", context_shelf)
     return context_shelf, metadata_shelf

@@ -24,10 +24,10 @@ from .actions import (
     ShelfActionDetermine as _ShelfActionDetermine,
 )
 from .actions import (
-    ShelfActionToggleLock as _ShelfActionToggleLock,
+    ShelfActionSet as _ShelfActionSet,
 )
 from .actions import (
-    ShelfActionSet as _ShelfActionSet,
+    ShelfActionToggleLock as _ShelfActionToggleLock,
 )
 from .options import OptionsPage as _ShelvesOptionsPageBase
 from .processors import get_default_processors
@@ -40,12 +40,11 @@ PLUGIN_NAME = "Shelves"
 PLUGIN_AUTHOR = "nrth3rnlb"
 # noinspection PyUnusedName
 PLUGIN_DESCRIPTION = """
-The **Shelves** plugin adds virtual shelf_name management to MusicBrainz Picard, allowing you to organise your music 
-files
-by top-level folders (shelves) in your music library.
+The **Shelves** plugin adds virtual shelf_name management to MusicBrainz Picard, allowing you to
+organise your music files by top-level folders (shelves) in your music library.
 
-Think of your music library as a physical library with different shelves — one for your standard collection,
-one for incoming/unprocessed music, one for Christmas music, etc.
+Think of your music library as a physical library with different shelves — one for your standard
+collection, one for incoming/unprocessed music, one for Christmas music, etc.
 
 ## Features
 
@@ -65,16 +64,6 @@ PLUGIN_API_VERSIONS = ["2.0"]
 PLUGIN_LICENSE = "GPL-2.0-or-later"
 # noinspection PyUnusedName
 PLUGIN_LICENSE_URL = "https://www.gnu.org/licenses/gpl-2.0.html"
-
-
-class Shelf():
-    """Represents a music shelf with a name and lock status."""
-    name: str
-    locked: bool = False
-
-    def __init__(self, name: str, locked: bool = False):
-        self.name = name
-        self.locked = locked
 
 
 class ShelvesOptionsPage(_ShelvesOptionsPageBase):
@@ -107,30 +96,36 @@ def func_shelf(parser: Any) -> Optional[str]:
 
 # Wrapper functions that pass shelf_manager to processors
 def _file_post_load_processor_wrapper(file: Any) -> None:
-    """ Wrapper for file_post_load_processor. """
+    """Wrapper for file_post_load_processor."""
     _get_shelf_processors().file_post_load_processor(file=file)
 
 
 def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
-    _get_shelf_processors().file_post_addition_to_track_processor(track=track, file=file)
+    _get_shelf_processors().file_post_addition_to_track_processor(
+        track=track, file=file
+    )
 
 
 def _track_metadata_processor_wrapper(
-        album: Any,
-        metadata: Dict[str, Any],
-        track: Any,
-        release: Any,
+    album: Any,
+    metadata: Dict[str, Any],
+    track: Any,
+    release: Any,
 ) -> None:
     """Wrapper for track_metadata_processor."""
     log.debug("TrackMetadataProcessor:")
-    _get_shelf_processors().track_metadata_processor(album=album, metadata=metadata, track=track, release=release)
+    _get_shelf_processors().track_metadata_processor(
+        _album=album, metadata=metadata, _track=track, _release=release
+    )
 
 
 def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
     log.debug("PostRemovalFromTrackProcessor")
-    _get_shelf_processors().file_post_removal_from_track_processor(track=track, file=file)
+    _get_shelf_processors().file_post_removal_from_track_processor(
+        track=track, file=file
+    )
 
 
 # Register metadata processors

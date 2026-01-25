@@ -1,6 +1,14 @@
-from picard import config, log
+"""
+Workflow engine for managing shelf transitions based on predefined stages and conditions.
 
-from . import constants
+This module provides a class `WorkflowEngine` that manages workflow transitions for shelf names.
+The workflow determines the transition rules and destination shelves based on predefined stages
+and conditions. The class ensures that transitions only occur when the workflow is enabled,
+and specific configuration keys are present and valid.
+"""
+
+from constants import ConfigKey
+from picard import config, log
 
 
 class WorkflowEngine:
@@ -14,14 +22,14 @@ class WorkflowEngine:
     The class ensures that transitions only occur when the workflow is enabled,
     and specific configuration keys are present and valid.
 
-    :ivar CONFIG_WORKFLOW_ENABLED_KEY: Key to check if workflow is enabled.
-    :type CONFIG_WORKFLOW_ENABLED_KEY: str
-    :ivar CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: Key for the first stage shelves in the workflow.
-    :type CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: str
-    :ivar CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: Key for the second stage shelves in the workflow.
-    :type CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: str
-    :ivar CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: Key indicating whether non-shelf items are part of stage 1.
-    :type CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: str
+    :ivar WORKFLOW_ENABLED: Key to check if workflow is enabled.
+    :type WORKFLOW_ENABLED: str
+    :ivar WORKFLOW_STAGE_1_SHELVES: Key for the first stage shelves in the workflow.
+    :type WORKFLOW_STAGE_1_SHELVES: str
+    :ivar WORKFLOW_STAGE_2_SHELVES: Key for the second stage shelves in the workflow.
+    :type WORKFLOW_STAGE_2_SHELVES: str
+    :ivar STAGE_1_INCLUDES_NON_SHELVES: Key indicating whether non-shelf items are part of stage 1.
+    :type STAGE_1_INCLUDES_NON_SHELVES: str
     """
 
     @staticmethod
@@ -38,19 +46,17 @@ class WorkflowEngine:
             return shelf_name
 
         # noinspection PyTypeHints
-        if not config.setting[constants.CONFIG_WORKFLOW_ENABLED_KEY]:
+        if not config.setting[ConfigKey.WORKFLOW_ENABLED]:
             return shelf_name
 
         # noinspection PyTypeHints
-        stage_1_includes_unknown = config.setting[
-            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
-        ]
+        stage_1_includes_unknown = config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES]
         # noinspection PyTypeHints
-        workflow_known_shelves = config.setting[constants.CONFIG_KNOWN_SHELVES_KEY]
+        workflow_known_shelves = config.setting[ConfigKey.KNOWN_SHELVES]
         # noinspection PyTypeHints
-        workflow_stage_1 = config.setting[constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
+        workflow_stage_1 = config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
         # noinspection PyTypeHints
-        workflow_stage_2 = config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+        workflow_stage_2 = config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
 
         if not workflow_stage_2:
             return shelf_name

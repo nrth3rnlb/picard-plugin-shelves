@@ -1,3 +1,7 @@
+"""
+Custom QListWidget that supports limiting the number of items it can contain.
+"""
+
 from typing import Optional
 
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -12,9 +16,9 @@ class QShelvesWidget(QtWidgets.QListWidget):
     _max_item_count: int = UNLIMITED
 
     def __init__(
-            self,
-            parent: Optional[QtWidgets.QWidget] = None,
-            max_count: int = UNLIMITED,
+        self,
+        parent: Optional[QtWidgets.QWidget] = None,
+        max_count: int = UNLIMITED,
     ):
         super().__init__(parent)
 
@@ -24,12 +28,7 @@ class QShelvesWidget(QtWidgets.QListWidget):
 
     @property
     def max_item_count(self):
-        """
-        Gets the maximum item count allowed.
-
-        :return: The maximum number of items permitted.
-        :rtype: int
-        """
+        """Gets the maximum item count allowed."""
         return (
             self.UNLIMITED
             if self._max_item_count == self.UNLIMITED
@@ -38,15 +37,7 @@ class QShelvesWidget(QtWidgets.QListWidget):
 
     @max_item_count.setter
     def max_item_count(self, value: int):
-        """
-        Sets the maximum number of items that are allowed.
-
-        :param value: The maximum count of items to be set. Must be an integer and comply with
-            the constraints of the system.
-        :type value: int
-        :return: None
-        :rtype: None
-        """
+        """Sets the maximum number of items that are allowed."""
         normalized = max(0, int(value))
         if normalized == self._max_item_count:
             return
@@ -55,13 +46,7 @@ class QShelvesWidget(QtWidgets.QListWidget):
         self._update_drop_acceptance()
 
     def dropEvent(self, event: Optional[QtGui.QDropEvent]) -> None:
-        """
-
-        :param event:
-        :type event:
-        :return:
-        :rtype:
-        """
+        """Handles the drop event for items into the widget."""
         if not event:
             return
 
@@ -94,6 +79,6 @@ class QShelvesWidget(QtWidgets.QListWidget):
     def _update_drop_acceptance(self) -> None:
         # 0 means "unlimited"
         self.setAcceptDrops(
-                self.max_item_count <= self.UNLIMITED
-                or self.count() <= self.max_item_count,
+            self.max_item_count <= self.UNLIMITED
+            or self.count() <= self.max_item_count,
         )

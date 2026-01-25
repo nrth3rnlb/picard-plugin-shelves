@@ -12,35 +12,20 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from enum import IntEnum
 from pathlib import Path
 from typing import Any, Dict, Optional
+from warnings import deprecated
 
 from picard import log
 from picard.file import File
 from picard.track import Track
 
-from . import constants, utils
-from .workflow import WorkflowEngine
-from .manager import ShelfManager
+from . import utils
+from .constants import TagKey
 from .exceptions import ShelfNotFoundException
-
-REMOVE = 10
-ADD = 20
-SAVE = 30
-LOAD = 40
-
-_type_to_name = {
-    REMOVE: 'REMOVE',
-    ADD   : 'ADD',
-    SAVE  : 'SAVE',
-    LOAD  : 'LOAD',
-}
-_name_to_type = {
-    'REMOVE': REMOVE,
-    'ADD'   : ADD,
-    'SAVE'  : SAVE,
-    'LOAD'  : LOAD,
-}
+from .manager import ShelfManager
+from .workflow import WorkflowEngine
 
 
 @dataclass
@@ -50,9 +35,10 @@ class ProcessingContext:
 
     Contains all information needed to determine shelf assignment.
     """
+
     # TODO tidy up
     # metadata: Dict[str, Any]
-    processor_type: int
+    processing_type: ProcessingType
     # trigger: str
     album_id: str
     # file: Any
@@ -78,6 +64,16 @@ class ProcessingContext:
         return self.name_from_tag not in shelf_names
 
 
+@dataclass
+class ProcessingType(IntEnum):
+    """Processing types for shelf processing strategies."""
+
+    REMOVE = 10
+    ADD = 20
+    SAVE = 30
+    LOAD = 40
+
+
 class ShelfStrategy(ABC):
     """
     Base class for shelf processing strategies.
@@ -96,47 +92,36 @@ class ShelfStrategy(ABC):
 
     @abstractmethod
     def should_apply(self, context: ProcessingContext) -> bool:
-        """
-        Check if this strategy should be applied.
-
-        :param context: Processing context with file/track data.
-        :return: True if strategy should be applied.
-        """
+        """Check if this strategy should be applied."""
         pass
 
     @abstractmethod
     def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
-        """
-        Get the shelf name to assign.
-
-        :param context: Processing context with file/track data.
-        :return: Shelf name or None.
-        """
+        """Get the shelf name to assign."""
         pass
 
-    def should_lock(self) -> bool:
+    @staticmethod
+    def should_lock() -> bool:
         """Whether this strategy should lock the shelf assignment."""
         return False
 
-    def should_unlock(self) -> bool:
+    @staticmethod
+    def should_unlock() -> bool:
         """Whether this strategy should unlock the shelf assignment."""
         return False
 
-    def should_upvote(self) -> bool:
+    @staticmethod
+    def should_upvote() -> bool:
         """Whether this strategy should vote."""
         return False
 
-    def should_downvote(self) -> bool:
+    @staticmethod
+    def should_downvote() -> bool:
         """Whether this strategy should downvote a shelf assignment."""
         return False
 
     def process(self, context: ProcessingContext) -> bool:
-        """
-        Process the shelf assignment if this strategy applies.
-
-        :param context: Processing context with file/track data.
-        :return: True if strategy was applied, False otherwise.
-        """
+        """Process the shelf assignment if this strategy applies."""
 
         if not self.should_apply(context):
             return False
@@ -146,41 +131,31 @@ class ShelfStrategy(ABC):
         if not shelf_name:
             return False
 
-        # Avoid duplicate votes:
-        # When adding, '.file_post_load_processor' and '.file_post_addition_to_track_processor' run
-        # run one after the other, which leads to a doubling of the votes.
-        # However, we must take both processors into account.
-        # log.debug(
-        #         "Trigger: %s, %s.%s", context.trigger, ShelfProcessors.__name__,
-        #         ShelfProcessors.file_post_load_processor.__name__
-        # )
-        log.debug('type: %s', _type_to_name[context.processor_type])
-
-        # disable_voting = False
-        # if context.trigger != (f'{ShelfProcessors.__name__}.'
-        #                        f'{ShelfProcessors.file_post_load_processor.__name__}'):
-        #     disable_voting = True
+        log.debug("type: %s", context.processing_type)
 
         # WorkflowEngine.apply_transition() returns the original shelf name if no transition is needed
         shelf_name = WorkflowEngine.apply_transition(shelf_name=shelf_name)
-        processor_type = self.manager.get_processor_type(album_id=context.album_id)
-        if context.processor_type == LOAD:
+        processing_type = self.manager.get_processing_type(album_id=context.album_id)
+        if context.processing_type == ProcessingType.LOAD:
             self.manager.upvote(
-                    album_id=context.album_id,
-                    shelf_name=shelf_name,
-                    type=context.processor_type
+                album_id=context.album_id,
+                shelf_name=shelf_name,
+                processing_type=context.processing_type,
             )
-        if context.processor_type == ADD and processor_type != LOAD:
+        if (
+            context.processing_type == ProcessingType.ADD
+            and processing_type != ProcessingType.LOAD
+        ):
             self.manager.upvote(
-                    album_id=context.album_id,
-                    shelf_name=shelf_name,
-                    type=context.processor_type
+                album_id=context.album_id,
+                shelf_name=shelf_name,
+                processing_type=context.processing_type,
             )
-        if context.processor_type == REMOVE:
+        if context.processing_type == ProcessingType.REMOVE:
             self.manager.downvote(
-                    album_id=context.album_id,
-                    shelf_name=shelf_name,
-                    type=context.processor_type
+                album_id=context.album_id,
+                shelf_name=shelf_name,
+                processing_type=context.processing_type,
             )
         if self.should_lock():
             self.manager.lock(album_id=context.album_id)
@@ -188,89 +163,70 @@ class ShelfStrategy(ABC):
         return True
 
 
-class KnownNameFromPathStrategy(ShelfStrategy):
-    """Strategy: Known shelf name found in file path (highest priority)."""
+class KnownIdenticalNames(ShelfStrategy):
+    """
+    Strategy: Matching shelf names in path and tag.
+
+    When the shelf name found in the file path is the same as the shelf name specified in the tag,
+    no further action is required.
+    """
 
     def should_apply(self, context: ProcessingContext) -> bool:
-        return context.is_known_name_from_path(self.manager.shelf_names)
+        return (
+            context.is_known_name_from_tag(self.manager.shelf_names)
+            and context.is_known_name_from_path(self.manager.shelf_names)
+            and context.name_from_tag == context.name_from_path
+        )
+
+    def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
+        return context.name_from_tag
+
+
+class KnownNameFromPath(ShelfStrategy):
+    """
+    Strategy: The shelf name detected in the file path does not match the shelf name indicated
+    by the tag.
+
+    The name of the shelf within the file's path is recognized and contrasts with the name present
+    in the tag.
+
+    This situation addresses the following scenario:
+    The album has been relocated outside of the Picard application. This event warrants the
+    utmost urgency.
+    """
+
+    def should_apply(self, context: ProcessingContext) -> bool:
+        return (
+            context.is_known_name_from_path(self.manager.shelf_names)
+            and context.name_from_tag != context.name_from_path
+        )
 
     def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_path
 
-    def should_lock(self) -> bool:
-        return True
 
-
-class IdenticalNameAndPathStrategy(ShelfStrategy):
-    """
-    Strategy: Known and identical shelf name from path and tag.
-
-    Der Name des Regals im Pfad und der Name des Regals im Tag sind identisch.
-    Wen das der Fall ist, dann muss nichts weiter entschieden werden.
-    """
-
-    def should_apply(self, context: ProcessingContext) -> bool:
-        return (
-                context.is_known_name_from_tag(self.manager.shelf_names) and
-                context.is_known_name_from_path(self.manager.shelf_names)
-                and context.name_from_tag == context.name_from_path
-        )
-
-    def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
-        return context.name_from_tag
-
-    def should_lock(self) -> bool:
-        return False
-
-
-class KnownNameFromTagAndLockedStrategy(ShelfStrategy):
-    """Strategy: Known shelf name from tag with manual suffix."""
-
-    def should_apply(self, context: ProcessingContext) -> bool:
-        return (
-                context.is_known_name_from_tag(self.manager.shelf_names)
-                and context.is_locked
-        )
-
-    def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
-        return context.name_from_tag
-
-
-class KnownNameFromTagStrategy(ShelfStrategy):
-    """Strategy: Known shelf name from tag (without manual suffix)."""
-
-    def should_apply(self, context: ProcessingContext) -> bool:
-        return context.is_known_name_from_tag(self.manager.shelf_names)
-
-    def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
-        return context.name_from_tag
-
-
-class UnknownNameFromTagStrategy(ShelfStrategy):
+class UnknownNameFromTag(ShelfStrategy):
     """Strategy: Unknown shelf name from tag, use path instead."""
 
     def should_apply(self, context: ProcessingContext) -> bool:
-        return context.is_unknown_name_from_tag(self.manager.shelf_names)
+        return context.name_from_tag != "" and context.is_unknown_name_from_tag(
+            self.manager.shelf_names
+        )
 
     def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_path
 
-    def should_upvote(self) -> bool:
-        return True
 
-
-class UnknownNameFromPathStrategy(ShelfStrategy):
-    """Strategy: Unknown shelf name from path (voting mode)."""
+class UnknownNameFromPath(ShelfStrategy):
+    """Strategy: Unknown shelf name from path."""
 
     def should_apply(self, context: ProcessingContext) -> bool:
-        # Since an empty name is not a name, it is neither known nor unknown.
-        return self.manager.shelf_names != "" and context.is_unknown_name_from_path(self.manager.shelf_names)
+        return context.name_from_path != "" and context.is_unknown_name_from_path(
+            self.manager.shelf_names
+        )
 
     def get_shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_path
-
-    def should_upvote(self) -> bool:
-        return True
 
 
 class ShelfProcessors:
@@ -289,30 +245,17 @@ class ShelfProcessors:
         """
         self.manager = manager or ShelfManager()
         self.strategies = [
-            IdenticalNameAndPathStrategy(self.manager),
-            KnownNameFromPathStrategy(self.manager),
-            KnownNameFromTagAndLockedStrategy(self.manager),
-            KnownNameFromTagStrategy(self.manager),
-            UnknownNameFromTagStrategy(self.manager),
-            UnknownNameFromPathStrategy(self.manager),
+            KnownIdenticalNames(self.manager),
+            KnownNameFromPath(self.manager),
+            UnknownNameFromTag(self.manager),
+            UnknownNameFromPath(self.manager),
         ]
-
-    @staticmethod
-    def set_metadata(obj: Any, key: str, value: Any, label: str) -> None:
-        """Safely sets metadata on a Picard object."""
-        meta = getattr(obj, "metadata", None)
-        filename = getattr(obj, "filename", "")
-        if meta is None:
-            log.debug("%s metadata missing for: %s", label, filename)
-            return
-        try:
-            meta[key] = value
-        except TypeError as e:
-            log.debug("Failed to set %s metadata for: %s; %s", label, filename, e)
 
     def file_post_load_processor(self, file: File) -> None:
         """Process a file after Picard has scanned it."""
-        context = self.build_processing_context_by_file(processor_type=LOAD, file=file)
+        context = self.build_processing_context_by_file(
+            processing_type=ProcessingType.LOAD, file=file
+        )
         if not context:
             return
         # Apply strategies in priority order
@@ -324,10 +267,14 @@ class ShelfProcessors:
                 break
 
     def file_post_addition_to_track_processor(
-            self, track: Track, file: File,
+        self,
+        track: Track,
+        file: File,
     ) -> None:
         """Process a file after it has been added to a track."""
-        context = self.build_processing_context_by_file_and_track(processor_type=ADD, track=track, file=file)
+        context = self.build_processing_context_by_file(
+            processing_type=ProcessingType.ADD, file=file
+        )
         if not context:
             return
         # Apply strategies in priority order
@@ -340,7 +287,9 @@ class ShelfProcessors:
 
     def file_post_removal_from_track_processor(self, track: Track, file: File) -> None:
         """Process a file after it has been removed from a track."""
-        context = self.build_processing_context_by_file_and_track(processor_type=REMOVE, track=track, file=file)
+        context = self.build_processing_context_by_file(
+            processing_type=ProcessingType.REMOVE, file=file
+        )
         if not context:
             return
         # Apply strategies in priority order
@@ -350,7 +299,9 @@ class ShelfProcessors:
 
     def file_post_save_processor(self, file: File) -> None:
         """Process a file after it has been saved."""
-        context = self.build_processing_context_by_file(processor_type=SAVE, file=file)
+        context = self.build_processing_context_by_file(
+            processing_type=ProcessingType.SAVE, file=file
+        )
         if not context:
             return
         # Apply strategies in priority order
@@ -359,14 +310,14 @@ class ShelfProcessors:
                 break
 
     def track_metadata_processor(
-            self,
-            album: Optional[Any],
-            metadata: Dict[str, Any],
-            track: Optional[Any],
-            release: Optional[Any],
+        self,
+        _album: Optional[Any],
+        metadata: Dict[str, Any],
+        _track: Optional[Any],
+        _release: Optional[Any],
     ) -> None:
         """Set a shelf name in track metadata from album's shelf assignment."""
-        album_id = metadata.get(constants.MUSICBRAINZ_ALBUMID)
+        album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID)
         if not album_id:
             return
         try:
@@ -375,90 +326,101 @@ class ShelfProcessors:
             log.warning("Failed to determine shelf name for album ID '%s'", album_id)
             return
 
-        metadata[constants.TAG_KEY] = WorkflowEngine.apply_transition(shelf_name=shelf_name)
-        metadata[constants.TAG_LOCKED_KEY] = self.manager.is_locked(album_id=album_id)
+        metadata[TagKey.SHELF] = WorkflowEngine.apply_transition(shelf_name=shelf_name)
+        metadata[TagKey.SHELF_LOCKED] = self.manager.is_locked(album_id=album_id)
 
-        log.debug("shelf name: %s, locked: %s", metadata[constants.TAG_KEY], metadata[constants.TAG_LOCKED_KEY])
+        log.debug(
+            "shelf name: %s, locked: %s",
+            metadata[TagKey.SHELF],
+            metadata[TagKey.SHELF_LOCKED],
+        )
 
-    def build_processing_context_by_file(self, processor_type: int, file: File) -> Optional[ProcessingContext]:
-        """ Build processing context from file """
-        # utils.debug_file(file)
+    def build_processing_context_by_file(
+        self, processing_type: ProcessingType, file: File
+    ) -> Optional[ProcessingContext]:
+        """Build processing context from file"""
+        utils.debug_file(file)
 
         file_meta = getattr(file, "metadata", None)
         if not file_meta:
             return None
 
-        album_id = file_meta.get(constants.MUSICBRAINZ_ALBUMID)
+        album_id = file_meta.get(TagKey.MUSICBRAINZ_ALBUMID)
         if not album_id:
             return None
 
         # Extract shelf name from path
         name_from_path = utils.get_shelf_name_from_path(
-                file_path=Path(file.filename), base_path=self.manager.base_path,
+            file_path=Path(file.filename),
+            base_path=self.manager.base_path,
         )
 
-        name_from_tag_file = file_meta.get(constants.TAG_KEY, None)
+        name_from_tag_file = file_meta.get(TagKey.SHELF, None)
         name_from_tag_file = utils.get_shelf_name_from_tag(name_from_tag_file)
-        is_locked_file = file_meta.get(constants.TAG_LOCKED_KEY, None)
+        is_locked_file = file_meta.get(TagKey.SHELF_LOCKED, None)
 
         log.debug(
-                f"file: {file.filename}, album_id: {album_id}, name_from_path: "
-                f"{name_from_path}, name_from_tag: {name_from_tag_file}, is_locked: {is_locked_file}"
+            f"file: {file.filename}, album_id: {album_id}, name_from_path: "
+            f"{name_from_path}, name_from_tag: {name_from_tag_file}, is_locked: {is_locked_file}"
         )
 
         return ProcessingContext(
-                processor_type=processor_type,
-                album_id=album_id,
-                name_from_path=name_from_path,
-                name_from_tag=name_from_tag_file,
-                is_locked=is_locked_file
+            processing_type=processing_type,
+            album_id=album_id,
+            name_from_path=name_from_path,
+            name_from_tag=name_from_tag_file,
+            is_locked=is_locked_file,
         )
 
-    def build_processing_context_by_file_and_track(self, processor_type: int, track: Track, file: File) -> Optional[
-        ProcessingContext]:
+    @deprecated(
+        "I'm not quite sure yet, but I think we can ignore the files per track."
+    )
+    def build_processing_context_by_file_and_track(
+        self, processing_type: ProcessingType, track: Track, _file: File
+    ) -> Optional[ProcessingContext]:
         """
         Build a processing context for a file based on its metadata and the track it belongs to.
         """
-        processing_context_file = self.build_processing_context_by_file(processor_type=processor_type, file=file)
-        if processing_context_file:
-            return processing_context_file
-
-        # TODO: I'm not quite sure yet, but I think we can ignore the files per track. Wenn dem so ist, dann
-        # utils.debug_track(track)
+        utils.debug_track(track)
         track_meta = getattr(track, "metadata", None)
         if not track_meta:
             return None
 
-        album_id = track_meta.get(constants.MUSICBRAINZ_ALBUMID)
+        album_id = track_meta.get(TagKey.MUSICBRAINZ_ALBUMID)
         if not album_id:
             return None
 
         names_from_path: set[str] = set()
         for file_by_track in track.files:
-            log.debug('file_by_track: %s', file_by_track.filename)  # Extract shelf name from path
+            log.debug(
+                "file_by_track: %s", file_by_track.filename
+            )  # Extract shelf name from path
             names_from_path.union(
-                    utils.get_shelf_name_from_path(
-                            file_path=Path(file_by_track.filename), base_path=self.manager.base_path,
-                    )
+                utils.get_shelf_name_from_path(
+                    file_path=Path(file_by_track.filename),
+                    base_path=self.manager.base_path,
+                )
             )
 
-        name_from_tag = track_meta.get(constants.TAG_KEY, None)
+        name_from_tag = track_meta.get(TagKey.SHELF, None)
         name_from_tag = utils.get_shelf_name_from_tag(name_from_tag)
-        is_locked = track_meta.get(constants.TAG_LOCKED_KEY, None)
+        is_locked = track_meta.get(TagKey.SHELF_LOCKED, None)
 
         log.debug(
-                f"Processing track: {track_meta['title']}, album_id: {album_id}, name_from_path: "
-                f"{names_from_path}, name_from_tag: {name_from_tag}, is_locked: {is_locked}"
+            f"Processing track: {track_meta['title']}, album_id: {album_id}, name_from_path: "
+            f"{names_from_path}, name_from_tag: {name_from_tag}, is_locked: {is_locked}"
         )
 
-        name_from_path = set(names_from_path).pop() if len(names_from_path) == 1 else "multiple"
+        name_from_path = (
+            set(names_from_path).pop() if len(names_from_path) == 1 else "multiple"
+        )
 
         return ProcessingContext(
-                processor_type=processor_type,
-                album_id=album_id,
-                name_from_path=name_from_path,
-                name_from_tag=name_from_tag,
-                is_locked=is_locked,
+            processing_type=processing_type,
+            album_id=album_id,
+            name_from_path=name_from_path,
+            name_from_tag=name_from_tag,
+            is_locked=is_locked,
         )
 
 
