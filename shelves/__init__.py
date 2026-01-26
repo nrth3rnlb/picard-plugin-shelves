@@ -103,20 +103,20 @@ def _file_post_load_processor_wrapper(file: Any) -> None:
 def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
     _get_shelf_processors().file_post_addition_to_track_processor(
-        track=track, file=file
+            track=track, file=file
     )
 
 
 def _track_metadata_processor_wrapper(
-    album: Any,
-    metadata: Dict[str, Any],
-    track: Any,
-    release: Any,
+        album: Any,
+        metadata: Dict[str, Any],
+        track: Any,
+        release: Any,
 ) -> None:
     """Wrapper for track_metadata_processor."""
     log.debug("TrackMetadataProcessor:")
     _get_shelf_processors().track_metadata_processor(
-        _album=album, metadata=metadata, _track=track, _release=release
+            _album=album, metadata=metadata, _track=track, _release=release
     )
 
 
@@ -124,7 +124,7 @@ def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
     log.debug("PostRemovalFromTrackProcessor")
     _get_shelf_processors().file_post_removal_from_track_processor(
-        track=track, file=file
+            track=track, file=file
     )
 
 

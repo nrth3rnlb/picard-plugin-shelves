@@ -8,11 +8,11 @@ class ShelfNotFoundException(Exception):
     """Represents an exception raised when a specific shelf name cannot be found in a given context."""
 
     def __init__(
-        self,
-        album_id: Optional[str] = None,
-        message: Optional[str] = None,
-        *,
-        cause: Optional[BaseException] = None,
+            self,
+            album_id: Optional[str] = None,
+            message: Optional[str] = None,
+            *,
+            cause: Optional[BaseException] = None,
     ) -> None:
         if message is None:
             message = (
@@ -35,11 +35,11 @@ class ShelfNotDeterminableException(Exception):
     """Represents an exception raised when a shelf name cannot be determined from a given filepath."""
 
     def __init__(
-        self,
-        filepath: Optional[str | Path] = None,
-        message: Optional[str] = None,
-        *,
-        cause: Optional[BaseException] = None,
+            self,
+            filepath: Optional[str | Path] = None,
+            message: Optional[str] = None,
+            *,
+            cause: Optional[BaseException] = None,
     ) -> None:
         if message is None:
             message = (

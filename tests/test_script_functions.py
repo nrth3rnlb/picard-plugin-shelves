@@ -2,8 +2,8 @@ import unittest
 from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
-from shelves import constants
 from shelves.script_functions import shelf
+from typings import ConfigKey
 
 
 class AttrDict(dict):
@@ -18,12 +18,12 @@ class ScriptFunctionsTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment"""
         self.test_configuration = {
-            constants.CONFIG_MOVE_FILES_TO_KEY               : "/home/foobar/music",
-            constants.CONFIG_WORKFLOW_ENABLED_KEY            : True,
-            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: False,
-            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY    : ["Incoming"],
-            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY    : ["Standard"],
-            constants.CONFIG_KNOWN_SHELVES_KEY               : ["Incoming", "Standard", "Stash", "Live"],
+            ConfigKey.MOVE_FILES_TO               : "/home/foobar/music",
+            ConfigKey.WORKFLOW_ENABLED            : True,
+            ConfigKey.STAGE_1_INCLUDES_NON_SHELVES: False,
+            ConfigKey.WORKFLOW_STAGE_1_SHELVES    : ["Incoming"],
+            ConfigKey.WORKFLOW_STAGE_2_SHELVES    : ["Standard"],
+            ConfigKey.KNOWN_SHELVES               : ["Incoming", "Standard", "Stash", "Live"],
         }
 
     @patch("shelves.workflow.config")
@@ -43,7 +43,7 @@ class ScriptFunctionsTest(unittest.TestCase):
         # Arrange
         # mock_manager_instance = MagicMock()
         # mock_manager.return_value = mock_manager_instance
-        # mock_manager_instance.get_shelf_name.side_effect = ShelfNotFoundException()
+        # mock_manager_instance.resolve_shelf_name.side_effect = ShelfNotFoundException()
         unknown_shelf = "Possim laboris accusam"
         mock_config.setting = deepcopy(self.test_configuration)
         parser = MagicMock()
@@ -53,13 +53,13 @@ class ScriptFunctionsTest(unittest.TestCase):
 
         # Act
         for includes in [True, False]:
-            mock_config.setting[constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (
+            mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = (
                 includes
             )
             with self.subTest(
-                    msg=constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY,
+                    msg=ConfigKey.WORKFLOW_STAGE_1_SHELVES,
                     includes_unknown=mock_config.setting[
-                        constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
+                        ConfigKey.STAGE_1_INCLUDES_NON_SHELVES
                     ],
             ):
                 result = shelf(parser)
@@ -69,7 +69,7 @@ class ScriptFunctionsTest(unittest.TestCase):
                     expected = unknown_shelf
                 else:
                     expected = mock_config.setting[
-                        constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY
+                        ConfigKey.WORKFLOW_STAGE_2_SHELVES
                     ].pop()
                 self.assertEqual(expected, result)
 
@@ -83,16 +83,16 @@ class ScriptFunctionsTest(unittest.TestCase):
         mock_config.setting = deepcopy(self.test_configuration)
 
         known_shelves: set[str] = set(
-                deepcopy(self.test_configuration[constants.CONFIG_KNOWN_SHELVES_KEY]),
+                deepcopy(self.test_configuration[ConfigKey.KNOWN_SHELVES]),
         )
 
         # Stage 2 entfernen
         known_shelves = known_shelves.difference(
-                set(self.test_configuration[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]),
+                set(self.test_configuration[ConfigKey.WORKFLOW_STAGE_2_SHELVES]),
         )
 
         # Einen Shelf Namen für Stage 1 auswählen
-        mock_config.setting[constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = [known_shelves.pop()]
+        mock_config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES] = [known_shelves.pop()]
 
         # Einen Shelf Namen entnehmen, der bekannt ist und in keinem Stage verwendet wird.
         known_shelf = known_shelves.pop()
@@ -105,19 +105,19 @@ class ScriptFunctionsTest(unittest.TestCase):
         # Act
         # No matter how CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY is set, the shelf name must not be changed.
         for includes in [True, False]:
-            mock_config.setting[constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (
+            mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = (
                 includes
             )
             with self.subTest(
-                    msg=constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY,
+                    msg=ConfigKey.WORKFLOW_STAGE_1_SHELVES,
                     includes_unknown=mock_config.setting[
-                        constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
+                        ConfigKey.STAGE_1_INCLUDES_NON_SHELVES
                     ],
             ):
                 result = shelf(parser)
 
                 # Assert
-                invalid = deepcopy(mock_config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]).pop()
+                invalid = deepcopy(mock_config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]).pop()
                 expected = known_shelf
                 self.assertNotEqual(invalid, result, f"Did not expect '{invalid}' but got it.")
                 self.assertEqual(expected, result, f"Expected '{expected}' but got '{result}'")
@@ -143,7 +143,7 @@ class ScriptFunctionsTest(unittest.TestCase):
         """
         mock_config.setting = deepcopy(self.test_configuration)
         stage_1_shelf_name = mock_config.setting[
-            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY
+            ConfigKey.WORKFLOW_STAGE_1_SHELVES
         ][0]
         parser = MagicMock()
         parser.file.metadata.get.return_value = stage_1_shelf_name
@@ -153,21 +153,21 @@ class ScriptFunctionsTest(unittest.TestCase):
         # Act
         # No matter how CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY is set, the shelf name must be changed.
         for includes in [True, False]:
-            mock_config.setting[constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = (
+            mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = (
                 includes
             )
             with self.subTest(
-                    msg=constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY,
+                    msg=ConfigKey.WORKFLOW_STAGE_1_SHELVES,
                     stage_1_shelf_name=stage_1_shelf_name,
                     includes_unknown=mock_config.setting[
-                        constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY
+                        ConfigKey.STAGE_1_INCLUDES_NON_SHELVES
                     ],
             ):
                 result = shelf(parser)
 
                 # Assert
                 expected = mock_config.setting[
-                    constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY
+                    ConfigKey.WORKFLOW_STAGE_2_SHELVES
                 ]
                 self.assertEqual(
                         expected, [result], f"Expected {expected} but got {result}",

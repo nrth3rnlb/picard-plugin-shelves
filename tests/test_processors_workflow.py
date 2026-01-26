@@ -6,8 +6,8 @@ import unittest
 from copy import deepcopy
 from unittest.mock import patch
 
-from shelves import constants
 from shelves.workflow import WorkflowEngine
+from typings import ConfigKey
 
 
 class WorkflowTest(unittest.TestCase):
@@ -16,12 +16,12 @@ class WorkflowTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment for workflow."""
         self.test_configuration = {
-            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY    : ["Incoming"],
-            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY    : ["Standard"],
-            constants.CONFIG_WORKFLOW_ENABLED_KEY            : True,
-            constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY: False,
-            constants.CONFIG_MOVE_FILES_TO_KEY               : "/home/foobar/music",
-            constants.CONFIG_KNOWN_SHELVES_KEY               : ["Incoming", "Standard", "Stash", "Live"],
+            ConfigKey.WORKFLOW_STAGE_1_SHELVES    : ["Incoming"],
+            ConfigKey.WORKFLOW_STAGE_2_SHELVES    : ["Standard"],
+            ConfigKey.WORKFLOW_ENABLED            : True,
+            ConfigKey.STAGE_1_INCLUDES_NON_SHELVES: False,
+            ConfigKey.MOVE_FILES_TO               : "/home/foobar/music",
+            ConfigKey.KNOWN_SHELVES               : ["Incoming", "Standard", "Stash", "Live"],
         }
 
     @patch("shelves.workflow.config")
@@ -34,7 +34,7 @@ class WorkflowTest(unittest.TestCase):
     def test_disabled_workflow_returns_same_shelf(self, mock_config):
         """Test that a disabled workflow never transitions the shelf_name."""
         mock_config.setting = self.test_configuration
-        mock_config.setting[constants.CONFIG_WORKFLOW_ENABLED_KEY] = False
+        mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = False
 
         self.assertEqual(WorkflowEngine.apply_transition("Incoming"), "Incoming")
 
@@ -42,8 +42,8 @@ class WorkflowTest(unittest.TestCase):
     def test_no_workflow_keys_leaves_shelf(self, mock_config):
         """Test that missing config keys prevent transition."""
         mock_config.setting = deepcopy(self.test_configuration)
-        mock_config.setting[constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY] = []
-        mock_config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = []
+        mock_config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES] = []
+        mock_config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES] = []
         self.assertEqual(WorkflowEngine.apply_transition("Incoming"), "Incoming")
 
     @patch("shelves.workflow.config")
@@ -63,13 +63,13 @@ class WorkflowTest(unittest.TestCase):
         """Test that the wildcard in stage 1 transitions any shelf_name."""
         # Arrange
         mock_config.setting = deepcopy(self.test_configuration)
-        mock_config.setting[constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = True
+        mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = True
 
         any_shelf = "invidunt amet suscipit"
 
         # Act
         actual = WorkflowEngine.apply_transition(any_shelf)
-        expected = mock_config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY][0]
+        expected = mock_config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES][0]
         self.assertEqual(
                 actual, expected, f"Expected {expected} but got {actual} for {any_shelf}",
         )
@@ -84,8 +84,8 @@ class WorkflowTest(unittest.TestCase):
     def test_missing_stage_keys_with_enabled_true_leaves_shelf(self, mock_config):
         """Test that missing stage keys with workflow enabled leaves the shelf_name unchanged."""
         mock_config.setting = deepcopy(self.test_configuration)
-        mock_config.setting[constants.CONFIG_STAGE_1_INCLUDES_NON_SHELVES_KEY] = True
-        mock_config.setting[constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY] = []
+        mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = True
+        mock_config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES] = []
         self.assertEqual(WorkflowEngine.apply_transition("Incoming"), "Incoming")
 
 

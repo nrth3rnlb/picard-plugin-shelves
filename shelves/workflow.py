@@ -7,8 +7,9 @@ and conditions. The class ensures that transitions only occur when the workflow 
 and specific configuration keys are present and valid.
 """
 
-from constants import ConfigKey
 from picard import config, log
+
+from .typings import ConfigKey
 
 
 class WorkflowEngine:

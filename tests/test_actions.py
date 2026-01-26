@@ -6,9 +6,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from shelves import constants
 from shelves.actions import ShelfActionDetermine, ShelfActionSet, ShelfActionToggleLock
 from shelves.dialogs import SetShelfDialog
+from typings import ConfigKey, TagKey
 
 
 class ResetShelfActionTest(unittest.TestCase):
@@ -18,11 +18,11 @@ class ResetShelfActionTest(unittest.TestCase):
         self.actions.tagger = MagicMock()
 
         self.test_configuration = {
-            constants.CONFIG_MOVE_FILES_TO_KEY           : "/home/foobar/music",
-            constants.CONFIG_WORKFLOW_ENABLED_KEY        : True,
-            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
-            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-            constants.CONFIG_KNOWN_SHELVES_KEY           : sorted(
+            ConfigKey.MOVE_FILES_TO           : "/home/foobar/music",
+            ConfigKey.WORKFLOW_ENABLED        : True,
+            ConfigKey.WORKFLOW_STAGE_1_SHELVES: ["Incoming"],
+            ConfigKey.WORKFLOW_STAGE_2_SHELVES: ["Standard"],
+            ConfigKey.KNOWN_SHELVES           : sorted(
                     ["Incoming", "Standard", "Stash", "Live"]
             ),
         }
@@ -36,16 +36,16 @@ class ResetShelfActionTest(unittest.TestCase):
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
         mock_manager_instance.base_path = Path(
-                str(self.test_configuration[constants.CONFIG_MOVE_FILES_TO_KEY])
+                str(self.test_configuration[ConfigKey.MOVE_FILES_TO])
         )
         album_id = "e653893a-ac0e-4246-9389-3aac0e7246f9"
         shelf_name = "Standard"
         file_mock = MagicMock()
         file_mock.filename = f"/home/foobar/music/{shelf_name}/test.mp3"
         file_mock.metadata = {
-            constants.MUSICBRAINZ_ALBUMID: album_id,
-            constants.TAG_KEY            : shelf_name,
-            constants.TAG_LOCKED_KEY     : True
+            TagKey.MUSICBRAINZ_ALBUMID: album_id,
+            TagKey.SHELF              : shelf_name,
+            TagKey.SHELF_LOCKED       : True
         }
 
         obj = MagicMock()
@@ -66,11 +66,11 @@ class SetShelfActionTest(unittest.TestCase):
         self.actions.tagger = MagicMock()
 
         self.test_configuration = {
-            constants.CONFIG_MOVE_FILES_TO_KEY           : "/home/foobar/music",
-            constants.CONFIG_WORKFLOW_ENABLED_KEY        : True,
-            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
-            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-            constants.CONFIG_KNOWN_SHELVES_KEY           : sorted(
+            ConfigKey.MOVE_FILES_TO           : "/home/foobar/music",
+            ConfigKey.WORKFLOW_ENABLED        : True,
+            ConfigKey.WORKFLOW_STAGE_1_SHELVES: ["Incoming"],
+            ConfigKey.WORKFLOW_STAGE_2_SHELVES: ["Standard"],
+            ConfigKey.KNOWN_SHELVES           : sorted(
                     ["Incoming", "Standard", "Stash", "Live"]
             ),
         }
@@ -87,7 +87,7 @@ class SetShelfActionTest(unittest.TestCase):
         mock_shelf_manager.return_value = mock_manager_instance
         mock_manager_instance.shelf_names = self.known_shelves
         mock_manager_instance.base_path = Path(
-                str(self.test_configuration[constants.CONFIG_MOVE_FILES_TO_KEY])
+                str(self.test_configuration[ConfigKey.MOVE_FILES_TO])
         )
         mock_manager_instance.is_locked.return_value = False
 
@@ -98,9 +98,9 @@ class SetShelfActionTest(unittest.TestCase):
         file_mock = MagicMock()
         file_mock.filename = f"/home/foobar/music/{shelf_name}/test.mp3"
         file_mock.metadata = {
-            constants.MUSICBRAINZ_ALBUMID: album_id,
-            constants.TAG_KEY            : shelf_name,
-            constants.TAG_LOCKED_KEY     : True
+            TagKey.MUSICBRAINZ_ALBUMID: album_id,
+            TagKey.SHELF              : shelf_name,
+            TagKey.SHELF_LOCKED       : True
         }
 
         obj = MagicMock()
@@ -120,11 +120,11 @@ class SetShelfDialogTest(unittest.TestCase):
         """Set up the test environment"""
         self.dialog = SetShelfDialog.__new__(SetShelfDialog)
         self.test_configuration = {
-            constants.CONFIG_MOVE_FILES_TO_KEY           : "/home/foobar/music",
-            constants.CONFIG_WORKFLOW_ENABLED_KEY        : True,
-            constants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY: ["Incoming"],
-            constants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY: ["Standard"],
-            constants.CONFIG_KNOWN_SHELVES_KEY           : sorted(
+            ConfigKey.MOVE_FILES_TO           : "/home/foobar/music",
+            ConfigKey.WORKFLOW_ENABLED        : True,
+            ConfigKey.WORKFLOW_STAGE_1_SHELVES: ["Incoming"],
+            ConfigKey.WORKFLOW_STAGE_2_SHELVES: ["Standard"],
+            ConfigKey.KNOWN_SHELVES           : sorted(
                     ["Incoming", "Standard", "Stash", "Live"]
             ),
         }
@@ -138,7 +138,7 @@ class SetShelfDialogTest(unittest.TestCase):
         mock_dialog_shelf_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_dialog_shelf_manager_instance
         mock_dialog_shelf_manager_instance.shelf_names = self.test_configuration[
-            constants.CONFIG_KNOWN_SHELVES_KEY
+            ConfigKey.KNOWN_SHELVES
         ]
 
         # Mock the dialog attributes and methods to simulate user input
@@ -165,7 +165,7 @@ class DetermineShelfActionTest(unittest.TestCase):
         self.actions = ShelfActionDetermine.__new__(ShelfActionDetermine)
         self.actions.tagger = MagicMock()
         self.test_configuration = {
-            constants.CONFIG_MOVE_FILES_TO_KEY: "/home/foobar/music",
+            ConfigKey.MOVE_FILES_TO: "/home/foobar/music",
         }
 
     @patch("shelves.actions.ShelfManager")
@@ -175,11 +175,11 @@ class DetermineShelfActionTest(unittest.TestCase):
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
         mock_manager_instance.base_path = Path(
-                str(self.test_configuration[constants.CONFIG_MOVE_FILES_TO_KEY])
+                str(self.test_configuration[ConfigKey.MOVE_FILES_TO])
         )
 
         file_path = (
-                Path(str(self.test_configuration[constants.CONFIG_MOVE_FILES_TO_KEY]))
+                Path(str(self.test_configuration[ConfigKey.MOVE_FILES_TO]))
                 / "Standard"
                 / "file_name.foobar"
         )

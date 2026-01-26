@@ -7,9 +7,9 @@ Tests for the ShelfManager class.
 import unittest
 from unittest.mock import patch
 
-from shelves import constants
 from shelves.manager import ShelfManager
-from shelves.processors import ProcessingType
+from shelves.typings import ProcessingType
+from typings import ConfigKey
 
 
 class ManagerTest(unittest.TestCase):
@@ -23,7 +23,7 @@ class ManagerTest(unittest.TestCase):
             str,
             str | list[str] | bool | int,
         ] = {
-            constants.CONFIG_MOVE_FILES_TO_KEY: "/music",
+            ConfigKey.MOVE_FILES_TO: "/music",
         }
 
     # def test_vote_for_shelf_increments_counter(self):
@@ -58,7 +58,7 @@ class ManagerTest(unittest.TestCase):
 
     @patch("shelves.manager.config")
     def test_get_album_shelf_returns_winner(self, _mock_config):
-        """Test that get_shelf_name returns the correct winner."""
+        """Test that resolve_shelf_name returns the correct winner."""
         _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
         # pylint: disable=protected-access
         ShelfManager().upvote(_album_id, "ShelfB", ProcessingType.LOAD)

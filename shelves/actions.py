@@ -14,9 +14,9 @@ from PyQt5 import (
 )
 
 from . import utils
-from .constants import TagKey
 from .dialogs import SetShelfDialog
 from .manager import ShelfManager
+from .typings import TagKey
 
 
 class ShelfActionSet(BaseAction):
@@ -45,9 +45,9 @@ class ShelfActionSet(BaseAction):
         is_valid, message = utils.validate_shelf_name(shelf_name)
         if not is_valid:
             QtWidgets.QMessageBox.warning(
-                self.tagger.window,
-                "Invalid shelf name",
-                f"Cannot use this name as a shelf name: {message}",
+                    self.tagger.window,
+                    "Invalid shelf name",
+                    f"Cannot use this name as a shelf name: {message}",
             )
             return
 
@@ -64,9 +64,9 @@ class ShelfActionSet(BaseAction):
                         continue
 
                     ShelfManager().set_shelf_name(
-                        album_id=album_id,
-                        shelf_name=shelf_name,
-                        lock=True,
+                            album_id=album_id,
+                            shelf_name=shelf_name,
+                            lock=True,
                     )
                     # Set shelf name in metadata
                     shelf_name = ShelfManager().get_shelf_name(album_id)[0]
@@ -76,7 +76,7 @@ class ShelfActionSet(BaseAction):
                     metadata[TagKey.SHELF_LOCKED] = ShelfManager().is_locked(album_id)
 
                     self.tagger.window.set_statusbar_message(
-                        f"Set shelf name to '{shelf_name}' for album {album_id}"
+                            f"Set shelf name to '{shelf_name}' for album {album_id}"
                     )
 
         # # Re-run the determination logic
@@ -115,13 +115,13 @@ class ShelfActionToggleLock(BaseAction):
                     metadata[TagKey.SHELF_LOCKED] = ShelfManager().is_locked(album_id)
 
                     self.tagger.window.set_statusbar_message(
-                        "Lock state of album %s is now %s."
-                        % (
-                            album_id,
-                            "locked"
-                            if ShelfManager().is_locked(album_id)
-                            else "unlocked",
-                        )
+                            "Lock state of album %s is now %s."
+                            % (
+                                album_id,
+                                "locked"
+                                if ShelfManager().is_locked(album_id)
+                                else "unlocked",
+                            )
                     )
 
         # # Re-run the determination logic
@@ -154,13 +154,13 @@ class ShelfActionDetermine(BaseAction):
                     file_path = Path(file.filename).resolve()
                     base_path = ShelfManager().base_path
                     shelf_name = utils.get_shelf_name_from_path(
-                        file_path=file_path,
-                        base_path=base_path,
+                            file_path=file_path,
+                            base_path=base_path,
                     )
                     if shelf_name is not None:
                         file.metadata[TagKey.SHELF] = shelf_name
                         self.tagger.window.set_statusbar_message(
-                            f"Set shelf name to '{shelf_name}' for file '{file.filename}'"
+                                f"Set shelf name to '{shelf_name}' for file '{file.filename}'"
                         )
 
                         ShelfManager().add_shelf_names(shelf_name)

@@ -13,12 +13,8 @@ from warnings import deprecated
 from picard import log
 from picard.script import ScriptParser
 
-from .constants import (
-    ALBUM_INDICATORS,
-    INVALID_SHELF_NAME_CHARS,
-    INVALID_SHELF_NAMES,
-    TagKey,
-)
+from .constants import (ALBUM_INDICATORS, INVALID_SHELF_NAMES, INVALID_SHELF_NAME_CHARS)
+from .typings import TagKey
 from .exceptions import ShelfNotDeterminableException
 
 
@@ -42,9 +38,9 @@ def validate_shelf_names(shelf_names: set[str]) -> set[str]:
 
 
 @deprecated(
-    "Is only mandatory until version 1.7.0. As of version 2, the use of the tag has changed. The function is  "
-    "used from version 2 to continue processing existing tags and will be removed in a later version will be "
-    "removed."
+        "Is only mandatory until version 1.7.0. As of version 2, the use of the tag has changed. The function is  "
+        "used from version 2 to continue processing existing tags and will be removed in a later version will be "
+        "removed."
 )
 def get_shelf_name_from_tag(tag_value: str) -> str:
     """
@@ -77,9 +73,9 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
 
     except (KeyError, ValueError, OSError) as e:
         log.error(
-            _("Error extracting shelf_name from file_path_str '%s': %s."),
-            file_path,
-            e,
+                _("Error extracting shelf_name from file_path_str '%s': %s."),
+                file_path,
+                e,
         )
         raise ShelfNotDeterminableException(filepath=file_path, cause=e)
 
@@ -165,7 +161,7 @@ def get_shelf_dirs(base_path: Path) -> Set[str]:
     shelf_sub_dirs: Set[str] = set()
     try:
         shelf_sub_dirs = set(
-            entry.name for entry in base_path.iterdir() if entry.is_dir()
+                entry.name for entry in base_path.iterdir() if entry.is_dir()
         )
 
     except (OSError, PermissionError) as e:
@@ -187,12 +183,12 @@ def debug_track(track: Any):
         log.debug("✓\ttrack HAS metadata")
         log.debug("\tKeys: %s", sorted(list(track.metadata.keys())))
         log.debug(
-            "\tTagKey.SHELF: %s",
-            track.metadata.get(TagKey.SHELF, "(not set)"),
+                "\tTagKey.SHELF: %s",
+                track.metadata.get(TagKey.SHELF, "(not set)"),
         )
         log.debug(
-            "\tTagKey.SHELF_LOCKED: %s",
-            track.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
+                "\tTagKey.SHELF_LOCKED: %s",
+                track.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
         )
 
     log.debug("TRACK DEBUG END")
@@ -214,8 +210,8 @@ def debug_file(file: Any):
         log.debug("\tKeys: %s", sorted(list(file.metadata.keys())))
         log.debug("\tTagKey.SHELF: %s", file.metadata.get(TagKey.SHELF, "(not set)"))
         log.debug(
-            "\tTagKey.SHELF_LOCKED: %s",
-            file.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
+                "\tTagKey.SHELF_LOCKED: %s",
+                file.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
         )
 
     log.debug("FILE DEBUG END")
@@ -239,12 +235,12 @@ def debug_parser(parser: ScriptParser):
         log.debug("✓\tparser.file HAS metadata")
         log.debug("\tKeys: %s", sorted(list(parser.file.metadata.keys())))
         log.debug(
-            "\tTagKey.SHELF: %s",
-            parser.file.metadata.get(TagKey.SHELF, "(not set)"),
+                "\tTagKey.SHELF: %s",
+                parser.file.metadata.get(TagKey.SHELF, "(not set)"),
         )
         log.debug(
-            "\tTagKey.SHELF_LOCKED: %s",
-            parser.file.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
+                "\tTagKey.SHELF_LOCKED: %s",
+                parser.file.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
         )
 
     # What is parser.context?
@@ -252,12 +248,12 @@ def debug_parser(parser: ScriptParser):
         log.debug("✓\tparser HAS context")
         log.debug("\tKeys: %s", sorted(list(parser.context.keys())))
         log.debug(
-            "\tTagKey.SHELF: %s",
-            parser.context.get(TagKey.SHELF, "(not set)"),
+                "\tTagKey.SHELF: %s",
+                parser.context.get(TagKey.SHELF, "(not set)"),
         )
         log.debug(
-            "\tTagKey.SHELF_LOCKED: %s",
-            parser.context.get(TagKey.SHELF_LOCKED, "(not set)"),
+                "\tTagKey.SHELF_LOCKED: %s",
+                parser.context.get(TagKey.SHELF_LOCKED, "(not set)"),
         )
 
     log.debug("PARSER DEBUG END")

@@ -12,16 +12,11 @@ from typing import Optional
 from picard import config, log
 from picard.config import BoolOption, IntOption, ListOption, Option, TextOption
 from picard.ui.options import OptionsPage as PicardOptions
-from PyQt5 import (
-    QtGui,
-    QtWidgets,
-    uic,
-)
-from QtCore.Qt import AlignmentFlag
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
-from . import utils
-from .constants import RENAME_SNIPPET, ConfigKey, TagKey
+from . import constants, utils
 from .manager import ShelfManager
+from .typings import ConfigKey, TagKey
 from .widgets import QShelvesWidget
 
 MESSAGE_INVALID_SHELF_NAME: str = _("Shelf name is not valid.")
@@ -33,7 +28,6 @@ MESSAGE_MOVE_SELECTED_ITEMS_DISABLED: str = _(
 )
 NAME_WORKFLOW_STAGE_ALL: str = _("Available shelf names")
 MESSAGE_PROVIDE_SHELF_NAME: str = _("Provide a name for the new shelf:")
-MESSAGE_REMOVE_SELECTED_ITEMS: str = _("Remove selected shelf names from workflow.")
 MESSAGE_USED_SHELF_NAME: str = _(
     "The shelf names '{list_of_shelf_names}' are used in your workflow. Are you sure you want to remove them?",
 )
@@ -44,12 +38,13 @@ TITLE_REMOVE_SHELF_NAMES: str = _("Remove shelf names?")
 
 
 class OptionsPage(PicardOptions):
-    """
-    Options options_page for the Shelves plugin.
-    """
+    """Options options_page for the Shelves plugin."""
 
+    # noinspection PyUnusedName
     NAME = "shelves"
+    # noinspection PyUnusedName
     TITLE = "Shelves"
+    # noinspection PyUnusedName
     PARENT = "plugins"
 
     options: list[Option] = [
@@ -79,7 +74,7 @@ class OptionsPage(PicardOptions):
             ConfigKey.ALBUM_SHELF,
             "",
         ),
-        IntOption("setting", ConfigKey.CONFIG_ACTIVE_TAB, 0),
+        IntOption("setting", ConfigKey.ACTIVE_TAB, 0),
     ]
 
     # UI widget type hints
@@ -163,10 +158,10 @@ class OptionsPage(PicardOptions):
             config.setting[ConfigKey.WORKFLOW_ENABLED],
         )
 
-        self.naming_script_code.setPlainText(RENAME_SNIPPET)
+        self.naming_script_code.setPlainText(constants.RENAME_SNIPPET)
 
         self.plugin_configuration.setCurrentIndex(
-            config.setting[ConfigKey.CONFIG_ACTIVE_TAB],
+            config.setting[ConfigKey.ACTIVE_TAB],
         )
 
     # noinspection PyTypeHints
@@ -191,9 +186,7 @@ class OptionsPage(PicardOptions):
         ]
 
         config.setting[ConfigKey.ALBUM_SHELF] = TagKey.SHELF
-        config.setting[ConfigKey.CONFIG_ACTIVE_TAB] = (
-            self.plugin_configuration.currentIndex()
-        )
+        config.setting[ConfigKey.ACTIVE_TAB] = self.plugin_configuration.currentIndex()
 
         config.setting[ConfigKey.WORKFLOW_ENABLED] = self.workflow_enabled.isChecked()
         config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = (
@@ -378,7 +371,7 @@ class OptionsPage(PicardOptions):
 
         # Stage 1 connections
         self.label_workflow_stage_1.setAlignment(
-            AlignmentFlag.AlignRight | AlignmentFlag.AlignVCenter,
+            QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter,
         )
         self.workflow_stage_1.setSelectionMode(
             QtWidgets.QAbstractItemView.ExtendedSelection,
@@ -459,9 +452,7 @@ class OptionsPage(PicardOptions):
         # noinspection PyTypeHints
         remaining_shelves = (
             ShelfManager()
-            .shelf_names.difference(
-                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES],
-            )
+            .shelf_names.difference(config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES])
             .difference(
                 config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES],
             )
