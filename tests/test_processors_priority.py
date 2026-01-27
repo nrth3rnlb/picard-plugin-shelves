@@ -10,9 +10,18 @@ from pathlib import Path
 from typing import Set
 from unittest.mock import MagicMock, patch
 
-from shelves import constants
-from shelves.processors import ShelfProcessors
-from typings import ConfigKey
+from typings import ConfigKey, ProcessingType, TagKey
+
+from shelves.processors import (
+    ShelfProcessors,
+    StrategyKnownIdenticalNames,
+    StrategyKnownNameFromPath,
+    StrategyUnknownNameFromPath,
+)
+
+
+def get_strategy(processors, cls):
+    return next(s for s in processors.strategies if isinstance(s, cls))
 
 
 class ProcessorPriorityTest(unittest.TestCase):
@@ -40,223 +49,150 @@ class ProcessorPriorityTest(unittest.TestCase):
             "Favorites",
         }
         self.test_configuration = {
-            ConfigKey.WORKFLOW_ENABLED        : False,
+            ConfigKey.WORKFLOW_ENABLED: False,
             ConfigKey.WORKFLOW_STAGE_1_SHELVES: ["Incoming"],
             ConfigKey.WORKFLOW_STAGE_2_SHELVES: ["Standard"],
-            ConfigKey.MOVE_FILES_TO           : "/music",
+            ConfigKey.MOVE_FILES_TO: "/music",
         }
 
-    # @patch("shelves.utils.get_shelf_name_from_path")
-    # @patch("shelves.utils.validate_shelf_names")
-    # @patch("shelves.processors.config")
-    # def test_manual_location_known_shelf_overrides_manual_tag(
-    #     self,
-    #     mock_config,
-    #     mock_get_configured_shelves,
-    #     mock_get_shelf_from_path,
-    # ):
-    #     """
-    #     PRIORITY 1: A file that is manually moved to a known or possible shelf_name folder
-    #     must take over this shelf_name and ignores all previous manual markings.
-    #     """
-    #     # Arrange
-    #     mock_config.setting = self.test_configuration
-    #     mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = False
-    #
-    #     mock_get_configured_shelves.return_value = self.test_known_shelves
-    #
-    #     shelf_sub_dir = self.test_known_shelves[0]
-    #     mock_get_shelf_from_path.return_value = shelf_sub_dir
-    #
-    #     file_mock = MagicMock()
-    #     file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
-    #     file_mock.metadata = {
-    #         constants.MUSICBRAINZ_ALBUMID: "album123",
-    #         TagKey.SHELF: f"{shelf_sub_dir} {constants.MANUAL_SHELF_SUFFIX}",
-    #     }
-    #
-    #     # Act
-    #     self.processors.file_post_addition_to_track_processor(
-    #         track=None, file=file_mock
-    #     )
-    #
-    #     # Assert
-    #     self.assertEqual(file_mock.metadata[TagKey.SHELF], shelf_sub_dir)
-
+    @patch("shelves.processors.ContextBuilder")
+    @patch("shelves.processors.ProcessingContext")
     @patch("shelves.processors.ShelfManager")
-    @patch(
-            "shelves.workflow.WorkflowEngine.apply_transition",
-            new_callable=MagicMock,
-    )
-    def test_file_post_addition_to_track_processor_identical_name_and_path_and_tag(  # is_known_name_from_path
-            self,
-            mock_apply_workflow_transition,
-            mock_shelf_manager,
+    def test_known_identical_names_strategy(
+        self, mock_shelf_manager, mock_context, mock_context_builder
     ):
         # Arrange
+        shelf_sub_dir = copy(self.known_shelves).pop()
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
         mock_manager_instance.base_path = Path(
-                str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
+            str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
         )
         mock_manager_instance.shelf_names = self.known_shelves
 
-        shelf_sub_dir = copy(self.known_shelves).pop()
-        mock_apply_workflow_transition.return_value = shelf_sub_dir
+        mock_context.name_from_tag = shelf_sub_dir
+        mock_context.name_from_path = shelf_sub_dir
+        mock_context.is_locked = False
+        mock_context.processing_type = ProcessingType.ADD
+
+        mock_context_builder.build_processing_context_by_file.return_value = (
+            mock_context
+        )
 
         file_mock = MagicMock()
         file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
         file_mock.metadata = {
-            constants.MUSICBRAINZ_ALBUMID: "f62b3023-34e7-40cd-bd08-b183118cb1fd",
-            TagKey.SHELF: shelf_sub_dir
+            TagKey.MUSICBRAINZ_ALBUMID: "f62b3023-34e7-40cd-bd08-b183118cb1fd",
+            TagKey.SHELF: shelf_sub_dir,
         }
-
-        # Act
         # Create processor with mocked manager
         processors = ShelfProcessors(manager=mock_manager_instance)
+
+        # Act
         processors.file_post_addition_to_track_processor(
-                track=None, file=file_mock,
+            track=MagicMock(),
+            file=file_mock,
         )
 
         # Assert
-        mock_manager_instance.set_shelf_name.assert_called_with(
-                album_id="f62b3023-34e7-40cd-bd08-b183118cb1fd",
-                shelf_name=shelf_sub_dir,
-                lock=False,
+        self.assertTrue(
+            get_strategy(processors, StrategyKnownIdenticalNames).is_applicable(
+                mock_context
+            )
         )
 
+    @patch("shelves.processors.ContextBuilder")
+    @patch("shelves.processors.ProcessingContext")
     @patch("shelves.processors.ShelfManager")
-    @patch(
-            "shelves.workflow.WorkflowEngine.apply_transition",
-            new_callable=MagicMock,
-    )
-    def test_file_post_addition_to_track_processor_known_name_from_path(  # is_known_name_from_path
-            self,
-            mock_apply_workflow_transition,
-            mock_shelf_manager,
+    def test_known_name_from_path(
+        self, mock_shelf_manager, mock_context, mock_context_builder
     ):
         # Arrange
+        shelf_sub_dirs = copy(self.known_shelves)
+        name_from_tag = shelf_sub_dirs.pop()
+        name_from_path = shelf_sub_dirs.pop()
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
         mock_manager_instance.base_path = Path(
-                str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
+            str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
         )
         mock_manager_instance.shelf_names = self.known_shelves
 
-        shelf_sub_dir = copy(self.known_shelves).pop()
-        mock_apply_workflow_transition.return_value = shelf_sub_dir
+        mock_context.name_from_tag = name_from_tag
+        mock_context.name_from_path = name_from_path
+        mock_context.is_locked = False
+        mock_context.processing_type = ProcessingType.ADD
+
+        mock_context_builder.build_processing_context_by_file.return_value = (
+            mock_context
+        )
 
         file_mock = MagicMock()
-        file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
+        file_mock.filename = f"/music/{name_from_path}/artist/album/track.mp3"
         file_mock.metadata = {
-            constants.MUSICBRAINZ_ALBUMID: "f62b3023-34e7-40cd-bd08-b183118cb1fd",
-            TagKey.SHELF: "no_tag_set",
+            TagKey.MUSICBRAINZ_ALBUMID: "019c008b-3934-7d68-9713-84de82082007",
+            TagKey.SHELF: name_from_tag,
         }
-
-        # Act
         # Create processor with mocked manager
         processors = ShelfProcessors(manager=mock_manager_instance)
+
+        # Act
         processors.file_post_addition_to_track_processor(
-                track=None, file=file_mock,
+            track=MagicMock(),
+            file=file_mock,
         )
 
         # Assert
-        mock_manager_instance.set_shelf_name.assert_called_with(
-                album_id="f62b3023-34e7-40cd-bd08-b183118cb1fd",
-                shelf_name=shelf_sub_dir,
-                lock=True,
+        self.assertTrue(
+            get_strategy(processors, StrategyKnownNameFromPath).is_applicable(
+                mock_context
+            )
         )
 
+    @patch("shelves.processors.ContextBuilder")
+    @patch("shelves.processors.ProcessingContext")
     @patch("shelves.processors.ShelfManager")
-    @patch(
-            "shelves.workflow.WorkflowEngine.apply_transition",
-            new_callable=MagicMock,
-    )
-    def test_file_post_addition_to_track_processor_known_name_from_tag_and_manual(
-            self,
-            mock_apply_workflow_transition,
-            mock_shelf_manager,
+    def test_unknown_name_from_path(
+        self, mock_shelf_manager, mock_context, mock_context_builder
     ):
-        """
-        Manually moved to another known shelf folder.
-
-        A file that has been manually moved to a known shelf folder
-        must adopt this shelf folder and ignore all previous manual markings.
-        """
-        # Arrange
-        mock_manager_instance = MagicMock()
-        mock_shelf_manager.return_value = mock_manager_instance
-        mock_manager_instance.shelf_names = self.known_shelves
-        mock_manager_instance.base_path = Path(
-                self.test_configuration[ConfigKey.MOVE_FILES_TO],
-        )
-
-        known_shelves_clone = copy(self.known_shelves)
-        shelf_name = known_shelves_clone.pop()
-        shelf_sub_dir = known_shelves_clone.pop()
-        mock_apply_workflow_transition.return_value = shelf_sub_dir
-
-        file_mock = MagicMock()
-        file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
-        file_mock.metadata = {
-            constants.MUSICBRAINZ_ALBUMID: "f62b3023-34e7-40cd-bd08-b183118cb1fd",
-            TagKey.SHELF: f"{shelf_name}",
-            constants.TAG_LOCKED_KEY     : True
-        }
-
-        # Act
-        ShelfProcessors().file_post_addition_to_track_processor(
-                track=None, file=file_mock,
-        )
-
-        # Assert
-        # The name of the shelf determined from the path wins
-        # The name of the shelf from the tag loses
-        mock_manager_instance.set_shelf_name.assert_called_with(
-                album_id="f62b3023-34e7-40cd-bd08-b183118cb1fd",
-                shelf_name=shelf_sub_dir,
-                lock=True,
-        )
-
-    @patch("shelves.processors.ShelfManager")
-    @patch(
-            "shelves.workflow.WorkflowEngine.apply_transition",
-            new_callable=MagicMock,
-    )
-    def test_file_post_addition_to_track_processor_priority_4(
-            self,
-            mock_apply_workflow_transition,
-            mock_shelf_manager,
-    ):
-        """
-        PRIORITY 3: The standard logic should be applied to a file without special properties
-        """
-        # Arrange
-        mock_manager_instance = MagicMock()
-        mock_shelf_manager.return_value = mock_manager_instance
-        mock_manager_instance.shelf_names = self.known_shelves
-        mock_manager_instance.base_path = Path(
-                self.test_configuration[ConfigKey.MOVE_FILES_TO],
-        )
-
         shelf_sub_dir = copy(self.known_shelves).pop()
-        mock_apply_workflow_transition.return_value = shelf_sub_dir
+        unknown_shelf_subdir = f"unknown_{shelf_sub_dir}"
+        mock_manager_instance = MagicMock()
+        mock_shelf_manager.return_value = mock_manager_instance
+        mock_manager_instance.base_path = Path(
+            str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
+        )
+        mock_manager_instance.shelf_names = self.known_shelves
+
+        mock_context.name_from_tag = shelf_sub_dir
+        mock_context.name_from_path = unknown_shelf_subdir
+        mock_context.is_locked = False
+        mock_context.processing_type = ProcessingType.ADD
+
+        mock_context_builder.build_processing_context_by_file.return_value = (
+            mock_context
+        )
 
         file_mock = MagicMock()
-        file_mock.filename = f"/music/{shelf_sub_dir}/artist/album/track.mp3"
+        file_mock.filename = f"/music/{unknown_shelf_subdir}/artist/album/track.mp3"
         file_mock.metadata = {
-            constants.MUSICBRAINZ_ALBUMID: "album123",
-            TagKey.SHELF: "",
+            TagKey.MUSICBRAINZ_ALBUMID: "019c008f-cadf-7d19-83d5-d3f0b8ea3f69",
+            TagKey.SHELF: shelf_sub_dir,
         }
+        # Create processor with mocked manager
+        processors = ShelfProcessors(manager=mock_manager_instance)
 
         # Act
-        ShelfProcessors().file_post_addition_to_track_processor(
-                track=None, file=file_mock,
+        processors.file_post_addition_to_track_processor(
+            track=MagicMock(),
+            file=file_mock,
         )
 
         # Assert
-        mock_manager_instance.set_shelf_name.assert_called_with(
-                album_id="album123", shelf_name=shelf_sub_dir, lock=True,
+        self.assertTrue(
+            get_strategy(processors, StrategyUnknownNameFromPath).is_applicable(
+                mock_context
+            )
         )
 
 

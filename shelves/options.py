@@ -69,11 +69,6 @@ class OptionsPage(PicardOptions):
             ConfigKey.STAGE_1_INCLUDES_NON_SHELVES,
             False,
         ),
-        TextOption(
-            "setting",
-            ConfigKey.ALBUM_SHELF,
-            "",
-        ),
         IntOption("setting", ConfigKey.ACTIVE_TAB, 0),
     ]
 
@@ -185,7 +180,6 @@ class OptionsPage(PicardOptions):
             if (item := self.workflow_stage_2.item(i)) is not None
         ]
 
-        config.setting[ConfigKey.ALBUM_SHELF] = TagKey.SHELF
         config.setting[ConfigKey.ACTIVE_TAB] = self.plugin_configuration.currentIndex()
 
         config.setting[ConfigKey.WORKFLOW_ENABLED] = self.workflow_enabled.isChecked()

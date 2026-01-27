@@ -7,9 +7,10 @@ Tests for the ShelfManager class.
 import unittest
 from unittest.mock import patch
 
+from typings import ConfigKey
+
 from shelves.manager import ShelfManager
 from shelves.typings import ProcessingType
-from typings import ConfigKey
 
 
 class ManagerTest(unittest.TestCase):
@@ -44,7 +45,7 @@ class ManagerTest(unittest.TestCase):
     def test_voting_determines_winner(self, _mock_config):
         """Test that the shelf_name with the most _shelf_votes_weighted is set as the winner."""
         # Arrange
-        _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
+        _album_id = "019c003f-66fa-7a57-89ff-767bdc16ab09"
         # pylint: disable=protected-access
         ShelfManager().upvote(_album_id, "ShelfA", ProcessingType.LOAD)
         ShelfManager().upvote(_album_id, "ShelfB", ProcessingType.LOAD)
@@ -52,8 +53,8 @@ class ManagerTest(unittest.TestCase):
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
-                ShelfManager().get_shelf_name(_album_id),
-                "ShelfA",
+            ShelfManager().get_shelf_name(_album_id),
+            "ShelfA",
         )
 
     @patch("shelves.manager.config")
@@ -67,15 +68,15 @@ class ManagerTest(unittest.TestCase):
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
-                ShelfManager().get_shelf_name(_album_id),
-                "ShelfB",
+            ShelfManager().get_shelf_name(_album_id),
+            "ShelfB",
         )
 
     @patch("shelves.manager.config")
     def test_clear_album_resets_state(self, _mock_config):
         """Test that clear_album removes all voting data for an album."""
         # mock_config.setting = self.test_configuration
-        _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
+        _album_id = "019c003f-adff-7646-bf58-064d0a645cd0"
         ShelfManager().upvote(_album_id, "ShelfA", ProcessingType.LOAD)
 
         # Verify _shelf_state exists

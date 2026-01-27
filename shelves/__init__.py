@@ -30,7 +30,7 @@ from .actions import (
     ShelfActionToggleLock as _ShelfActionToggleLock,
 )
 from .options import OptionsPage as _ShelvesOptionsPageBase
-from .processors import get_default_processors
+from .processors import get_processors_singleton
 from .script_functions import shelf as _func_shelf_base
 
 # Plugin metadata
@@ -85,7 +85,7 @@ class ShelfActionToggleLock(_ShelfActionToggleLock):
 # Lazy initialization to avoid import-time config access
 def _get_shelf_processors():
     """Get the shelf processors instance."""
-    return get_default_processors()
+    return get_processors_singleton()
 
 
 # Wrapper for script function
