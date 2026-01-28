@@ -414,7 +414,7 @@ class ContextBuilder:
 _processors_singleton = None
 
 
-def get_processors_singleton() -> ShelfProcessors:
+def instance() -> ShelfProcessors:
     """Get the default global ShelfProcessors instance."""
     global _processors_singleton
     if _processors_singleton is None:

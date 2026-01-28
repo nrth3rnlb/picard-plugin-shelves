@@ -20,6 +20,7 @@ from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
+from . import processors
 from .actions import (
     ShelfActionDetermine as _ShelfActionDetermine,
 )
@@ -30,7 +31,6 @@ from .actions import (
     ShelfActionToggleLock as _ShelfActionToggleLock,
 )
 from .options import OptionsPage as _ShelvesOptionsPageBase
-from .processors import get_processors_singleton
 from .script_functions import shelf as _func_shelf_base
 
 # Plugin metadata
@@ -82,57 +82,47 @@ class ShelfActionToggleLock(_ShelfActionToggleLock):
     """Wrapper class for ShelfActionToggleLock to ensure proper plugin registration."""
 
 
-# Lazy initialization to avoid import-time config access
-def _get_shelf_processors():
-    """Get the shelf processors instance."""
-    return get_processors_singleton()
-
-
 # Wrapper for script function
 def func_shelf(parser: Any) -> Optional[str]:
     """Wrapper for shelf to ensure proper plugin registration."""
     return _func_shelf_base(parser)
 
 
+def _track_metadata_processor(
+    album: Any,
+    metadata: Dict[str, Any],
+    track: Any,
+    release: Any,
+) -> None:
+    """Wrapper for track_metadata_processor."""
+    log.debug("TrackMetadataProcessor:")
+    processors.instance().track_metadata_processor(
+        _album=album, metadata=metadata, _track=track, _release=release
+    )
+
+
 # Wrapper functions that pass shelf_manager to processors
-def _file_post_load_processor_wrapper(file: Any) -> None:
+def _file_post_load_processor(file: Any) -> None:
     """Wrapper for file_post_load_processor."""
-    _get_shelf_processors().file_post_load_processor(file=file)
+    processors.instance().file_post_load_processor(file=file)
 
 
 def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
-    _get_shelf_processors().file_post_addition_to_track_processor(
-            track=track, file=file
-    )
-
-
-def _track_metadata_processor_wrapper(
-        album: Any,
-        metadata: Dict[str, Any],
-        track: Any,
-        release: Any,
-) -> None:
-    """Wrapper for track_metadata_processor."""
-    log.debug("TrackMetadataProcessor:")
-    _get_shelf_processors().track_metadata_processor(
-            _album=album, metadata=metadata, _track=track, _release=release
-    )
+    processors.instance().file_post_addition_to_track_processor(track=track, file=file)
 
 
 def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
     log.debug("PostRemovalFromTrackProcessor")
-    _get_shelf_processors().file_post_removal_from_track_processor(
-            track=track, file=file
-    )
+    processors.instance().file_post_removal_from_track_processor(track=track, file=file)
 
 
 # Register metadata processors
-register_track_metadata_processor(_track_metadata_processor_wrapper)
+register_track_metadata_processor(_track_metadata_processor)
 
 # Register file processors
-register_file_post_load_processor(_file_post_load_processor_wrapper)
+register_file_post_load_processor(_file_post_load_processor)
 register_file_post_addition_to_track_processor(_file_post_addition_to_track_processor)
 register_file_post_removal_from_track_processor(_file_post_removal_from_track_processor)
 
