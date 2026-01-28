@@ -181,7 +181,7 @@ class StrategyKnownNameFromPathDiffersFromTag(ShelfStrategy):
 
     @staticmethod
     def should_lock() -> bool:
-        return True
+        return False
 
 
 class StrategyUnknownNameFromPath(ShelfStrategy):
