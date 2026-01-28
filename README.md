@@ -3,18 +3,14 @@
 The **Shelves** plugin adds virtual shelf management to [MusicBrainz Picard](https://picard.musicbrainz.org/), allowing
 you to organize your music files by top-level folders (shelves) in your music library.
 
-Think of your music library as a physical library with different shelves — one for your standard collection, one for
-incoming/unprocessed music, one for Christmas music, etc.
-
 ## Features
 
-- **Automatic shelf detection** from file paths during scanning
-- **Smart detection** prevents artist/album names from being mistaken as shelves
-- **Manual shelf assignment** via the context menu
-- **Shelf management** in plugin settings (add, remove, scan directory)
-- **Workflow automation** automatically moves files between shelves (e.g. "Incoming" > "Standard")
 - **Script function `$shelf()`** for file naming integration
-- **Visual script preview** in settings shows your file naming snippet
+- **Automatic shelf detection** from file paths during scanning
+- **Manual shelf assignment** via the context menu
+- **Manually locking and unlocking** the shelf via the context menu
+- **Workflow automation** automatically moves files between shelves (e.g. "Incoming" or "Stash" or … -> "Standard")
+- **Configuration** in plugin settings
 
 ---
 
@@ -23,9 +19,7 @@ incoming/unprocessed music, one for Christmas music, etc.
 1. Copy the `shelves` folder to your Picard plugins directory:
     - **System Package**: `~/.config/MusicBrainz/Picard/plugins/`
     - **Flatpak**: `~/.var/app/org.musicbrainz.Picard/config/MusicBrainz/Picard/plugins`
-
 2. Restart Picard
-
 3. Enable the plugin in: **Options → Plugins → Shelves**
 
 ## Usage
@@ -35,17 +29,16 @@ incoming/unprocessed music, one for Christmas music, etc.
 The plugin expects your music library to be organized like this:
 
 ```
-~/Music/
+~/Picard_FileNaming_DestinationDirectory/
 ├── Standard/
-│   ├── Artist Name/
-│   │   └── Album Name/
-│   │       └── track.mp3
+│   └── …
 ├── Incoming/
-├── Christmas/
-├── Soundtrack/
-│   ├── Album Name/
-│   │   └── track.mp3
-└── ...
+│   └── …
+├── Stash/
+│   └── …
+├── Soundtracks/
+│   └── …
+└── …
 ```
 
 It is important to remember that each top-level folder in your music directory is considered a “shelf.”
@@ -134,9 +127,8 @@ The `$shelf()` function:
 
 Configure in plugin settings:
 
-- Enable Workflow
-- Stage 1: "Incoming"
-- Stage 2: "Standard"
+- Scan for potential shelf names from your music directory.
+- Activate and configure the workflow
 
 Then:
 
@@ -171,13 +163,8 @@ If you accidentally place files directly under Music:
 
 1. Files are in: `~/Music/Artist - Album/tracks/`
 2. **Scan** in Picard
-3. Plugin detects suspicious name, sets shelf to "Standard" (with warning in the log)
+3. Plugin detects suspicious name, sets shelf to "Standard"
 4. **Save** moves files to: `~/Music/Standard/Artist/Album/`
-
-## Tag Information
-
-- **Tag name:** `shelf`
-- **Default shelves:** Standard, Incoming
 
 ## Troubleshooting
 
@@ -197,7 +184,7 @@ Check the log for details about why it was considered suspicious.
 2. Look at the metadata panel on the right
 3. Find the `shelf` tag
 
-You can also check Picard's log (Help → View Error/Debug Log) for detailed information about shelf detection.
+It is also possible to view the examples under Options -> File Naming.
 
 ### The workflow isn't working
 
@@ -207,72 +194,23 @@ Make sure:
 - Your file naming script uses `$shelf()` (not `%shelf%` directly)
 - Stage 1 and Stage 2 are set to different shelves
 
-## Development
+## Architektur
 
-### Architecture
+Module in `shelves/`:
 
-The plugin uses a component-based architecture with the following key components:
-
-**Core Components (in `manager.py`):**
-
-- **ShelfRegistry**: Manages shelf names and base path configuration
-- **ShelfAssignmentEngine**: Handles voting logic and determines shelf assignments
-- **ShelfLockManager**: Manages manual overrides and locked shelf states
-- **ShelfValidator**: Validates shelf names using heuristics
-- **ShelfManager**: Facade pattern providing a unified interface (singleton with dependency injection support)
-
-**Supporting Modules:**
-
-- `processors.py`: File and metadata processors for automatic shelf detection
-- `workflow.py`: Workflow automation for shelf transitions
-- `actions.py`: Context menu actions (Set Shelf, Reset Shelf, Determine Shelf)
-- `options.py`: Options page UI and logic
-- `script_functions.py`: `$shelf()` script function implementation
-- `utils.py`: Utility functions for validation and file operations
-
-### Project Structure
-
-```
-shelves/
-├── __init__.py           # Plugin registration and setup
-├── constants.py          # Constants and defaults
-├── exceptions.py         # Custom exceptions
-├── manager.py            # Core shelf management (4 components + facade)
-├── utils.py              # Utility functions
-├── processors.py         # File and metadata processors
-├── workflow.py           # Workflow engine
-├── actions.py            # Context menu actions
-├── options.py            # Options page
-├── dialogs.py            # UI dialogs
-├── widgets.py            # Custom widgets
-├── script_functions.py   # $shelf() function
-└── ui/                   # Generated UI files
-```
-
-### Testing
-
-See [TESTING.md](TESTING.md) for comprehensive testing information.
-
-Quick start:
-
-```bash
-# Run all tests
-make test
-
-# Run with pytest
-make test-pytest
-
-# Run with coverage
-make coverage
-```
-
-## Requirements
-
-- MusicBrainz Picard 2.0 or higher
-- PyQt5
-- `discid/discid.h` for the installation of the development environment using `pip install -e '.[dev]`
-    - Search for a package with a name like `libdiscid-dev`, `libdiscid-devel` or similar, depending on your Linux
-      distribution.
+- `__init__.py`: Plugin registration
+- `constants.py`: Constants and defaults
+- `exceptions.py`: Custom exceptions
+- `typings.py`: Types and guards
+- `utils.py`: Utility functions (validation, path handling)
+- `manager.py`: Central shelf management (registry, votes, lock status, validation)
+- `processors.py`: Processing of paths and metadata, voting, priorities, workflow integration
+- `workflow.py`: Engine for two-stage transitions and target path calculation
+- `actions.py`: Context menu actions (set/reset/determine shelf name)
+- `options.py`: Options page including validations and script example with the `$shelf()` function
+- `dialogs.py`: UI dialogs for selecting/entering shelves
+- `widgets.py`: UI widgets
+- `script_functions.py`: Implementation of `$shelf()`
 
 ## License
 
