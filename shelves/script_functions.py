@@ -16,4 +16,4 @@ def shelf(parser: ScriptParser) -> str:
     if not metadata_shelf and not context_shelf:
         return ""
 
-    return WorkflowEngine.apply_transition(metadata_shelf or context_shelf)
+    return metadata_shelf or context_shelf
