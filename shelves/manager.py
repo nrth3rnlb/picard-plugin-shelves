@@ -88,11 +88,7 @@ class ShelfRegistry:
         log.debug("Current shelf names: %s", self.shelf_names)
 
     def remove_shelf_names(self, names: Set[str] | str) -> None:
-        """
-        Remove shelf names from the registry.
-
-        :param names: Single shelf name or set of shelf names to remove.
-        """
+        """Remove shelf names from the registry."""
         if isinstance(names, str):
             names = {names}
         self.shelf_names = self.shelf_names.difference(names)
@@ -100,11 +96,7 @@ class ShelfRegistry:
         log.debug("Current shelf names: %s", self.shelf_names)
 
     def intersect_shelf_names(self, names: Set[str] | str) -> None:
-        """
-        Intersect shelf names with the provided set.
-
-        :param names: Single shelf name or set of shelf names to intersect.
-        """
+        """Intersect shelf names with the provided set."""
         if isinstance(names, str):
             names = {names}
         self.shelf_names = self.shelf_names.intersection(names)
@@ -347,7 +339,6 @@ class ShelfManager:
         """
         if not hasattr(self, "_initialized"):
             self._initialized = True
-            self._test_value = None
 
             # Initialize component hierarchy (use injected or create new)
             self._registry = registry or ShelfRegistry()
@@ -381,16 +372,6 @@ class ShelfManager:
     def base_path(self) -> Path:
         """Get the base path."""
         return self._registry.base_path
-
-    @property
-    def test_value(self):
-        """Test value for testing purposes."""
-        return self._test_value
-
-    @test_value.setter
-    def test_value(self, value):
-        """Set test value."""
-        self._test_value = value
 
     # ===== Delegation Methods =====
 

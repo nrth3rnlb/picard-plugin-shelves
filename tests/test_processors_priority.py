@@ -15,7 +15,7 @@ from typings import ConfigKey, ProcessingType, TagKey
 from shelves.processors import (
     ShelfProcessors,
     StrategyKnownIdenticalNames,
-    StrategyKnownNameFromPath,
+    StrategyKnownNameFromPathDiffersFromTag,
     StrategyUnknownNameFromPath,
 )
 
@@ -144,9 +144,9 @@ class ProcessorPriorityTest(unittest.TestCase):
 
         # Assert
         self.assertTrue(
-            get_strategy(processors, StrategyKnownNameFromPath).is_applicable(
-                mock_context
-            )
+            get_strategy(
+                processors, StrategyKnownNameFromPathDiffersFromTag
+            ).is_applicable(mock_context)
         )
 
     @patch("shelves.processors.ContextBuilder")

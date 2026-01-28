@@ -157,7 +157,7 @@ class StrategyKnownIdenticalNames(ShelfStrategy):
         return context.name_from_tag
 
 
-class StrategyKnownNameFromPath(ShelfStrategy):
+class StrategyKnownNameFromPathDiffersFromTag(ShelfStrategy):
     """
     Strategy: The shelf name detected in the file path does not match the shelf name indicated
     by the tag.
@@ -178,6 +178,10 @@ class StrategyKnownNameFromPath(ShelfStrategy):
 
     def resolve_shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_path
+
+    @staticmethod
+    def should_lock() -> bool:
+        return True
 
 
 class StrategyUnknownNameFromPath(ShelfStrategy):
@@ -203,7 +207,7 @@ class ShelfProcessors:
 
     STRATEGY_ORDER: Sequence[type[ShelfStrategy]] = [
         StrategyKnownIdenticalNames,
-        StrategyKnownNameFromPath,
+        StrategyKnownNameFromPathDiffersFromTag,
         StrategyUnknownNameFromPath,
     ]
 

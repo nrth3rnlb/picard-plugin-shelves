@@ -6,6 +6,8 @@ Tests for the processors module.
 
 import unittest
 
+from typings import ConfigKey
+
 
 class AttrDict(dict):
     """A dictionary that allows attribute-style access."""
@@ -24,10 +26,10 @@ class ProcessorsTest(unittest.TestCase):
         """Set up the test environment."""
         self.config = {
             "settings": {
-                ConfigKey.WORKFLOW_ENABLED        : True,
+                ConfigKey.WORKFLOW_ENABLED: True,
                 ConfigKey.WORKFLOW_STAGE_1_SHELVES: ["Incoming"],
                 ConfigKey.WORKFLOW_STAGE_2_SHELVES: ["Standard"],
-                ConfigKey.MOVE_FILES_TO           : "/music",
+                ConfigKey.MOVE_FILES_TO: "/music",
             }
         }
 

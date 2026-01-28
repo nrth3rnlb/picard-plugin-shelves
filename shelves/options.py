@@ -600,18 +600,7 @@ class OptionsPage(PicardOptions):
         stage_name: str,
         is_full: Optional[bool] = False,
     ) -> str:
-        """
-        Generates a tooltip message based on the state of the target.
-
-        :param stage_name: The target list widget name.
-        :type stage_name: str
-        :param is_full: A boolean flag indicating whether the operation is fully
-            completed. If True, a disabled message is returned; otherwise, an enabled
-            message is returned.
-        :type is_full: bool
-        :return: The tooltip message.
-        :rtype: str
-        """
+        """Generates a tooltip message based on the state of the target."""
         if is_full:
             return MESSAGE_MOVE_SELECTED_ITEMS_DISABLED.format(
                 name_of_target_stage=stage_name,
