@@ -127,22 +127,13 @@ class OptionsPage(PicardOptions):
     # ============================================================================
     # noinspection PyTypeHints
     def load(self) -> None:
-        """
-        Load configuration.
+        """Load configuration."""
 
-        :return:
-        :rtype:
-        """
+        # The widgets "workflow_stage_1" and "workflow_stage_2," and of course "shelves_for_stages," are indirectly
+        # populated by filling the widget "shelf_management_shelves." Therefore, we first add the shelf names to that
+        # widget.
         self.shelf_management_shelves.addItems(
             config.setting[ConfigKey.KNOWN_SHELVES],
-        )
-
-        self.workflow_stage_1.addItems(
-            config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES],
-        )
-
-        self.workflow_stage_2.addItems(
-            config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES],
         )
 
         self.stage_1_includes_non_shelves.setChecked(
@@ -161,23 +152,26 @@ class OptionsPage(PicardOptions):
 
     # noinspection PyTypeHints
     def save(self) -> None:
-        """Save shelf_names list to config."""
+        """Save configuration."""
         config.setting[ConfigKey.KNOWN_SHELVES] = [
             item.text()
             for i in range(self.shelf_management_shelves.count())
             if (item := self.shelf_management_shelves.item(i)) is not None
+            and item.text() in ShelfManager().shelf_names
         ]
 
         config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES] = [
             item.text()
             for i in range(self.workflow_stage_1.count())
             if (item := self.workflow_stage_1.item(i)) is not None
+            and item.text() in ShelfManager().shelf_names
         ]
 
         config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES] = [
             item.text()
             for i in range(self.workflow_stage_2.count())
             if (item := self.workflow_stage_2.item(i)) is not None
+            and item.text() in ShelfManager().shelf_names
         ]
 
         config.setting[ConfigKey.ACTIVE_TAB] = self.plugin_configuration.currentIndex()
@@ -188,12 +182,7 @@ class OptionsPage(PicardOptions):
         )
 
     def _management_action_add(self) -> None:
-        """
-        Add a new shelf name and update the UI.
-
-        :return: None
-        :rtype: None
-        """
+        """Add a new shelf name and update the UI."""
         shelf_name, ok = QtWidgets.QInputDialog.getText(
             self,
             _(TITLE_ADD_SHELF_NAME),
@@ -215,12 +204,7 @@ class OptionsPage(PicardOptions):
         self._management_build_list()
 
     def _management_action_remove(self) -> None:
-        """
-        Remove the selected shelf names and update the UI.
-
-        :return: None
-        :rtype: None
-        """
+        """Remove the selected shelf names and update the UI."""
         selected_items = self.shelf_management_shelves.selectedItems()
         if not selected_items:
             return
@@ -257,24 +241,14 @@ class OptionsPage(PicardOptions):
         self._management_build_list()
 
     def _management_action_scan(self) -> None:
-        """
-        Scan Picard's target directory for shelf names and update the UI.
-
-        :return: None
-        :rtype: None
-        """
+        """Scan Picard's target directory for shelf names and update the UI."""
         shelf_names: set[str] = utils.get_shelf_dirs(base_path=ShelfManager().base_path)
 
         ShelfManager().add_shelf_names(shelf_names)
         self._management_build_list()
 
     def _management_action_intersect(self) -> None:
-        """
-        Remove shelf_names that no longer exist in the music directory.
-
-        :return: None
-        :rtype: None
-        """
+        """Remove shelf_names that no longer exist in the music directory."""
         shelf_names: set[str] = utils.get_shelf_dirs(base_path=ShelfManager().base_path)
 
         ShelfManager().intersect_shelf_names(shelf_names)
@@ -355,13 +329,13 @@ class OptionsPage(PicardOptions):
         self.shelves_for_stages.itemSelectionChanged.connect(
             self._workflow_on_lists_changed,
         )
-        # if (model := self.shelves_for_stages.model()) is not None:
-        #     model.rowsInserted.connect(
-        #         self._workflow_on_lists_changed,
-        #     )
-        #     model.rowsRemoved.connect(
-        #         self._workflow_on_lists_changed,
-        #     )
+        if (model := self.shelves_for_stages.model()) is not None:
+            model.rowsInserted.connect(
+                self._workflow_on_lists_changed,
+            )
+            model.rowsRemoved.connect(
+                self._workflow_on_lists_changed,
+            )
 
         # Stage 1 connections
         self.label_workflow_stage_1.setAlignment(
@@ -373,13 +347,13 @@ class OptionsPage(PicardOptions):
         self.workflow_stage_1.itemSelectionChanged.connect(
             self._workflow_on_lists_changed,
         )
-        # if (model := self.workflow_stage_1.model()) is not None:
-        #     model.rowsInserted.connect(
-        #         self._workflow_on_lists_changed,
-        #     )
-        #     model.rowsRemoved.connect(
-        #         self._workflow_on_lists_changed,
-        #     )
+        if (model := self.workflow_stage_1.model()) is not None:
+            model.rowsInserted.connect(
+                self._workflow_on_lists_changed,
+            )
+            model.rowsRemoved.connect(
+                self._workflow_on_lists_changed,
+            )
 
         # Stage 2 connections
         self.workflow_stage_2.max_item_count = 1
@@ -441,18 +415,30 @@ class OptionsPage(PicardOptions):
         self.button_stage_1_to_all.setToolTip(tooltip_to_all)
         self.button_stage_2_to_all.setToolTip(tooltip_to_all)
 
+    # noinspection PyTypeHints
     def _workflow_build_shelves_for_stages(self) -> None:
         # Build shelves for stages and trigger an initial state change
-        # noinspection PyTypeHints
-        remaining_shelves = (
+
+        self.shelves_for_stages.clear()
+        self.shelves_for_stages.addItems(
             ShelfManager()
             .shelf_names.difference(config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES])
             .difference(
                 config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES],
             )
         )
-        self.shelves_for_stages.clear()
-        self.shelves_for_stages.addItems(remaining_shelves)
+        self.workflow_stage_1.clear()
+        self.workflow_stage_1.addItems(
+            ShelfManager().shelf_names.intersection(
+                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
+            )
+        )
+        self.workflow_stage_2.clear()
+        self.workflow_stage_2.addItems(
+            ShelfManager().shelf_names.intersection(
+                config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
+            )
+        )
 
     # ============================================================================
     # Workflow - Helper methods
@@ -463,12 +449,7 @@ class OptionsPage(PicardOptions):
         source: QShelvesWidget,
         target: QShelvesWidget,
     ) -> None:
-        """
-        Move current item from source to target list widget.
-
-        :param source: Source list widget.
-        :param target: Target list widget.
-        """
+        """Move current item from source to target list widget."""
         items = source.selectedItems()
         for item in items:
             is_full = (
@@ -479,12 +460,7 @@ class OptionsPage(PicardOptions):
             target.addItem(source.takeItem(source.row(item)))
 
     def _management_build_list(self):
-        """
-        Refresh the shelves widget with the current shelf names.
-
-        :return: None
-        :rtype: None
-        """
+        """Refresh the shelves widget with the current shelf names."""
         self.shelf_management_shelves.clear()
         self.shelf_management_shelves.addItems(ShelfManager().shelf_names)
         self.shelf_management_shelves.sortItems()
@@ -494,32 +470,19 @@ class OptionsPage(PicardOptions):
     # ============================================================================
     def _management_on_list_rows_changed(self) -> None:
         """
-        Rebuild shelf_names for stages.
+        Rebuild shelf names for stages.
         Normally linked to an event, an explicit call should not be necessary.
-
-        :return: None
-        :rtype: None
         """
         self._workflow_build_shelves_for_stages()
 
     def _management_on_list_selection_changed(self) -> None:
-        """
-        Enable / disable the remove button based on selection.
-
-        :return: None
-        :rtype: None
-        """
+        """Enable / disable the remove button based on selection."""
         self.remove_shelves_button.setEnabled(
             len(self.shelf_management_shelves.selectedItems()) > 0,
         )
 
     def _workflow_on_lists_changed(self) -> None:
-        """
-        Handles the state change for shelves available for workflow stages.
-
-        :return: This method does not return any value.
-        :rtype: None
-        """
+        """Handles the state change for shelves available for workflow stages."""
         # Check for items
         has_items_shelves_for_stages = self.shelves_for_stages.count() > 0
         has_items_stage_1 = self.workflow_stage_1.count() > 0

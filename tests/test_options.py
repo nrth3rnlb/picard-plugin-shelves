@@ -9,10 +9,10 @@ from unittest.mock import MagicMock, patch
 
 from picard.config import BoolOption, IntOption, ListOption
 from PyQt5.QtWidgets import QApplication
+from typings import ConfigKey, TagKey
 
 from shelves import constants
 from shelves.options import OptionsPage
-from typings import ConfigKey, TagKey
 
 
 class OptionsPageTest(unittest.TestCase):
@@ -55,28 +55,28 @@ class OptionsPageTest(unittest.TestCase):
             str,
             str | list[str] | bool | int,
         ] = {
-            ConfigKey.ACTIVE_TAB                  : 1,
-            ConfigKey.KNOWN_SHELVES               : self.test_known_shelves,
+            ConfigKey.ACTIVE_TAB: 1,
+            ConfigKey.KNOWN_SHELVES: self.test_known_shelves,
             ConfigKey.STAGE_1_INCLUDES_NON_SHELVES: True,
-            ConfigKey.WORKFLOW_ENABLED            : True,
-            ConfigKey.WORKFLOW_STAGE_1_SHELVES    : self.test_known_shelves[
+            ConfigKey.WORKFLOW_ENABLED: True,
+            ConfigKey.WORKFLOW_STAGE_1_SHELVES: self.test_known_shelves[
                 : self.test_number_known_shelves - 2
             ],
-            ConfigKey.WORKFLOW_STAGE_2_SHELVES    : self.test_known_shelves[
-                self.test_number_known_shelves - 1:
+            ConfigKey.WORKFLOW_STAGE_2_SHELVES: self.test_known_shelves[
+                self.test_number_known_shelves - 1 :
             ],
-            ConfigKey.ALBUM_SHELF                 : TagKey.SHELF,
-            ConfigKey.MOVE_FILES_TO               : "/music",
+            ConfigKey.ALBUM_SHELF: TagKey.SHELF,
+            ConfigKey.MOVE_FILES_TO: "/music",
         }
 
         self.widget_config = {
-            ConfigKey.ACTIVE_TAB                  : {
+            ConfigKey.ACTIVE_TAB: {
                 "option_class": IntOption,
                 "widget": self.options_page.plugin_configuration,
                 "setter": "setCurrentIndex",
                 "getter": "currentIndex",
             },
-            ConfigKey.KNOWN_SHELVES               : {
+            ConfigKey.KNOWN_SHELVES: {
                 "option_class": ListOption,
                 "widget": self.options_page.shelf_management_shelves,
                 "setter": "addItems",
@@ -88,19 +88,19 @@ class OptionsPageTest(unittest.TestCase):
                 "setter": "setChecked",
                 "getter": "isChecked",
             },
-            ConfigKey.WORKFLOW_ENABLED            : {
+            ConfigKey.WORKFLOW_ENABLED: {
                 "option_class": BoolOption,
                 "widget": self.options_page.workflow_enabled,
                 "setter": "setChecked",
                 "getter": "isChecked",
             },
-            ConfigKey.WORKFLOW_STAGE_1_SHELVES    : {
+            ConfigKey.WORKFLOW_STAGE_1_SHELVES: {
                 "option_class": ListOption,
                 "widget": self.options_page.workflow_stage_1,
                 "setter": "addItems",
                 "getter": None,
             },
-            ConfigKey.WORKFLOW_STAGE_2_SHELVES    : {
+            ConfigKey.WORKFLOW_STAGE_2_SHELVES: {
                 "option_class": ListOption,
                 "widget": self.options_page.workflow_stage_2,
                 "setter": "addItems",
@@ -136,9 +136,9 @@ class OptionsPageTest(unittest.TestCase):
         for option in OptionsPage.options:
             with self.subTest(option=option.name):
                 self.assertEqual(
-                        option.section,
-                        "setting",
-                        f"Option '{option.name}' uses incorrect namespace '{option.section}' instead of 'setting'",
+                    option.section,
+                    "setting",
+                    f"Option '{option.name}' uses incorrect namespace '{option.section}' instead of 'setting'",
                 )
 
     def test_all_options_used(self):
@@ -213,7 +213,7 @@ class OptionsPageTest(unittest.TestCase):
     @patch("shelves.options.config")
     @patch("shelves.options.ShelfManager")
     def test_load_populates_ui_from_config(
-            self, mock_shelf_manager, mock_config
+        self, mock_shelf_manager, mock_config
     ) -> None:
         """Test if the load method correctly populates UI from config."""
         # Arrange
@@ -223,38 +223,47 @@ class OptionsPageTest(unittest.TestCase):
             ConfigKey.MOVE_FILES_TO
         ]
         mock_config.setting = self.test_configuration
+
+        # The configurations for these keys are not set directly in the `load()` method.
+        # These widgets are filled indirectly by filling the `shelf_management_shelves` widget.
+        keys_to_skip = {
+            ConfigKey.WORKFLOW_STAGE_1_SHELVES,
+            ConfigKey.WORKFLOW_STAGE_2_SHELVES,
+        }
+
         # Act
         self.options_page.load()
 
         # Assert - Check whether the widgets have been given the correct values
         for key, config in self.widget_config.items():
-            with self.subTest(key=key):
-                option_class = config["option_class"]
-                widget = config["widget"]
-                setter = config["setter"]
+            if key not in keys_to_skip:
+                with self.subTest(key=key):
+                    option_class = config["option_class"]
+                    widget = config["widget"]
+                    setter = config["setter"]
 
-                if option_class == BoolOption:
-                    expected_bool_option: bool = self.test_configuration[key]
-                    getattr(widget, setter).assert_called_with(expected_bool_option)
-                elif option_class == IntOption:
-                    expected_int_option: int = self.test_configuration[key]
-                    getattr(widget, setter).assert_called_with(expected_int_option)
-                elif option_class == ListOption:
-                    expected_list_option: list[str] = self.test_configuration[key]
-                    # Verify the method was called
-                    self.assertTrue(getattr(widget, setter).called)
-                    # Get the actual argument and compare as sets
-                    actual_arg = getattr(widget, setter).call_args[0][0]
-                    self.assertEqual(set(actual_arg), set(expected_list_option))
-                else:
-                    raise ValueError(f"Unsupported option type: {option_class}")
+                    if option_class == BoolOption:
+                        expected_bool_option: bool = self.test_configuration[key]
+                        getattr(widget, setter).assert_called_with(expected_bool_option)
+                    elif option_class == IntOption:
+                        expected_int_option: int = self.test_configuration[key]
+                        getattr(widget, setter).assert_called_with(expected_int_option)
+                    elif option_class == ListOption:
+                        expected_list_option: list[str] = self.test_configuration[key]
+                        # Verify the method was called
+                        self.assertTrue(getattr(widget, setter).called)
+                        # Get the actual argument and compare as sets
+                        actual_arg = getattr(widget, setter).call_args[0][0]
+                        self.assertEqual(set(actual_arg), set(expected_list_option))
+                    else:
+                        raise ValueError(f"Unsupported option type: {option_class}")
 
     # ============================================================================
     # Shelf management tests - Add
     # ============================================================================
     @patch("shelves.options.ShelfManager")
     @patch(
-            "shelves.options.QtWidgets.QInputDialog.getText",
+        "shelves.options.QtWidgets.QInputDialog.getText",
     )
     def test_add_valid_shelf(self, mock_get_text, mock_shelf_manager):
         """Test adding a new, valid shelf_name."""
@@ -275,17 +284,17 @@ class OptionsPageTest(unittest.TestCase):
         mock_manager_instance.add_shelf_names.assert_called_with(expected_shelves)
 
     @patch(
-            "shelves.options.QtWidgets.QInputDialog.getText",
+        "shelves.options.QtWidgets.QInputDialog.getText",
     )
     @patch(
-            "shelves.options.QtWidgets.QMessageBox.warning",
+        "shelves.options.QtWidgets.QMessageBox.warning",
     )
     @unittest.skipUnless(
-            constants.INVALID_SHELF_NAME_CHARS,
-            "No INVALID_SHELF_NAME_CHARS defined",
+        constants.INVALID_SHELF_NAME_CHARS,
+        "No INVALID_SHELF_NAME_CHARS defined",
     )
     def test_add_invalid_shelf(
-            self, mock_register_shelf_names, mock_warning, mock_get_text
+        self, mock_register_shelf_names, mock_warning, mock_get_text
     ):
         """Test adding an invalid shelf name shows warning dialog."""
         # Arrange
@@ -297,7 +306,7 @@ class OptionsPageTest(unittest.TestCase):
         )
 
         with patch.object(
-                OptionsPage, "registered_shelf_names"
+            OptionsPage, "registered_shelf_names"
         ) as mock_registered_shelf_names:
             mock_registered_shelf_names.return_value = set(self.test_known_shelves)
             # Act
@@ -332,11 +341,11 @@ class OptionsPageTest(unittest.TestCase):
         # Assert
         expected_shelves = {selected_text}
         mock_manager_instance.remove_shelf_names.assert_called_with(
-                set(expected_shelves)
+            set(expected_shelves)
         )
 
     @patch(
-            "shelves.options.QtWidgets.QMessageBox.question",
+        "shelves.options.QtWidgets.QMessageBox.question",
     )
     @patch("shelves.options.ShelfManager")
     def test_remove_shelves_with_conflicts(self, _mock_shelf_manager, mock_question):
@@ -404,7 +413,7 @@ class OptionsPageTest(unittest.TestCase):
             find_items_side_effect
         )
         self.options_page.shelf_management_shelves.row.side_effect = lambda item: list(
-                mock_items.keys()
+            mock_items.keys()
         ).index(item.text())
 
         # Act
@@ -413,7 +422,7 @@ class OptionsPageTest(unittest.TestCase):
         # Assert
         expected_shelves = shelf_dirs
         mock_manager_instance.intersect_shelf_names.assert_called_with(
-                set(expected_shelves)
+            set(expected_shelves)
         )
 
     # ============================================================================
