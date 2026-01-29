@@ -7,12 +7,20 @@ from __future__ import annotations
 import os
 import sys
 from gettext import gettext as _
-from typing import Optional
+from typing import Optional, cast
 
 from picard import config, log
 from picard.config import BoolOption, IntOption, ListOption, Option, TextOption
 from picard.ui.options import OptionsPage as PicardOptions
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PyQt5.QtCore import QPoint, Qt
+from PyQt5.QtWidgets import (
+    QAbstractItemView,
+    QInputDialog,
+    QListWidgetItem,
+    QMenu,
+    QMessageBox,
+)
 
 from . import constants, utils
 from .manager import ShelfManager
@@ -118,6 +126,7 @@ class OptionsPage(PicardOptions):
         finally:
             sys.path.pop(0)
 
+        self._management_customize()
         self._management_setup_connections()
         self._workflow_setup_connections()
         self._workflow_customize_buttons()
@@ -183,17 +192,23 @@ class OptionsPage(PicardOptions):
 
     def _management_action_add(self) -> None:
         """Add a new shelf name and update the UI."""
-        shelf_name, ok = QtWidgets.QInputDialog.getText(
-            self,
-            _(TITLE_ADD_SHELF_NAME),
-            _(MESSAGE_PROVIDE_SHELF_NAME),
-        )
-        if not ok or not shelf_name:
-            return
+        # shelf_name, ok = QInputDialog.getText(
+        #     self,
+        #     _(TITLE_ADD_SHELF_NAME),
+        #     _(MESSAGE_PROVIDE_SHELF_NAME),
+        # )
+        # if not ok or not shelf_name:
+        #     return
+
+        item = QListWidgetItem("")
+        item.setFlags(item.flags() | Qt.ItemIsEditable)  # type: ignore[attr-defined]
+        self.shelf_management_shelves.addItem(item)
+        self.shelf_management_shelves.setCurrentItem(item)
+        self.shelf_management_shelves.editItem(item)
 
         is_valid, message = utils.validate_shelf_name(shelf_name)
         if not is_valid:
-            QtWidgets.QMessageBox.warning(
+            QMessageBox.warning(
                 self,
                 _(MESSAGE_INVALID_SHELF_NAME),
                 message if message is not None else "",
@@ -203,7 +218,7 @@ class OptionsPage(PicardOptions):
         ShelfManager().add_shelf_names(shelf_name)
         self._management_build_list()
 
-    def _management_action_remove(self) -> None:
+    def _management_action_remove_selected(self) -> None:
         """Remove the selected shelf names and update the UI."""
         selected_items = self.shelf_management_shelves.selectedItems()
         if not selected_items:
@@ -297,13 +312,84 @@ class OptionsPage(PicardOptions):
     # Configuration setup
     # ============================================================================
 
+    def _show_shelves_context_menu(self, pos: QPoint) -> None:
+        # Context menu for shelf_management_shelves
+        menu = QMenu(self.shelf_management_shelves)
+        add_act = menu.addAction("Add shelf")
+        remove_act = None
+        if self.shelf_management_shelves.selectedItems():
+            remove_act = menu.addAction("Remove selection")
+
+        action = menu.exec_(self.shelf_management_shelves.mapToGlobal(pos))
+        if action == add_act:
+            self._management_action_add()
+        elif remove_act and action == remove_act:
+            self._management_action_remove_selected()
+
+    def _on_shelf_item_changed(self, item: QListWidgetItem) -> None:
+        """Validiere neu eingegebene Shelf-Namen und füge sie der Registry hinzu."""
+        # Nur neu markierte Items verarbeiten
+        is_new = bool(item.data(Qt.UserRole))
+        if not is_new:
+            return
+
+        shelf_name_text = item.text().strip()
+
+        # Leere oder doppelte Namen verhindern
+        if not shelf_name_text or shelf_name_text in ShelfManager().shelf_names:
+            QMessageBox.warning(
+                self,
+                _(MESSAGE_INVALID_SHELF_NAME),
+                _(MESSAGE_INVALID_SHELF_NAME),
+            )
+            # ungültiges Item entfernen
+            row = self.shelf_management_shelves.row(item)
+            self.shelf_management_shelves.takeItem(row)
+            return
+
+        # Validierung über Utility
+        is_valid, message = utils.validate_shelf_name(shelf_name_text)
+        if not is_valid:
+            QMessageBox.warning(
+                self,
+                _(MESSAGE_INVALID_SHELF_NAME),
+                message if message is not None else "",
+            )
+            row = self.shelf_management_shelves.row(item)
+            self.shelf_management_shelves.takeItem(row)
+            return
+
+        # gültig: zur Registry hinzufügen
+        ShelfManager().add_shelf_names({shelf_name_text})
+
+        # Flag entfernen, damit spätere Änderungen nicht erneut verarbeitet werden
+        item.setData(Qt.UserRole, None)
+
+        # Liste neu aufbauen (setzt Editier-Flags konsistent und sortiert)
+        self._management_build_list()
+
+    def _management_customize(self) -> None:
+        """Customize shelf management UI components."""
+        self.shelf_management_shelves.setSortingEnabled(True)
+        self.shelf_management_shelves.setAlternatingRowColors(True)
+        self.shelf_management_shelves.setEditTriggers(
+            QAbstractItemView.EditKeyPressed | QAbstractItemView.DoubleClicked
+        )
+        self.shelf_management_shelves.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.shelf_management_shelves.setContextMenuPolicy(Qt.CustomContextMenu)  # type: ignore[attr-defined]
+        self.shelf_management_shelves.customContextMenuRequested.connect(
+            self._show_shelves_context_menu
+        )
+        self.shelf_management_shelves.installEventFilter(self)
+        self.remove_shelves_button.setEnabled(False)
+
     def _management_setup_connections(self) -> None:
         """Setup shelf management UI components and connect signals."""
-        self.shelf_management_shelves.setSelectionMode(
-            QtWidgets.QAbstractItemView.ExtendedSelection,
-        )
+        self.shelf_management_shelves.itemChanged.connect(self._on_shelf_item_changed)
         self.add_shelf_button.clicked.connect(self._management_action_add)
-        self.remove_shelves_button.clicked.connect(self._management_action_remove)
+        self.remove_shelves_button.clicked.connect(
+            self._management_action_remove_selected
+        )
         self.remove_unknown_shelves_button.clicked.connect(
             self._management_action_intersect,
         )
@@ -324,7 +410,7 @@ class OptionsPage(PicardOptions):
 
         # Shelves for stages connections
         self.shelves_for_stages.setSelectionMode(
-            QtWidgets.QAbstractItemView.ExtendedSelection,
+            QAbstractItemView.ExtendedSelection,
         )
         self.shelves_for_stages.itemSelectionChanged.connect(
             self._workflow_on_lists_changed,
@@ -339,10 +425,10 @@ class OptionsPage(PicardOptions):
 
         # Stage 1 connections
         self.label_workflow_stage_1.setAlignment(
-            QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter,
+            Qt.AlignRight | Qt.AlignVCenter,  # type: ignore[attr-defined]
         )
         self.workflow_stage_1.setSelectionMode(
-            QtWidgets.QAbstractItemView.ExtendedSelection,
+            QAbstractItemView.ExtendedSelection,
         )
         self.workflow_stage_1.itemSelectionChanged.connect(
             self._workflow_on_lists_changed,
@@ -359,7 +445,7 @@ class OptionsPage(PicardOptions):
         self.workflow_stage_2.max_item_count = 1
         log.debug(f"Max item count: {self.workflow_stage_2.max_item_count}")
         self.workflow_stage_2.setSelectionMode(
-            QtWidgets.QAbstractItemView.ExtendedSelection,
+            QAbstractItemView.ExtendedSelection,
         )
         self.workflow_stage_2.itemSelectionChanged.connect(
             self._workflow_on_lists_changed,
@@ -463,6 +549,10 @@ class OptionsPage(PicardOptions):
         """Refresh the shelves widget with the current shelf names."""
         self.shelf_management_shelves.clear()
         self.shelf_management_shelves.addItems(ShelfManager().shelf_names)
+        for i in range(self.shelf_management_shelves.count()):
+            item = self.shelf_management_shelves.item(i)
+            if item is not None:
+                item.setFlags(item.flags() | Qt.ItemIsEditable)  # type: ignore[attr-defined]
         self.shelf_management_shelves.sortItems()
 
     # ============================================================================
