@@ -51,10 +51,7 @@ class OptionsPageTest(unittest.TestCase):
             "Soundtracks - Movies",
         ]
         self.test_number_known_shelves = len(self.test_known_shelves)
-        self.test_configuration: dict[
-            str,
-            str | list[str] | bool | int,
-        ] = {
+        self.test_configuration = {
             ConfigKey.ACTIVE_TAB: 1,
             ConfigKey.KNOWN_SHELVES: self.test_known_shelves,
             ConfigKey.STAGE_1_INCLUDES_NON_SHELVES: True,
@@ -187,9 +184,10 @@ class OptionsPageTest(unittest.TestCase):
     def test_save_writes_to_config_with_shelves(self, mock_shelf_manager, mock_config):
         """Test if the save method correctly writes UI state to config with shelves."""
         # Arrange
+        _test_configuration = deepcopy(self.test_configuration)
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
-        _test_configuration = deepcopy(self.test_configuration)
+        mock_manager_instance.shelf_names = self.test_known_shelves
 
         mock_config.setting = {}
         for option in OptionsPage.options:

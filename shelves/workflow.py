@@ -52,15 +52,27 @@ class TransitionStrategy(ABC):
         if not self.is_applicable(context):
             return False
 
-        shelf_name = self.resolve_shelf_name(context)
-        if not shelf_name:
-            return False
+        # shelf_name = self.resolve_shelf_name(context)
+        # if not shelf_name:
+        #     return False
 
         self.manager.set_shelf_name(
             album_id=context.album_id,
             shelf_name=config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES][0],
         )
         return True
+
+
+class TransitionEmptyNameToStage2(TransitionStrategy):
+    """TransitionStrategy of an empty shelf name."""
+
+    def is_applicable(self, context: TransitionContext) -> bool:
+        # noinspection PyTypeHints
+        return (
+            context.transition_type == TransitionType.TO_STAGE_2
+            and config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
+            and context.shelf_name == ""
+        )
 
 
 class TransitionUnknownNameToStage2(TransitionStrategy):
@@ -100,6 +112,7 @@ class Transitions:
     """
 
     TRANSITION_ORDER: Sequence[type[TransitionStrategy]] = [
+        TransitionEmptyNameToStage2,
         TransitionUnknownNameToStage2,
         TransitionsKnownNameToStage2,
     ]
@@ -133,9 +146,13 @@ class ContextBuilder:
     @staticmethod
     def build_context(
         manager: ShelfManager, album_id: str, transition_type: TransitionType
-    ) -> TransitionContext:
+    ) -> Optional[TransitionContext]:
         """Build transition context from album_id."""
         shelf_name = manager.get_shelf_name(album_id=album_id)
+
+        if shelf_name is None:
+            return None
+
         return TransitionContext(
             album_id=album_id,
             shelf_name=shelf_name,

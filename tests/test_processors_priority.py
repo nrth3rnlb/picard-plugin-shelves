@@ -122,7 +122,6 @@ class ProcessorPriorityTest(unittest.TestCase):
         mock_context.name_from_path = name_from_path
         mock_context.is_locked = False
         mock_context.processing_type = ProcessingType.ADD
-
         mock_context_builder.build_processing_context_by_file.return_value = (
             mock_context
         )
