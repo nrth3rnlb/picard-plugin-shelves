@@ -20,19 +20,15 @@ from picard import log
 from picard.file import File
 from picard.track import Track
 
+from . import workflow
 from .exceptions import ShelfNotFoundException
 from .manager import ShelfManager
-from .typings import ProcessingType, TagKey
-from .workflow import WorkflowEngine
+from .typings import ProcessingType, TagKey, TransitionType
 
 
 @dataclass
 class ProcessingContext:
-    """
-    Context for shelf processing strategies.
-
-    Contains all information needed to determine shelf assignment.
-    """
+    """Context for shelf processing strategies."""
 
     processing_type: ProcessingType
     album_id: str
@@ -50,11 +46,7 @@ class ShelfStrategy(ABC):
     """
 
     def __init__(self, manager: ShelfManager):
-        """
-        Initialize strategy with ShelfManager.
-
-        :param manager: ShelfManager instance for shelf operations.
-        """
+        """Initialize with ShelfManager."""
         self.manager = manager
 
     @abstractmethod
@@ -199,10 +191,16 @@ class StrategyUnknownNameFromPath(ShelfStrategy):
 
 class ShelfProcessors:
     """
-    File processors for loading and saving shelf name information.
+    Manages and orchestrates the processing strategies for shelf-related operations
+    on files and tracks. Provides mechanisms to handle file post-loading, addition,
+    removal, saving processes, as well as track metadata processing, applying
+    various shelf strategies for their resolution.
 
-    Supports dependency injection for testing. Uses strategy pattern
-    for processing shelf assignments based on file paths and tags.
+    The purpose of this class is to encapsulate the application of various shelf
+    strategies in a prioritized manner to manage shelf assignments and metadata
+    within a music processing context. Operations performed by this class include
+    post-loading, addition, and removal of files from tracks, as well as processing
+    of metadata. Strategies are applied sequentially according to the defined order.
     """
 
     STRATEGY_ORDER: Sequence[type[ShelfStrategy]] = [
@@ -229,11 +227,9 @@ class ShelfProcessors:
         # Apply strategies in priority order
         for strategy in self.strategies:
             if strategy.process(context):
-                # ShelfProcessors.track_metadata_processor(
-                #         self, album=None, metadata=file.metadata, track=None, release=None
-                # )
                 break
 
+    # noinspection PyUnusedLocal
     def file_post_addition_to_track_processor(
         self,
         track: Track,
@@ -250,11 +246,9 @@ class ShelfProcessors:
         # Apply strategies in priority order
         for strategy in self.strategies:
             if strategy.process(context):
-                # ShelfProcessors.track_metadata_processor(
-                #         self, album=None, metadata=file.metadata, track=track, release=None
-                # )
                 break
 
+    # noinspection PyUnusedLocal
     def file_post_removal_from_track_processor(self, track: Track, file: File) -> None:
         """Process a file after it has been removed from a track."""
         context = ContextBuilder.build_processing_context_by_file(
@@ -294,13 +288,16 @@ class ShelfProcessors:
         album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID)
         if not album_id:
             return
+
+        workflow.instance().transition_to(
+            album_id=album_id, transition_type=TransitionType.TO_STAGE_2
+        )
         try:
             shelf_name = self.manager.get_shelf_name(album_id=album_id)
         except ShelfNotFoundException:
             log.warning("Failed to determine shelf name for album ID '%s'", album_id)
             return
-
-        metadata[TagKey.SHELF] = WorkflowEngine.apply_transition(shelf_name=shelf_name)
+        metadata[TagKey.SHELF] = shelf_name
         metadata[TagKey.SHELF_LOCKED] = self.manager.is_locked(album_id=album_id)
 
         log.debug(

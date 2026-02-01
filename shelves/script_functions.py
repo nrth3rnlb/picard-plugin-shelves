@@ -7,7 +7,6 @@ from __future__ import annotations
 from picard.script import ScriptParser
 
 from . import utils
-from .workflow import WorkflowEngine
 
 
 def shelf(parser: ScriptParser) -> str:

@@ -412,8 +412,6 @@ class ShelfManager:
         self,
         album_id: str,
         shelf_name: str,
-        lock: bool = False,
-        vote: bool = False,
     ) -> None:
         """
         Set the shelf for an album with optional locking.
