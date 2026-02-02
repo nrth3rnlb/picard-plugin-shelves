@@ -35,13 +35,13 @@ class Strategy(ABC):
 
     @abstractmethod
     def is_applicable(self, context: Context) -> bool:
-        """Check if this transition should be applied."""
+        """Check if this strategy is applicable."""
         pass
 
-    def resolve_shelf_name(self, context: Context) -> Optional[str]:
-        """The shelf name to which the transition should be applied."""
-        shelf_name = self.manager.get_shelf_name(album_id=context.album_id)
-        return shelf_name
+    @abstractmethod
+    def apply_transition(self, context: Context) -> bool:
+        """Check if this transition should be applied."""
+        pass
 
     # noinspection PyTypeHints
     def process(self, context: Context) -> bool:
@@ -52,14 +52,11 @@ class Strategy(ABC):
         if not self.is_applicable(context):
             return False
 
-        # shelf_name = self.resolve_shelf_name(context)
-        # if not shelf_name:
-        #     return False
-
-        self.manager.set_shelf_name(
-            album_id=context.album_id,
-            shelf_name=config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES][0],
-        )
+        if self.apply_transition(context):
+            self.manager.set_shelf_name(
+                album_id=context.album_id,
+                shelf_name=config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES][0],
+            )
         return True
 
 
@@ -68,11 +65,15 @@ class StrategyEmptyNameToStage2(Strategy):
 
     def is_applicable(self, context: Context) -> bool:
         # noinspection PyTypeHints
-        return (
+        decision = (
             context.transition_type == TransitionType.TO_STAGE_2
             and config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
             and context.shelf_name == ""
         )
+        return decision
+
+    def apply_transition(self, context: Context) -> bool:
+        return False
 
 
 class StrategyUnknownNameToStage2(Strategy):
@@ -80,12 +81,21 @@ class StrategyUnknownNameToStage2(Strategy):
 
     def is_applicable(self, context: Context) -> bool:
         # noinspection PyTypeHints
-        return (
+        decision = (
             context.transition_type == TransitionType.TO_STAGE_2
             and config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
             and config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES]
             and context.shelf_name not in self.manager.shelf_names
         )
+        return decision
+
+    def apply_transition(self, context: Context) -> bool:
+        # noinspection PyTypeHints
+        decision = (
+            config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES]
+            and context.shelf_name not in self.manager.shelf_names
+        )
+        return decision
 
 
 class StrategyKnownNameToStage2(Strategy):
@@ -93,11 +103,16 @@ class StrategyKnownNameToStage2(Strategy):
 
     def is_applicable(self, context: Context) -> bool:
         # noinspection PyTypeHints
-        return (
+        decision = (
             context.transition_type == TransitionType.TO_STAGE_2
             and config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
             and context.shelf_name in self.manager.shelf_names
         )
+        return decision
+
+    def apply_transition(self, context: Context) -> bool:
+        decision = context.shelf_name in self.manager.shelf_names
+        return decision
 
 
 class Transitions:
