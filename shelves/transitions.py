@@ -18,7 +18,7 @@ from .typings import ConfigKey, TransitionType
 
 
 @dataclass
-class TransitionContext:
+class Context:
     """Context for shelf workflow transitions."""
 
     transition_type: TransitionType
@@ -26,7 +26,7 @@ class TransitionContext:
     shelf_name: str
 
 
-class TransitionStrategy(ABC):
+class Strategy(ABC):
     """Base class for shelf workflow transitions."""
 
     def __init__(self, manager: ShelfManager):
@@ -34,17 +34,17 @@ class TransitionStrategy(ABC):
         self.manager = manager
 
     @abstractmethod
-    def is_applicable(self, context: TransitionContext) -> bool:
+    def is_applicable(self, context: Context) -> bool:
         """Check if this transition should be applied."""
         pass
 
-    def resolve_shelf_name(self, context: TransitionContext) -> Optional[str]:
+    def resolve_shelf_name(self, context: Context) -> Optional[str]:
         """The shelf name to which the transition should be applied."""
         shelf_name = self.manager.get_shelf_name(album_id=context.album_id)
         return shelf_name
 
     # noinspection PyTypeHints
-    def process(self, context: TransitionContext) -> bool:
+    def process(self, context: Context) -> bool:
         """Process the shelf transition."""
         if not config.setting[ConfigKey.WORKFLOW_ENABLED]:
             return False
@@ -63,10 +63,10 @@ class TransitionStrategy(ABC):
         return True
 
 
-class TransitionEmptyNameToStage2(TransitionStrategy):
-    """TransitionStrategy of an empty shelf name."""
+class StrategyEmptyNameToStage2(Strategy):
+    """Strategy of an empty shelf name."""
 
-    def is_applicable(self, context: TransitionContext) -> bool:
+    def is_applicable(self, context: Context) -> bool:
         # noinspection PyTypeHints
         return (
             context.transition_type == TransitionType.TO_STAGE_2
@@ -75,10 +75,10 @@ class TransitionEmptyNameToStage2(TransitionStrategy):
         )
 
 
-class TransitionUnknownNameToStage2(TransitionStrategy):
-    """TransitionStrategy of an unknown shelf name."""
+class StrategyUnknownNameToStage2(Strategy):
+    """Strategy of an unknown shelf name."""
 
-    def is_applicable(self, context: TransitionContext) -> bool:
+    def is_applicable(self, context: Context) -> bool:
         # noinspection PyTypeHints
         return (
             context.transition_type == TransitionType.TO_STAGE_2
@@ -88,10 +88,10 @@ class TransitionUnknownNameToStage2(TransitionStrategy):
         )
 
 
-class TransitionsKnownNameToStage2(TransitionStrategy):
-    """TransitionStrategy of a known shelf name."""
+class StrategyKnownNameToStage2(Strategy):
+    """Strategy of a known shelf name."""
 
-    def is_applicable(self, context: TransitionContext) -> bool:
+    def is_applicable(self, context: Context) -> bool:
         # noinspection PyTypeHints
         return (
             context.transition_type == TransitionType.TO_STAGE_2
@@ -111,10 +111,10 @@ class Transitions:
     its own copy of the manager.
     """
 
-    TRANSITION_ORDER: Sequence[type[TransitionStrategy]] = [
-        TransitionEmptyNameToStage2,
-        TransitionUnknownNameToStage2,
-        TransitionsKnownNameToStage2,
+    TRANSITION_ORDER: Sequence[type[Strategy]] = [
+        StrategyEmptyNameToStage2,
+        StrategyUnknownNameToStage2,
+        StrategyKnownNameToStage2,
     ]
 
     def __init__(self, manager: Optional[ShelfManager] = None):
@@ -146,14 +146,14 @@ class ContextBuilder:
     @staticmethod
     def build_context(
         manager: ShelfManager, album_id: str, transition_type: TransitionType
-    ) -> Optional[TransitionContext]:
+    ) -> Optional[Context]:
         """Build transition context from album_id."""
         shelf_name = manager.get_shelf_name(album_id=album_id)
 
         if shelf_name is None:
             return None
 
-        return TransitionContext(
+        return Context(
             album_id=album_id,
             shelf_name=shelf_name,
             transition_type=transition_type,

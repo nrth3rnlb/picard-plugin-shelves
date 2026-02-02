@@ -2,10 +2,10 @@
 File processors for loading and saving shelf_name information.
 
 Architecture:
-- ProcessingContext: Holds file/track data and extracted shelf names
-- ShelfStrategy (ABC): Base class for processing strategies
+- Context: Holds file/track data and extracted shelf names
+- Strategy (ABC): Base class for processing strategies
 - Concrete strategies: KnownFromPath, KnownFromTagAndManual, etc.
-- ShelfProcessors: Main processor facade with dependency injection support
+- Processors: Main processor facade with dependency injection support
 """
 
 from __future__ import annotations
@@ -20,14 +20,14 @@ from picard import log
 from picard.file import File
 from picard.track import Track
 
-from . import workflow
+from . import transitions
 from .exceptions import ShelfNotFoundException
 from .manager import ShelfManager
 from .typings import ProcessingType, TagKey, TransitionType
 
 
 @dataclass
-class ProcessingContext:
+class Context:
     """Context for shelf processing strategies."""
 
     processing_type: ProcessingType
@@ -37,7 +37,7 @@ class ProcessingContext:
     is_locked: bool
 
 
-class ShelfStrategy(ABC):
+class Strategy(ABC):
     """
     Base class for shelf processing strategies.
 
@@ -50,12 +50,12 @@ class ShelfStrategy(ABC):
         self.manager = manager
 
     @abstractmethod
-    def is_applicable(self, context: ProcessingContext) -> bool:
+    def is_applicable(self, context: Context) -> bool:
         """Check if this strategy should be applied."""
         pass
 
     @abstractmethod
-    def resolve_shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def resolve_shelf_name(self, context: Context) -> Optional[str]:
         """Get the shelf name to assign."""
         pass
 
@@ -69,7 +69,7 @@ class ShelfStrategy(ABC):
         """Whether this strategy should unlock the shelf assignment."""
         return False
 
-    def should_upvote(self, context: ProcessingContext) -> bool:
+    def should_upvote(self, context: Context) -> bool:
         """Whether this strategy should vote."""
         current_type = self.manager.get_processing_type(album_id=context.album_id)
         return (
@@ -79,11 +79,11 @@ class ShelfStrategy(ABC):
         )
 
     @staticmethod
-    def should_downvote(context: ProcessingContext) -> bool:
+    def should_downvote(context: Context) -> bool:
         """Whether this strategy should downvote a shelf assignment."""
         return context.processing_type == ProcessingType.REMOVE
 
-    def process(self, context: ProcessingContext) -> bool:
+    def process(self, context: Context) -> bool:
         """Process the shelf assignment based on the strategy."""
 
         # There are 4 responsibilities in process:
@@ -107,14 +107,14 @@ class ShelfStrategy(ABC):
 
         return True
 
-    def apply_lock_state(self, context: ProcessingContext):
+    def apply_lock_state(self, context: Context):
         """Apply manual lock/unlock state to the shelf assignment."""
         if self.should_lock():
             self.manager.lock(album_id=context.album_id)
         if self.should_unlock():
             self.manager.unlock(album_id=context.album_id)
 
-    def apply_votes(self, context: ProcessingContext, shelf_name: str):
+    def apply_votes(self, context: Context, shelf_name: str):
         """Apply upvote/downvote to the shelf assignment."""
         if self.should_upvote(context):
             self.manager.upvote(
@@ -130,7 +130,7 @@ class ShelfStrategy(ABC):
             )
 
 
-class StrategyKnownIdenticalNames(ShelfStrategy):
+class StrategyKnownIdenticalNames(Strategy):
     """
     Strategy: Matching shelf names in path and tag.
 
@@ -138,18 +138,18 @@ class StrategyKnownIdenticalNames(ShelfStrategy):
     no further action is required.
     """
 
-    def is_applicable(self, context: ProcessingContext) -> bool:
+    def is_applicable(self, context: Context) -> bool:
         return (
             context.name_from_tag in self.manager.shelf_names
             and context.name_from_path in self.manager.shelf_names
             and context.name_from_tag == context.name_from_path
         )
 
-    def resolve_shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def resolve_shelf_name(self, context: Context) -> Optional[str]:
         return context.name_from_tag
 
 
-class StrategyKnownNameFromPathDiffersFromTag(ShelfStrategy):
+class StrategyKnownNameFromPathDiffersFromTag(Strategy):
     """
     Strategy: The shelf name detected in the file path does not match the shelf name indicated
     by the tag.
@@ -162,13 +162,13 @@ class StrategyKnownNameFromPathDiffersFromTag(ShelfStrategy):
     utmost urgency.
     """
 
-    def is_applicable(self, context: ProcessingContext) -> bool:
+    def is_applicable(self, context: Context) -> bool:
         return (
             context.name_from_path in self.manager.shelf_names
             and context.name_from_tag != context.name_from_path
         )
 
-    def resolve_shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def resolve_shelf_name(self, context: Context) -> Optional[str]:
         return context.name_from_path
 
     @staticmethod
@@ -176,20 +176,20 @@ class StrategyKnownNameFromPathDiffersFromTag(ShelfStrategy):
         return False
 
 
-class StrategyUnknownNameFromPath(ShelfStrategy):
+class StrategyUnknownNameFromPath(Strategy):
     """Strategy: Unknown shelf name from path."""
 
-    def is_applicable(self, context: ProcessingContext) -> bool:
+    def is_applicable(self, context: Context) -> bool:
         return (
             context.name_from_path != ""
             and context.name_from_path not in self.manager.shelf_names
         )
 
-    def resolve_shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def resolve_shelf_name(self, context: Context) -> Optional[str]:
         return context.name_from_path
 
 
-class ShelfProcessors:
+class Processors:
     """
     Manages and orchestrates the processing strategies for shelf-related operations
     on files and tracks. Provides mechanisms to handle file post-loading, addition,
@@ -203,7 +203,7 @@ class ShelfProcessors:
     of metadata. Strategies are applied sequentially according to the defined order.
     """
 
-    STRATEGY_ORDER: Sequence[type[ShelfStrategy]] = [
+    STRATEGY_ORDER: Sequence[type[Strategy]] = [
         StrategyKnownIdenticalNames,
         StrategyKnownNameFromPathDiffersFromTag,
         StrategyUnknownNameFromPath,
@@ -315,7 +315,7 @@ class ContextBuilder:
         manager: ShelfManager,
         processing_type: ProcessingType,
         file: File,
-    ) -> Optional[ProcessingContext]:
+    ) -> Optional[Context]:
         """Build processing context from file"""
         from . import utils
 
@@ -344,7 +344,7 @@ class ContextBuilder:
             f"{name_from_path}, name_from_tag: {name_from_tag_file}, is_locked: {is_locked_file}"
         )
 
-        return ProcessingContext(
+        return Context(
             processing_type=processing_type,
             album_id=album_id,
             name_from_path=name_from_path,
@@ -361,7 +361,7 @@ class ContextBuilder:
         processing_type: ProcessingType,
         track: Track,
         _file: File,
-    ) -> Optional[ProcessingContext]:
+    ) -> Optional[Context]:
         """
         Build a processing context for a file based on its metadata and the track it belongs to.
         """
@@ -402,7 +402,7 @@ class ContextBuilder:
             set(names_from_path).pop() if len(names_from_path) == 1 else "multiple"
         )
 
-        return ProcessingContext(
+        return Context(
             processing_type=processing_type,
             album_id=album_id,
             name_from_path=name_from_path,
@@ -415,9 +415,9 @@ class ContextBuilder:
 _processors_singleton = None
 
 
-def instance() -> ShelfProcessors:
-    """Get the default global ShelfProcessors instance."""
+def instance() -> Processors:
+    """Get the default global Processors instance."""
     global _processors_singleton
     if _processors_singleton is None:
-        _processors_singleton = ShelfProcessors()
+        _processors_singleton = Processors()
     return _processors_singleton

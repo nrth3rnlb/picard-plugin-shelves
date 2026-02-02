@@ -9,12 +9,12 @@ from unittest.mock import MagicMock, patch
 
 from typings import ConfigKey
 
-from shelves.workflow import (
-    TransitionEmptyNameToStage2,
+from shelves.transitions import (
+    StrategyEmptyNameToStage2,
+    StrategyKnownNameToStage2,
+    StrategyUnknownNameToStage2,
     Transitions,
-    TransitionsKnownNameToStage2,
     TransitionType,
-    TransitionUnknownNameToStage2,
 )
 
 
@@ -22,7 +22,7 @@ def get_strategy(workflow, cls):
     return next(s for s in workflow.transitions if isinstance(s, cls))
 
 
-class WorkflowTest(unittest.TestCase):
+class TransitionsTest(unittest.TestCase):
     """Tests for the workflow transition logic."""
 
     def setUp(self):
@@ -47,9 +47,9 @@ class WorkflowTest(unittest.TestCase):
             ConfigKey.KNOWN_SHELVES
         ]
 
-    @patch("shelves.workflow.ContextBuilder")
-    @patch("shelves.workflow.TransitionContext")
-    @patch("shelves.workflow.config")
+    @patch("shelves.transitions.ContextBuilder")
+    @patch("shelves.transitions.Context")
+    @patch("shelves.transitions.config")
     def test_workflow_enabled(self, mock_config, mock_context, mock_context_builder):
         mock_config.setting = self.test_configuration
         mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = True
@@ -75,9 +75,9 @@ class WorkflowTest(unittest.TestCase):
             shelf_name=self.test_configuration[ConfigKey.WORKFLOW_STAGE_2_SHELVES][0],
         )
 
-    @patch("shelves.workflow.ContextBuilder")
-    @patch("shelves.workflow.TransitionContext")
-    @patch("shelves.workflow.config")
+    @patch("shelves.transitions.ContextBuilder")
+    @patch("shelves.transitions.Context")
+    @patch("shelves.transitions.config")
     def test_workflow_disabled(self, mock_config, mock_context, mock_context_builder):
         mock_config.setting = self.test_configuration
         mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = False
@@ -100,9 +100,9 @@ class WorkflowTest(unittest.TestCase):
         # Assert
         self.mock_manager_instance.set_shelf_name.assert_not_called()
 
-    @patch("shelves.workflow.ContextBuilder")
-    @patch("shelves.workflow.TransitionContext")
-    @patch("shelves.workflow.config")
+    @patch("shelves.transitions.ContextBuilder")
+    @patch("shelves.transitions.Context")
+    @patch("shelves.transitions.config")
     def test_empty_shelf_is_not_transitioned(
         self, mock_config, mock_context, mock_context_builder
     ):
@@ -124,7 +124,7 @@ class WorkflowTest(unittest.TestCase):
 
         # Assert
         self.assertTrue(
-            get_strategy(transition, TransitionEmptyNameToStage2).is_applicable(
+            get_strategy(transition, StrategyEmptyNameToStage2).is_applicable(
                 mock_context
             )
         )
