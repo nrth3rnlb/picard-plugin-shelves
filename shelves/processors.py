@@ -73,9 +73,9 @@ class Strategy(ABC):
         """Whether this strategy should vote."""
         current_type = self.manager.get_processing_type(album_id=context.album_id)
         return (
-            context.processing_type == ProcessingType.LOAD
-            or context.processing_type == ProcessingType.ADD
-            and current_type != ProcessingType.LOAD
+                context.processing_type == ProcessingType.LOAD
+                or context.processing_type == ProcessingType.ADD
+                and current_type != ProcessingType.LOAD
         )
 
     @staticmethod
@@ -118,15 +118,15 @@ class Strategy(ABC):
         """Apply upvote/downvote to the shelf assignment."""
         if self.should_upvote(context):
             self.manager.upvote(
-                album_id=context.album_id,
-                shelf_name=shelf_name,
-                processing_type=context.processing_type,
+                    album_id=context.album_id,
+                    shelf_name=shelf_name,
+                    processing_type=context.processing_type,
             )
         if self.should_downvote(context):
             self.manager.downvote(
-                album_id=context.album_id,
-                shelf_name=shelf_name,
-                processing_type=context.processing_type,
+                    album_id=context.album_id,
+                    shelf_name=shelf_name,
+                    processing_type=context.processing_type,
             )
 
 
@@ -140,9 +140,9 @@ class StrategyKnownIdenticalNames(Strategy):
 
     def is_applicable(self, context: Context) -> bool:
         return (
-            context.name_from_tag in self.manager.shelf_names
-            and context.name_from_path in self.manager.shelf_names
-            and context.name_from_tag == context.name_from_path
+                context.name_from_tag in self.manager.shelf_names
+                and context.name_from_path in self.manager.shelf_names
+                and context.name_from_tag == context.name_from_path
         )
 
     def resolve_shelf_name(self, context: Context) -> Optional[str]:
@@ -164,8 +164,8 @@ class StrategyKnownNameFromPathDiffersFromTag(Strategy):
 
     def is_applicable(self, context: Context) -> bool:
         return (
-            context.name_from_path in self.manager.shelf_names
-            and context.name_from_tag != context.name_from_path
+                context.name_from_path in self.manager.shelf_names
+                and context.name_from_tag != context.name_from_path
         )
 
     def resolve_shelf_name(self, context: Context) -> Optional[str]:
@@ -181,8 +181,8 @@ class StrategyUnknownNameFromPath(Strategy):
 
     def is_applicable(self, context: Context) -> bool:
         return (
-            context.name_from_path != ""
-            and context.name_from_path not in self.manager.shelf_names
+                context.name_from_path != ""
+                and context.name_from_path not in self.manager.shelf_names
         )
 
     def resolve_shelf_name(self, context: Context) -> Optional[str]:
@@ -218,9 +218,9 @@ class Processors:
     def file_post_load_processor(self, file: File) -> None:
         """Process a file after Picard has scanned it."""
         context = ContextBuilder.build_processing_context_by_file(
-            self.manager,
-            processing_type=ProcessingType.LOAD,
-            file=file,
+                self.manager,
+                processing_type=ProcessingType.LOAD,
+                file=file,
         )
         if not context:
             return
@@ -231,15 +231,15 @@ class Processors:
 
     # noinspection PyUnusedLocal
     def file_post_addition_to_track_processor(
-        self,
-        track: Track,
-        file: File,
+            self,
+            track: Track,
+            file: File,
     ) -> None:
         """Process a file after it has been added to a track."""
         context = ContextBuilder.build_processing_context_by_file(
-            self.manager,
-            processing_type=ProcessingType.ADD,
-            file=file,
+                self.manager,
+                processing_type=ProcessingType.ADD,
+                file=file,
         )
         if not context:
             return
@@ -252,9 +252,9 @@ class Processors:
     def file_post_removal_from_track_processor(self, track: Track, file: File) -> None:
         """Process a file after it has been removed from a track."""
         context = ContextBuilder.build_processing_context_by_file(
-            self.manager,
-            processing_type=ProcessingType.REMOVE,
-            file=file,
+                self.manager,
+                processing_type=ProcessingType.REMOVE,
+                file=file,
         )
         if not context:
             return
@@ -266,9 +266,9 @@ class Processors:
     def file_post_save_processor(self, file: File) -> None:
         """Process a file after it has been saved."""
         context = ContextBuilder.build_processing_context_by_file(
-            self.manager,
-            processing_type=ProcessingType.SAVE,
-            file=file,
+                self.manager,
+                processing_type=ProcessingType.SAVE,
+                file=file,
         )
         if not context:
             return
@@ -278,19 +278,19 @@ class Processors:
                 break
 
     def track_metadata_processor(
-        self,
-        _album: Optional[Any],
-        metadata: Dict[str, Any],
-        _track: Optional[Any],
-        _release: Optional[Any],
+            self,
+            _album: Optional[Any],
+            metadata: Dict[str, Any],
+            _track: Optional[Any],
+            _release: Optional[Any],
     ) -> None:
         """Set a shelf name in track metadata from album's shelf assignment."""
         album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID)
         if not album_id:
             return
 
-        workflow.instance().transition_to(
-            album_id=album_id, transition_type=TransitionType.TO_STAGE_2
+        transitions.instance().transition_to(
+                album_id=album_id, transition_type=TransitionType.TO_STAGE_2
         )
         try:
             shelf_name = self.manager.get_shelf_name(album_id=album_id)
@@ -301,9 +301,9 @@ class Processors:
         metadata[TagKey.SHELF_LOCKED] = self.manager.is_locked(album_id=album_id)
 
         log.debug(
-            "shelf name: %s, locked: %s",
-            metadata[TagKey.SHELF],
-            metadata[TagKey.SHELF_LOCKED],
+                "shelf name: %s, locked: %s",
+                metadata[TagKey.SHELF],
+                metadata[TagKey.SHELF_LOCKED],
         )
 
 
@@ -312,9 +312,9 @@ class ContextBuilder:
 
     @staticmethod
     def build_processing_context_by_file(
-        manager: ShelfManager,
-        processing_type: ProcessingType,
-        file: File,
+            manager: ShelfManager,
+            processing_type: ProcessingType,
+            file: File,
     ) -> Optional[Context]:
         """Build processing context from file"""
         from . import utils
@@ -331,8 +331,8 @@ class ContextBuilder:
 
         # Extract shelf name from path
         name_from_path = utils.get_shelf_name_from_path(
-            file_path=Path(file.filename),
-            base_path=manager.base_path,
+                file_path=Path(file.filename),
+                base_path=manager.base_path,
         )
 
         name_from_tag_file = file_meta.get(TagKey.SHELF, None)
@@ -340,27 +340,27 @@ class ContextBuilder:
         is_locked_file = file_meta.get(TagKey.SHELF_LOCKED, None)
 
         log.debug(
-            f"file: {file.filename}, album_id: {album_id}, name_from_path: "
-            f"{name_from_path}, name_from_tag: {name_from_tag_file}, is_locked: {is_locked_file}"
+                f"file: {file.filename}, album_id: {album_id}, name_from_path: "
+                f"{name_from_path}, name_from_tag: {name_from_tag_file}, is_locked: {is_locked_file}"
         )
 
         return Context(
-            processing_type=processing_type,
-            album_id=album_id,
-            name_from_path=name_from_path,
-            name_from_tag=name_from_tag_file,
-            is_locked=is_locked_file,
+                processing_type=processing_type,
+                album_id=album_id,
+                name_from_path=name_from_path,
+                name_from_tag=name_from_tag_file,
+                is_locked=is_locked_file,
         )
 
     @staticmethod
     @deprecated(
-        "I'm not quite sure yet, but I think we can ignore the files per track."
+            "I'm not quite sure yet, but I think we can ignore the files per track."
     )
     def build_processing_context_by_file_and_track(
-        manager: ShelfManager,
-        processing_type: ProcessingType,
-        track: Track,
-        _file: File,
+            manager: ShelfManager,
+            processing_type: ProcessingType,
+            track: Track,
+            _file: File,
     ) -> Optional[Context]:
         """
         Build a processing context for a file based on its metadata and the track it belongs to.
@@ -380,13 +380,13 @@ class ContextBuilder:
         names_from_path: set[str] = set()
         for file_by_track in track.files:
             log.debug(
-                "file_by_track: %s", file_by_track.filename
+                    "file_by_track: %s", file_by_track.filename
             )  # Extract shelf name from path
             names_from_path.union(
-                utils.get_shelf_name_from_path(
-                    file_path=Path(file_by_track.filename),
-                    base_path=manager.base_path,
-                )
+                    utils.get_shelf_name_from_path(
+                            file_path=Path(file_by_track.filename),
+                            base_path=manager.base_path,
+                    )
             )
 
         name_from_tag = track_meta.get(TagKey.SHELF, None)
@@ -394,8 +394,8 @@ class ContextBuilder:
         is_locked = track_meta.get(TagKey.SHELF_LOCKED, None)
 
         log.debug(
-            f"Processing track: {track_meta['title']}, album_id: {album_id}, name_from_path: "
-            f"{names_from_path}, name_from_tag: {name_from_tag}, is_locked: {is_locked}"
+                f"Processing track: {track_meta['title']}, album_id: {album_id}, name_from_path: "
+                f"{names_from_path}, name_from_tag: {name_from_tag}, is_locked: {is_locked}"
         )
 
         name_from_path = (
@@ -403,11 +403,11 @@ class ContextBuilder:
         )
 
         return Context(
-            processing_type=processing_type,
-            album_id=album_id,
-            name_from_path=name_from_path,
-            name_from_tag=name_from_tag,
-            is_locked=is_locked,
+                processing_type=processing_type,
+                album_id=album_id,
+                name_from_path=name_from_path,
+                name_from_tag=name_from_tag,
+                is_locked=is_locked,
         )
 
 

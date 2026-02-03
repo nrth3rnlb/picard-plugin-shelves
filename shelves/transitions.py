@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from picard import config
+from picard import config, log
 
 from .manager import ShelfManager
 from .typings import ConfigKey, TransitionType
@@ -51,8 +51,10 @@ class Strategy(ABC):
 
         if not self.is_applicable(context):
             return False
+        log.debug("strategy: %s", self.__class__.__name__)
 
         if self.apply_transition(context):
+            log.debug("apply transition")
             self.manager.set_shelf_name(
                     album_id=context.album_id,
                     shelf_name=config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES][0],
