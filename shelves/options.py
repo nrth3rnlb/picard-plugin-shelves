@@ -10,7 +10,7 @@ from gettext import gettext as _
 from typing import Optional, cast
 
 from picard import config, log
-from picard.config import BoolOption, IntOption, ListOption, Option, TextOption
+from picard.config import BoolOption, IntOption, ListOption, Option
 from picard.ui.options import OptionsPage as PicardOptions
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import QPoint, Qt
@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import (
 
 from . import constants, utils
 from .manager import ShelfManager
-from .typings import ConfigKey, TagKey
+from .typings import ConfigKey
 from .widgets import QShelvesWidget
 
 MESSAGE_INVALID_SHELF_NAME: str = _("Shelf name is not valid.")
