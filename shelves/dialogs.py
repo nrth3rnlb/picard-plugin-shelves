@@ -31,26 +31,21 @@ class SetShelfDialog(QtWidgets.QDialog):
         uic.loadUi(ui_file, self)
 
         self.validation_label: Optional[QtWidgets.QLabel] = self.findChild(
-                QtWidgets.QLabel,
-                LABEL_VALIDATION_NAME,
+            QtWidgets.QLabel,
+            LABEL_VALIDATION_NAME,
         )
         self.shelf_combo: Optional[QtWidgets.QComboBox] = self.findChild(
-                QtWidgets.QComboBox,
-                COMBO_SHELF_NAME,
+            QtWidgets.QComboBox,
+            COMBO_SHELF_NAME,
         )
-
         if self.shelf_combo is not None:
             self.shelf_combo.currentTextChanged.connect(self._on_text_changed)
 
-    def ask_for_shelf_name(self) -> str | None:
-        """
-        Ask for a name.
-        :return:
-        :rtype:
-        """
+    def ask_for_shelf_name(self) -> Optional[str]:
+        """Ask for a name."""
         if self.shelf_combo is not None:
             self.shelf_combo.clear()
-            self.shelf_combo.addItems(ShelfManager().shelf_names)
+            self.shelf_combo.addItems(sorted(ShelfManager().registered_shelf_names))
             self.shelf_combo.setEditable(True)
             self.shelf_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
 

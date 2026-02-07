@@ -157,21 +157,21 @@ class OptionsPage(PicardOptions):
             item.text()
             for i in range(self.shelf_management_shelves.count())
             if (item := self.shelf_management_shelves.item(i)) is not None
-            and item.text() in ShelfManager().shelf_names
+            and item.text() in ShelfManager().registered_shelf_names
         ]
 
         config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES] = [
             item.text()
             for i in range(self.workflow_stage_1.count())
             if (item := self.workflow_stage_1.item(i)) is not None
-            and item.text() in ShelfManager().shelf_names
+            and item.text() in ShelfManager().registered_shelf_names
         ]
 
         config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES] = [
             item.text()
             for i in range(self.workflow_stage_2.count())
             if (item := self.workflow_stage_2.item(i)) is not None
-            and item.text() in ShelfManager().shelf_names
+            and item.text() in ShelfManager().registered_shelf_names
         ]
 
         config.setting[ConfigKey.ACTIVE_TAB] = self.plugin_configuration.currentIndex()
@@ -422,20 +422,22 @@ class OptionsPage(PicardOptions):
         self.shelves_for_stages.clear()
         self.shelves_for_stages.addItems(
             ShelfManager()
-            .shelf_names.difference(config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES])
+            .registered_shelf_names.difference(
+                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
+            )
             .difference(
                 config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES],
             )
         )
         self.workflow_stage_1.clear()
         self.workflow_stage_1.addItems(
-            ShelfManager().shelf_names.intersection(
+            ShelfManager().registered_shelf_names.intersection(
                 config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
             )
         )
         self.workflow_stage_2.clear()
         self.workflow_stage_2.addItems(
-            ShelfManager().shelf_names.intersection(
+            ShelfManager().registered_shelf_names.intersection(
                 config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
             )
         )
@@ -462,7 +464,7 @@ class OptionsPage(PicardOptions):
     def _management_build_list(self):
         """Refresh the shelves widget with the current shelf names."""
         self.shelf_management_shelves.clear()
-        self.shelf_management_shelves.addItems(ShelfManager().shelf_names)
+        self.shelf_management_shelves.addItems(ShelfManager().registered_shelf_names)
         self.shelf_management_shelves.sortItems()
 
     # ============================================================================

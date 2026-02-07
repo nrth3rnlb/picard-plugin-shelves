@@ -14,6 +14,7 @@ from picard.file import (
     register_file_post_addition_to_track_processor,
     register_file_post_load_processor,
     register_file_post_removal_from_track_processor,
+    register_file_post_save_processor,
 )
 from picard.metadata import register_track_metadata_processor
 from picard.script import register_script_function
@@ -21,9 +22,10 @@ from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
 from . import processors
-from .actions import (
-    ShelfActionDetermine as _ShelfActionDetermine,
-)
+
+# from .actions import (
+#     ShelfActionDetermine as _ShelfActionDetermine,
+# )
 from .actions import (
     ShelfActionSet as _ShelfActionSet,
 )
@@ -48,13 +50,11 @@ collection, one for incoming/unprocessed music, one for Christmas music, etc.
 
 ## Features
 
-- **Automatic shelf_name detection** from file paths during scanning
+- **Automatic shelf name detection** from file paths during scanning
 - **Smart detection** prevents artist/album names from being mistaken as shelves
-- **Manual shelf_name assignment** via context menu
-- **Shelf management** in plugin settings (add, remove, scan directory)
+- **Manual shelf name assignment** via context menu
 - **Workflow automation** automatically moves files between shelves (e.g. "Incoming" > "Standard")
-- **Script function `$shelf_name()`** for file naming integration
-- **Visual script preview** in settings shows your file naming snippet
+- **Script function `$shelf()`** for file naming integration
 """
 # noinspection PyUnusedName
 PLUGIN_VERSION = "1.6.1"
@@ -74,12 +74,12 @@ class ShelfActionSet(_ShelfActionSet):
     """Wrapper class for ShelfActionSet to ensure proper plugin registration."""
 
 
-class ShelfActionDetermine(_ShelfActionDetermine):
-    """Wrapper class for ShelfActionDetermine to ensure proper plugin registration."""
+# class ShelfActionDetermine(_ShelfActionDetermine):
+#     """Wrapper class for ShelfActionDetermine to ensure proper plugin registration."""
 
 
-class ShelfActionToggleLock(_ShelfActionToggleLock):
-    """Wrapper class for ShelfActionToggleLock to ensure proper plugin registration."""
+# class ShelfActionToggleLock(_ShelfActionToggleLock):
+#     """Wrapper class for ShelfActionToggleLock to ensure proper plugin registration."""
 
 
 # Wrapper for script function
@@ -95,10 +95,15 @@ def _track_metadata_processor(
     release: Any,
 ) -> None:
     """Wrapper for track_metadata_processor."""
-    log.debug("TrackMetadataProcessor:")
     processors.instance().track_metadata_processor(
         _album=album, metadata=metadata, _track=track, _release=release
     )
+
+
+# Wrapper functions that pass shelf_manager to processors
+def _file_post_save_processor(file: Any) -> None:
+    """Wrapper for file_post_save_processor."""
+    processors.instance().file_post_save_processor(file=file)
 
 
 # Wrapper functions that pass shelf_manager to processors
@@ -114,7 +119,6 @@ def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
 
 def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
-    log.debug("PostRemovalFromTrackProcessor")
     processors.instance().file_post_removal_from_track_processor(track=track, file=file)
 
 
@@ -123,13 +127,14 @@ register_track_metadata_processor(_track_metadata_processor)
 
 # Register file processors
 register_file_post_load_processor(_file_post_load_processor)
+register_file_post_save_processor(_file_post_save_processor)
 register_file_post_addition_to_track_processor(_file_post_addition_to_track_processor)
 register_file_post_removal_from_track_processor(_file_post_removal_from_track_processor)
 
 # Register context menu actions
 register_album_action(ShelfActionSet())
-register_album_action(ShelfActionDetermine())
-register_album_action(ShelfActionToggleLock())
+# register_album_action(ShelfActionDetermine())
+# register_album_action(ShelfActionToggleLock())
 
 # Register options options_page
 register_options_page(ShelvesOptionsPage)

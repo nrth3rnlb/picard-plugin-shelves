@@ -4,10 +4,9 @@ Context menu actions for the Shelves plugin.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Optional
 
-from picard import log
+from picard.album import Album, File, Track
 from picard.ui.itemviews import BaseAction
 from PyQt5 import (
     QtWidgets,
@@ -16,70 +15,56 @@ from PyQt5 import (
 from . import utils
 from .dialogs import SetShelfDialog
 from .manager import ShelfManager
-from .typings import TagKey
+from .processors import ContextBuilder
+from .typings import ProcessingType, TagKey
 
 
 class ShelfActionSet(BaseAction):
-    """
-    Manually set shelf_name
-    """
+    """Manually set shelf_name"""
 
     # noinspection PyUnusedName
     NAME: str = "Define/Set shelf name..."
 
     tagger: Any
 
-    def callback(self, objs: List[Any]) -> None:
-        """
-
-        :param objs:
-        :type objs:
-        :return:
-        :rtype:
-        """
-        dialog = SetShelfDialog()
-        shelf_name = dialog.ask_for_shelf_name()
+    def callback(self, objs) -> None:
+        shelf_name = self._ask_for_shelf_name()
         if not shelf_name:
             return
 
-        is_valid, message = utils.validate_shelf_name(shelf_name)
-        if not is_valid:
-            QtWidgets.QMessageBox.warning(
-                self.tagger.window,
-                "Invalid shelf name",
-                f"Cannot use this name as a shelf name: {message}",
-            )
-            return
+        manager = ShelfManager()
 
-        for obj in objs:
-            if hasattr(obj, "iterfiles"):
-                for file in list(obj.iterfiles()):
-                    log.debug("Processing file: %s", file.filename)
-                    metadata = file.metadata
-                    album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID)
-
-                    if not album_id:
+        albums: list[Album] = list(filter(lambda o: isinstance(o, Album), objs))
+        for album in albums:
+            track: Track
+            for track in album.tracks:
+                file: File
+                for file in track.files:
+                    context = ContextBuilder.build(
+                        file=file,
+                        processing_type=ProcessingType.SET,
+                        manager=manager,
+                    )
+                    if not context:
                         continue
-
-                    ShelfManager().set_shelf_name(
-                        album_id=album_id,
-                        shelf_name=shelf_name,
+                    context.processing_name = shelf_name
+                    manager.upvote(context=context)
+                    file.metadata[TagKey.SHELF] = shelf_name
+                    file.metadata[TagKey.SHELF_LOCKED] = manager.is_locked(
+                        file.metadata.get(TagKey.MUSICBRAINZ_ALBUMID)
                     )
-                    # Set shelf name in metadata
-                    shelf_name = ShelfManager().get_shelf_name(album_id)[0]
-                    log.debug("Set shelf name: %s", shelf_name)
+                    file.update()
+                track.update()
+            album.update()
+            self.tagger.window.set_statusbar_message(
+                f'Successfully set shelf name "{shelf_name}" for "{album.metadata["album"]}"'
+            )
 
-                    metadata[TagKey.SHELF] = shelf_name
-                    metadata[TagKey.SHELF_LOCKED] = ShelfManager().is_locked(album_id)
-
-                    self.tagger.window.set_statusbar_message(
-                        f"Set shelf name to '{shelf_name}' for album {album_id}"
-                    )
-
-        # # Re-run the determination logic
-        determine_action = ShelfActionDetermine()
-        determine_action.tagger = self.tagger
-        determine_action.callback(objs)
+    @staticmethod
+    def _ask_for_shelf_name() -> Optional[str]:
+        dialog = SetShelfDialog()
+        shelf_name = dialog.ask_for_shelf_name()
+        return shelf_name
 
 
 class ShelfActionToggleLock(BaseAction):
@@ -121,43 +106,38 @@ class ShelfActionToggleLock(BaseAction):
                         )
                     )
 
-        # # Re-run the determination logic
-        determine_action = ShelfActionDetermine()
-        determine_action.tagger = self.tagger
-        determine_action.callback(objs)
 
-
-class ShelfActionDetermine(BaseAction):
-    """
-    Determine shelf_name
-    """
-
-    # noinspection PyUnusedName
-    NAME = "Determine shelf name"
-
-    tagger: Any
-
-    def callback(self, objs: List[Any]) -> None:
-        """
-        Determine the shelf name
-        :param objs:
-        :type objs:
-        :return:
-        :rtype:
-        """
-        for obj in objs:
-            if hasattr(obj, "iterfiles"):
-                for file in obj.iterfiles():
-                    file_path = Path(file.filename).resolve()
-                    base_path = ShelfManager().base_path
-                    shelf_name = utils.get_shelf_name_from_path(
-                        file_path=file_path,
-                        base_path=base_path,
-                    )
-                    if shelf_name is not None:
-                        file.metadata[TagKey.SHELF] = shelf_name
-                        self.tagger.window.set_statusbar_message(
-                            f"Set shelf name to '{shelf_name}' for file '{file.filename}'"
-                        )
-
-                        ShelfManager().add_shelf_names(shelf_name)
+# class ShelfActionDetermine(BaseAction):
+#     """
+#     Determine shelf_name
+#     """
+#
+#     # noinspection PyUnusedName
+#     NAME = "Determine shelf name"
+#
+#     tagger: Any
+#
+#     def callback(self, objs: List[Any]) -> None:
+#         """
+#         Determine the shelf name
+#         :param objs:
+#         :type objs:
+#         :return:
+#         :rtype:
+#         """
+#         for obj in objs:
+#             if hasattr(obj, "iterfiles"):
+#                 for file in obj.iterfiles():
+#                     file_path = Path(file.filename).resolve()
+#                     base_path = ShelfManager().base_path
+#                     shelf_name = utils.get_shelf_name_from_path(
+#                         file_path=file_path,
+#                         base_path=base_path,
+#                     )
+#                     if shelf_name is not None:
+#                         file.metadata[TagKey.SHELF] = shelf_name
+#                         self.tagger.window.set_statusbar_message(
+#                             f"Set shelf name to '{shelf_name}' for file '{file.filename}'"
+#                         )
+#
+#                         ShelfManager().add_shelf_names(shelf_name)

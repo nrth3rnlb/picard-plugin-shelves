@@ -266,7 +266,8 @@ def squeeze_the_parser(parser: ScriptParser) -> tuple[str, str]:
     returns their corresponding shelf names. If the required attributes are not
     present in the parser, the corresponding shelf name will be an empty string.
     """
-    debug_parser(parser)
+    # debug_parser(parser)
+
     metadata_shelf: str = ""
     context_shelf: str = ""
     if hasattr(parser.file, "metadata"):

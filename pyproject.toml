@@ -8,7 +8,7 @@ license-files = ["LISENCE"]
 authors = [
     { name = "nrth3rnlb" }
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.14"
 dependencies = [
     "mypy==1.19.1",
     "picard==2.13.3",
@@ -18,13 +18,13 @@ dependencies = [
 dev = [
     "black==26.1.0",
     "mypy==1.19.1",
-    "ruff==0.14.14",
+    "ruff==0.15.0",
     "pydeps==3.0.2",
     "pylint==4.0.4",
 ]
 
 release = [
-    "commitizen==4.12.1",
+    "commitizen==4.13.6",
     "python-semantic-release==10.5.3",
 ]
 

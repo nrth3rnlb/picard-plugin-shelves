@@ -8,17 +8,19 @@ from enum import IntEnum, StrEnum
 class ProcessingType(IntEnum):
     """Processing types for shelf processing strategies."""
 
-    REMOVE = 10
-    ADD = 20
-    SAVE = 30
-    LOAD = 40
+    LOAD = 1
+    ADD = 2
+    SET = 4
+    SAVE = 8
+    REMOVE = 16
+    UNSET = 32
 
 
 class TransitionType(IntEnum):
     """Transition types for shelf workflow."""
 
-    TO_STAGE_1 = 10
-    TO_STAGE_2 = 20
+    TO_STAGE_1 = 1
+    TO_STAGE_2 = 2
 
 
 class ConfigKey(StrEnum):
