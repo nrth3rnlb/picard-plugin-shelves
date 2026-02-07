@@ -334,7 +334,7 @@ class OptionsPageTest(unittest.TestCase):
         ]
 
         # Act
-        self.options_page._management_action_remove()
+        self.options_page._management_action_remove_selected()
 
         # Assert
         expected_shelves = {selected_text}
@@ -376,7 +376,7 @@ class OptionsPageTest(unittest.TestCase):
         )
 
         # Act
-        self.options_page._management_action_remove()
+        self.options_page._management_action_remove_selected()
 
         # Assert - The dialog should have been called because there's a conflict
         mock_question.assert_called_once()
