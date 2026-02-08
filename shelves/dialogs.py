@@ -46,7 +46,7 @@ class SetShelfDialog(QtWidgets.QDialog):
         if self.shelf_combo is not None:
             self.shelf_combo.clear()
             self.shelf_combo.addItems(sorted(ShelfManager().registered_shelf_names))
-            self.shelf_combo.setEditable(True)
+            self.shelf_combo.setEditable(False)
             self.shelf_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
 
         if self.validation_label is not None:

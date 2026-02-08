@@ -12,8 +12,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence
-from warnings import deprecated
+from typing import Any, Dict, List, Optional, Sequence
 
 from picard import log
 from picard.file import File
@@ -22,7 +21,7 @@ from picard.track import Track
 from . import transitions
 from .contexts import ProcessingContext, TransitionContext
 from .manager import ShelfManager
-from .typings import ProcessingType, TagKey, TransitionType
+from .typings import ProcessingType, TagKey, TransitionType, VotingType
 
 
 class Strategy(ABC):
@@ -36,16 +35,27 @@ class Strategy(ABC):
     def __init__(self, manager: ShelfManager):
         """Initialize with ShelfManager."""
         self.manager = manager
+        self.strategy = self
 
     @abstractmethod
     def is_applicable(self, context: ProcessingContext) -> bool:
         """Check if this strategy should be applied."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    def resolve_shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def shelf_name(self, context: ProcessingContext) -> str:
         """Get the shelf name to assign."""
-        pass
+        raise NotImplementedError
+
+    def upvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        return [self.shelf_name(context)]
+
+    def downvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        return list(
+            self.manager.registered_shelf_names.difference(
+                self.upvote_shelf_names(context)
+            )
+        )
 
     @staticmethod
     def should_lock(context: ProcessingContext) -> bool:
@@ -59,48 +69,20 @@ class Strategy(ABC):
         decision = context.processing_type == ProcessingType.UNSET
         return decision
 
-    @staticmethod
-    def should_init_voting(context: ProcessingContext) -> bool:
-        """Whether this strategy should initialize the shelf assignment."""
-        decision = context.processing_type == ProcessingType.LOAD
-        return decision
-
-    @staticmethod
-    def should_downvote(context: ProcessingContext) -> bool:
-        """Whether this strategy should vote."""
-        return (
-            context.processing_type == ProcessingType.REMOVE
-            or context.processing_type == ProcessingType.UNSET
-        )
-
-    @staticmethod
-    def should_upvote(context: ProcessingContext) -> bool:
-        """Whether this strategy should vote."""
-        return (
-            context.processing_type == ProcessingType.ADD
-            or context.processing_type == ProcessingType.SET
-        )
-
-    def process(self, context: ProcessingContext) -> bool:
-        """Process the shelf assignment based on the strategy."""
-
-        # There are 4 responsibilities in process:
-        # Activation, name resolution, voting, locking.
-
-        if not self.is_applicable(context):
-            return False
-        log.debug("strategy: %s", self.__class__.__name__)
-
-        shelf_name = self.resolve_shelf_name(context)
-        if not shelf_name:
-            return False
-        context.processing_name = shelf_name
-        log.debug("type: %s", context.processing_type.name)
-
-        self.apply_votes(context)
-        self.apply_lock_state(context)
-
-        return True
+    # @staticmethod
+    # def decide_voting(context: ProcessingContext) -> VotingType:
+    #     """Whether this strategy should initialize the shelf assignment."""
+    #     if (
+    #         context.processing_type == ProcessingType.REMOVE
+    #         or context.processing_type == ProcessingType.UNSET
+    #     ):
+    #         return VotingType.DOWN
+    #     if (
+    #         context.processing_type == ProcessingType.ADD
+    #         or context.processing_type == ProcessingType.SET
+    #     ):
+    #         return VotingType.UP
+    #     return VotingType.INITIAL
 
     def apply_lock_state(self, context: ProcessingContext):
         """Apply manual lock/unlock state to the shelf assignment."""
@@ -109,14 +91,81 @@ class Strategy(ABC):
         if self.should_unlock(context):
             self.manager.unlock(album_id=context.album_id)
 
-    def apply_votes(self, context: ProcessingContext):
+    def apply_votes(
+        self, voting_type: VotingType, album_id: str, shelf_names: str | List[str]
+    ):
         """Initialize voting, apply upvote/downvote to the shelf assignment."""
-        if self.should_init_voting(context):
-            self.manager.init_voting(context)
-        if self.should_upvote(context):
-            self.manager.upvote(context)
-        if self.should_downvote(context):
-            self.manager.downvote(context)
+        if isinstance(shelf_names, str):
+            shelf_names = [shelf_names]
+
+        for shelf_name in shelf_names:
+            self.manager.vote(
+                voting_type=voting_type, album_id=album_id, shelf_name=shelf_name
+            )
+
+    def process(self, context: ProcessingContext) -> bool:
+        """Process the shelf assignment based on the strategy."""
+
+        if not self.strategy.is_applicable(context):
+            return False
+        log.debug("strategy: %s %s", self.__class__.__name__, context)
+
+        if context.processing_type == ProcessingType.LOAD:
+            self.apply_votes(
+                voting_type=VotingType.INITIAL,
+                album_id=context.album_id,
+                shelf_names=self.strategy.shelf_name(context),
+            )
+        else:
+            log.debug("UP %s", self.strategy.upvote_shelf_names(context))
+            self.apply_votes(
+                voting_type=VotingType.UP,
+                album_id=context.album_id,
+                shelf_names=self.strategy.upvote_shelf_names(context),
+            )
+            log.debug("DOWN %s", self.strategy.downvote_shelf_names(context))
+            self.apply_votes(
+                voting_type=VotingType.DOWN,
+                album_id=context.album_id,
+                shelf_names=self.strategy.downvote_shelf_names(context),
+            )
+
+        return True
+
+
+class StrategyManualUnset(Strategy):
+    def is_applicable(self, context: ProcessingContext) -> bool:
+        return context.processing_type == ProcessingType.UNSET
+
+    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+        return context.name_from_path
+
+    def upvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        return context.name_from_path
+
+    def downvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        return list(
+            self.manager.registered_shelf_names.difference([context.name_from_path])
+        )
+
+
+class StrategyManualSet(Strategy):
+    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+        return context.processing_name
+
+    def is_applicable(self, context: ProcessingContext) -> bool:
+        return (
+            context.processing_type == ProcessingType.SET
+            and context.processing_name in self.manager.registered_shelf_names
+        )
+
+    def upvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        return context.processing_name
+
+    def downvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        return list(
+            self.manager.registered_shelf_names.difference([context.processing_name])
+        )
 
 
 class StrategyKnownIdenticalNames(Strategy):
@@ -134,7 +183,7 @@ class StrategyKnownIdenticalNames(Strategy):
             and context.name_from_tag == context.name_from_path
         )
 
-    def resolve_shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_tag
 
 
@@ -157,7 +206,7 @@ class StrategyKnownNameFromPathDiffersFromTag(Strategy):
             and context.name_from_tag != context.name_from_path
         )
 
-    def resolve_shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_path
 
 
@@ -170,7 +219,7 @@ class StrategyUnknownNameFromPath(Strategy):
             and context.name_from_path not in self.manager.registered_shelf_names
         )
 
-    def resolve_shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_path
 
 
@@ -189,6 +238,8 @@ class Processors:
     """
 
     STRATEGY_ORDER: Sequence[type[Strategy]] = [
+        StrategyManualUnset,
+        StrategyManualSet,
         StrategyKnownIdenticalNames,
         StrategyKnownNameFromPathDiffersFromTag,
         StrategyUnknownNameFromPath,
@@ -200,15 +251,34 @@ class Processors:
         self.manager = manager or ShelfManager()
         self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
+    def action_unset_processor(self, file: File) -> None:
+        context = ContextBuilder.build(
+            self.manager,
+            file=file,
+            processing_type=ProcessingType.UNSET,
+        )
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
+    def action_set_processor(self, file: File, shelf_name: str) -> None:
+        context = ContextBuilder.build(
+            self.manager,
+            file=file,
+            processing_type=ProcessingType.SET,
+            processing_name=shelf_name,
+        )
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
     def file_post_load_processor(self, file: File) -> None:
         """Process a file after it has been loaded."""
         context = ContextBuilder.build(
             self.manager,
-            processing_type=ProcessingType.LOAD,
             file=file,
+            processing_type=ProcessingType.LOAD,
         )
-        if not context:
-            return
         for strategy in self.strategies:
             if strategy.process(context):
                 break
@@ -217,11 +287,9 @@ class Processors:
         """Process a file after it has been saved."""
         context = ContextBuilder.build(
             self.manager,
-            processing_type=ProcessingType.SAVE,
             file=file,
+            processing_type=ProcessingType.SAVE,
         )
-        if not context:
-            return
         for strategy in self.strategies:
             if strategy.process(context):
                 break
@@ -235,12 +303,9 @@ class Processors:
         """Process a file after it has been added to a track."""
         context = ContextBuilder.build(
             self.manager,
-            processing_type=ProcessingType.ADD,
             file=file,
+            processing_type=ProcessingType.ADD,
         )
-        if not context:
-            return
-        # Apply strategies in priority order
         for strategy in self.strategies:
             if strategy.process(context):
                 break
@@ -250,12 +315,9 @@ class Processors:
         """Process a file after it has been removed from a track."""
         context = ContextBuilder.build(
             self.manager,
-            processing_type=ProcessingType.REMOVE,
             file=file,
+            processing_type=ProcessingType.REMOVE,
         )
-        if not context:
-            return
-        # Apply strategies in priority order
         for strategy in self.strategies:
             if strategy.process(context):
                 break
@@ -291,8 +353,9 @@ class ContextBuilder:
     @staticmethod
     def build(
         manager: ShelfManager,
-        processing_type: ProcessingType,
         file: File,
+        processing_type: ProcessingType,
+        processing_name: str = None,
     ) -> Optional[ProcessingContext]:
         """Build processing context from file"""
 
@@ -313,7 +376,7 @@ class ContextBuilder:
             album_id=file.metadata[TagKey.MUSICBRAINZ_ALBUMID],
             name_from_path=name_from_path,
             name_from_tag=file.metadata[TagKey.SHELF],
-            processing_name=None,
+            processing_name=processing_name,
             is_locked=file.metadata[TagKey.SHELF_LOCKED],
         )
 

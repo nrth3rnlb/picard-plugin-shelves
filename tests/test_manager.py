@@ -47,9 +47,9 @@ class ManagerTest(unittest.TestCase):
         # Arrange
         _album_id = "019c003f-66fa-7a57-89ff-767bdc16ab09"
         # pylint: disable=protected-access
-        ShelfManager().upvote(_album_id, "ShelfA", ProcessingType.LOAD)
-        ShelfManager().upvote(_album_id, "ShelfB", ProcessingType.LOAD)
-        ShelfManager().upvote(_album_id, "ShelfA", ProcessingType.LOAD)
+        ShelfManager().upvote("ShelfA")
+        ShelfManager().upvote("ShelfB")
+        ShelfManager().upvote("ShelfA")
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
@@ -62,9 +62,9 @@ class ManagerTest(unittest.TestCase):
         """Test that resolve_shelf_name returns the correct winner."""
         _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
         # pylint: disable=protected-access
-        ShelfManager().upvote(_album_id, "ShelfB", ProcessingType.LOAD)
-        ShelfManager().upvote(_album_id, "ShelfB", ProcessingType.ADD)
-        ShelfManager().upvote(_album_id, "ShelfA", ProcessingType.LOAD)
+        ShelfManager().upvote("ShelfB")
+        ShelfManager().upvote("ShelfB")
+        ShelfManager().upvote("ShelfA")
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
@@ -77,7 +77,7 @@ class ManagerTest(unittest.TestCase):
         """Test that clear_album removes all voting data for an album."""
         # mock_config.setting = self.test_configuration
         _album_id = "019c003f-adff-7646-bf58-064d0a645cd0"
-        ShelfManager().upvote(_album_id, "ShelfA", ProcessingType.LOAD)
+        ShelfManager().upvote("ShelfA")
 
         # Verify _shelf_state exists
         # pylint: disable=protected-access

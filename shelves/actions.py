@@ -8,22 +8,36 @@ from typing import Any, List, Optional
 
 from picard.album import Album, File, Track
 from picard.ui.itemviews import BaseAction
-from PyQt5 import (
-    QtWidgets,
-)
 
-from . import utils
 from .dialogs import SetShelfDialog
 from .manager import ShelfManager
-from .processors import ContextBuilder
-from .typings import ProcessingType, TagKey
+from .typings import TagKey
+
+
+class ShelfActionUnset(BaseAction):
+    # noinspection PyUnusedName
+    NAME: str = "Unset shelf name"
+
+    def callback(self, objs) -> None:
+        from . import processors
+
+        processors = processors.instance()
+        albums: list[Album] = list(filter(lambda o: isinstance(o, Album), objs))
+        for album in albums:
+            track: Track
+            for track in album.tracks:
+                file: File
+                for file in track.files:
+                    processors.action_unset_processor(file=file)
+
+        _set_album_metadata(albums)
 
 
 class ShelfActionSet(BaseAction):
     """Manually set shelf_name"""
 
     # noinspection PyUnusedName
-    NAME: str = "Define/Set shelf name..."
+    NAME: str = "Replace shelf name"
 
     tagger: Any
 
@@ -31,34 +45,18 @@ class ShelfActionSet(BaseAction):
         shelf_name = self._ask_for_shelf_name()
         if not shelf_name:
             return
+        from . import processors
 
-        manager = ShelfManager()
-
+        processors = processors.instance()
         albums: list[Album] = list(filter(lambda o: isinstance(o, Album), objs))
         for album in albums:
             track: Track
             for track in album.tracks:
                 file: File
                 for file in track.files:
-                    context = ContextBuilder.build(
-                        file=file,
-                        processing_type=ProcessingType.SET,
-                        manager=manager,
-                    )
-                    if not context:
-                        continue
-                    context.processing_name = shelf_name
-                    manager.upvote(context=context)
-                    file.metadata[TagKey.SHELF] = shelf_name
-                    file.metadata[TagKey.SHELF_LOCKED] = manager.is_locked(
-                        file.metadata.get(TagKey.MUSICBRAINZ_ALBUMID)
-                    )
-                    file.update()
-                track.update()
-            album.update()
-            self.tagger.window.set_statusbar_message(
-                f'Successfully set shelf name "{shelf_name}" for "{album.metadata["album"]}"'
-            )
+                    processors.action_set_processor(file=file, shelf_name=shelf_name)
+
+        _set_album_metadata(albums)
 
     @staticmethod
     def _ask_for_shelf_name() -> Optional[str]:
@@ -141,3 +139,17 @@ class ShelfActionToggleLock(BaseAction):
 #                         )
 #
 #                         ShelfManager().add_shelf_names(shelf_name)
+
+
+def _set_album_metadata(albums: List[Album]):
+    for album in albums:
+        track: Track
+        for track in album.tracks:
+            file: File
+            for file in track.files:
+                file.metadata[TagKey.SHELF] = ShelfManager().get_shelf_name(
+                    album.metadata[TagKey.MUSICBRAINZ_ALBUMID]
+                )
+                file.update()
+            track.update()
+        album.update()

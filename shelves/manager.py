@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import threading
 from collections import Counter, defaultdict
+from functools import partial
 from pathlib import Path
 from typing import Any, Dict, Optional, Set, Tuple
 
@@ -22,9 +23,8 @@ from picard import config, log
 
 from . import utils
 from .constants import ALBUM_INDICATORS, MAX_SHELF_NAME_LENGTH, MAX_WORD_COUNT
-from .contexts import ProcessingContext
 from .exceptions import ShelfNotFoundException
-from .typings import ConfigKey, ProcessingType
+from .typings import ConfigKey, ProcessingType, VotingType
 
 SHELF_NAME = "shelf_name"
 SHELF_LOCKED = "shelf_locked"
@@ -121,65 +121,72 @@ class ShelfAssignmentEngine:
         self._shelf_processor: Dict[str, ProcessingType] = {}
         self._lock = threading.Lock()
 
-    def init_voting(self, context: ProcessingContext) -> None:
-        """Initialize the voting engine for album id and shelf name."""
-        if not context.processing_name:
-            return
-        if (
-            context.album_id not in self._shelf_votes
-            or context.processing_name not in self._shelf_votes[context.album_id]
-        ):
-            self._shelf_votes[context.album_id] = Counter({context.processing_name: 0})
+    def vote(
+        self,
+        album_id: str,
+        shelf_name: str,
+        voting_type: VotingType = VotingType.INITIAL,
+    ):
+        """
+
+        :param album_id:
+        :param shelf_name:
+        :param voting_type:
+        :return:
+        """
+        dispatch = {
+            VotingType.DOWN: partial(
+                self._downvote, album_id=album_id, shelf_name=shelf_name
+            ),
+            VotingType.UP: partial(
+                self._upvote, album_id=album_id, shelf_name=shelf_name
+            ),
+            VotingType.INITIAL: partial(
+                self._init_voting, album_id=album_id, shelf_name=shelf_name
+            ),
+        }
+        dispatch[voting_type]()
 
         log.debug(
-            "%s %s",
-            self.get_shelf_name_by_votes(context.album_id),
-            context,
+            "%s, %s, %s, %s",
+            album_id,
+            shelf_name,
+            voting_type.name,
+            self._shelf_votes[album_id],
         )
 
-    def upvote(self, context: ProcessingContext) -> None:
-        """Register a vote for a shelf assignment."""
-        if not context.processing_name:
-            return
-        if context.album_id not in self._shelf_votes:
-            return
+    def _init_voting(self, album_id, shelf_name) -> None:
+        """
+        Initialize the voting engine for album is and shelf name.
 
-        # if the name changes, then the previous name will be downgraded
-        if (
-            context.processing_type == ProcessingType.ADD
-            or context.processing_type == ProcessingType.SET
-        ):
-            if context.name_from_tag != context.processing_name:
-                self._shelf_votes[context.album_id].subtract({context.name_from_tag})
+        If the album id is already registered, the initialization will be ignored.
 
-        self._shelf_votes[context.album_id].update({context.processing_name})
-        self._shelf_processor[context.album_id] = context.processing_type
-        log.debug(
-            "%s %s",
-            self.get_shelf_name_by_votes(context.album_id),
-            context,
-        )
+        :param album_id:
+        :param shelf_name:
+        """
+        if album_id not in self._shelf_votes:
+            self._shelf_votes[album_id] = Counter({shelf_name: 0})
 
-    def downvote(self, context: ProcessingContext) -> None:
-        """Unregister a vote for a shelf assignment."""
-        if not context.processing_name:
-            return
-        if context.album_id not in self._shelf_votes:
-            return
-        # if (
-        #     context.processing_type == ProcessingType.REMOVE
-        #     or context.processing_type == ProcessingType.UNSET
-        # ):
-        #     if context.name_from_tag != shelf_name:
-        #         self._shelf_votes[album_id].update({context.name_from_tag})
-        self._shelf_votes[context.album_id].subtract({context.processing_name})
-        self._shelf_processor[context.album_id] = context.processing_type
+    def _upvote(self, album_id, shelf_name) -> None:
+        """
+        Register a vote for a shelf assignment.
 
-        log.debug(
-            "%s %s",
-            self.get_shelf_name_by_votes(context.album_id),
-            context,
-        )
+        :param album_id:
+        :param shelf_name:
+        """
+        self._shelf_votes[album_id].update({shelf_name})
+
+    def _downvote(self, album_id, shelf_name) -> None:
+        """
+        Unregister a vote for a shelf assignment.
+
+        Elements that reach the number 0 are ignored.
+
+        :param album_id:
+        :param shelf_name:
+        """
+        if shelf_name in self._shelf_votes[album_id].elements():
+            self._shelf_votes[album_id].subtract({shelf_name})
 
     def get_shelf_name_by_votes(self, album_id) -> Optional[str]:
         """Determine the winning shelf based on vote counts."""
@@ -397,16 +404,15 @@ class ShelfManager:
 
     # ===== Delegation Methods =====
 
-    def init_voting(self, context: ProcessingContext) -> None:
-        self._assignment_engine.init_voting(context)
-
-    def downvote(self, context: ProcessingContext) -> None:
-        """Register a vote for a shelf assignment - delegates to assignment engine."""
-        self._assignment_engine.downvote(context)
-
-    def upvote(self, context: ProcessingContext) -> None:
-        """Register a vote for a shelf assignment - delegates to assignment engine."""
-        self._assignment_engine.upvote(context)
+    def vote(
+        self,
+        album_id: str,
+        shelf_name: str,
+        voting_type: VotingType = VotingType.INITIAL,
+    ) -> None:
+        self._assignment_engine.vote(
+            album_id=album_id, shelf_name=shelf_name, voting_type=voting_type
+        )
 
     def get_shelf_name(self, album_id: str) -> str:
         """Determine the shelf for an album."""

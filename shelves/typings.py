@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from enum import IntEnum, StrEnum
+from enum import Enum, IntEnum, StrEnum
+
+
+class VotingType(IntEnum):
+    """Voting types for the Shelves plugin."""
+
+    UP = 1
+    DOWN = 2
+    INITIAL = UP | DOWN
 
 
 class ProcessingType(IntEnum):
