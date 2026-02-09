@@ -68,7 +68,7 @@ class ProcessorsTest(unittest.TestCase):
         mock_manager_instance.base_path = Path(
             str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
         )
-        mock_manager_instance.shelf_names = self.known_shelves
+        mock_manager_instance.registered_shelf_names = self.known_shelves
 
         mock_context.name_from_tag = shelf_sub_dir
         mock_context.name_from_path = shelf_sub_dir
@@ -114,7 +114,7 @@ class ProcessorsTest(unittest.TestCase):
         mock_manager_instance.base_path = Path(
             str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
         )
-        mock_manager_instance.shelf_names = self.known_shelves
+        mock_manager_instance.registered_shelf_names = self.known_shelves
 
         mock_context.name_from_tag = name_from_tag
         mock_context.name_from_path = name_from_path
@@ -157,7 +157,7 @@ class ProcessorsTest(unittest.TestCase):
         mock_manager_instance.base_path = Path(
             str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
         )
-        mock_manager_instance.shelf_names = self.known_shelves
+        mock_manager_instance.registered_shelf_names = self.known_shelves
 
         mock_context.name_from_tag = shelf_sub_dir
         mock_context.name_from_path = unknown_shelf_subdir

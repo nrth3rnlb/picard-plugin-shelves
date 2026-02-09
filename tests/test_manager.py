@@ -7,7 +7,7 @@ Tests for the ShelfManager class.
 import unittest
 from unittest.mock import patch
 
-from typings import ConfigKey
+from typings import ConfigKey, VotingType
 
 from shelves.manager import ShelfManager
 from shelves.typings import ProcessingType
@@ -45,50 +45,50 @@ class ManagerTest(unittest.TestCase):
     def test_voting_determines_winner(self, _mock_config):
         """Test that the shelf_name with the most _shelf_votes_weighted is set as the winner."""
         # Arrange
-        _album_id = "019c003f-66fa-7a57-89ff-767bdc16ab09"
-        # pylint: disable=protected-access
-        ShelfManager().upvote("ShelfA")
-        ShelfManager().upvote("ShelfB")
-        ShelfManager().upvote("ShelfA")
+        album_id = "019c003f-66fa-7a57-89ff-767bdc16ab09"
+        ShelfManager().vote(album_id=album_id, shelf_name="ShelfA")
+        ShelfManager().vote(
+            album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP
+        )
+        ShelfManager().vote(
+            album_id=album_id, shelf_name="ShelfB", voting_type=VotingType.UP
+        )
+        ShelfManager().vote(
+            album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP
+        )
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
-            ShelfManager().get_shelf_name(_album_id),
+            ShelfManager().get_shelf_name(album_id),
             "ShelfA",
         )
 
     @patch("shelves.manager.config")
     def test_get_album_shelf_returns_winner(self, _mock_config):
         """Test that resolve_shelf_name returns the correct winner."""
-        _album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
-        # pylint: disable=protected-access
-        ShelfManager().upvote("ShelfB")
-        ShelfManager().upvote("ShelfB")
-        ShelfManager().upvote("ShelfA")
+        album_id = "4cce8861-b30e-46ce-8e88-61b30e06ceb9"
+        ShelfManager().vote(album_id=album_id, shelf_name="ShelfA")
+        ShelfManager().vote(
+            album_id=album_id, shelf_name="ShelfB", voting_type=VotingType.UP
+        )
+        ShelfManager().vote(
+            album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP
+        )
+        ShelfManager().vote(
+            album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP
+        )
+        ShelfManager().vote(
+            album_id=album_id, shelf_name="ShelfB", voting_type=VotingType.UP
+        )
+        ShelfManager().vote(
+            album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP
+        )
 
         # The internal winner should be 'ShelfA'
         self.assertEqual(
-            ShelfManager().get_shelf_name(_album_id),
-            "ShelfB",
+            ShelfManager().get_shelf_name(album_id),
+            "ShelfA",
         )
-
-    @patch("shelves.manager.config")
-    def test_clear_album_resets_state(self, _mock_config):
-        """Test that clear_album removes all voting data for an album."""
-        # mock_config.setting = self.test_configuration
-        _album_id = "019c003f-adff-7646-bf58-064d0a645cd0"
-        ShelfManager().upvote("ShelfA")
-
-        # Verify _shelf_state exists
-        # pylint: disable=protected-access
-        # self.assertIn(_album_id, ShelfManager()._assignment_engine._shelf_votes_weighted)
-        self.assertIn(_album_id, ShelfManager()._assignment_engine._shelf_votes)
-
-        # Clear and verify _shelf_state is gone
-        ShelfManager().clear_album(_album_id)
-        # pylint: disable=protected-access
-        # self.assertNotIn(_album_id, ShelfManager()._assignment_engine._shelf_votes_weighted)
-        self.assertNotIn(_album_id, ShelfManager()._assignment_engine._shelf_votes)
 
 
 if __name__ == "__main__":

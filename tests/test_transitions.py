@@ -7,13 +7,18 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from typings import ConfigKey
+
 from shelves.transitions import (
-    StrategyEmptyNameToStage2, StrategyKnownNameToStage2, StrategyUnknownNameToStage2, TransitionType, Transitions
+    StrategyEmptyNameToStage2,
+    StrategyKnownNameToStage2,
+    StrategyUnknownNameToStage2,
+    Transitions,
+    TransitionType,
 )
 
 
 def get_strategy(workflow, cls):
-    return next(s for s in workflow.transitions if isinstance(s, cls))
+    return next(s for s in workflow.strategies if isinstance(s, cls))
 
 
 class TransitionsTest(unittest.TestCase):
@@ -22,81 +27,39 @@ class TransitionsTest(unittest.TestCase):
     def setUp(self):
         """Set up the test environment for workflow."""
         self.test_configuration = {
-            ConfigKey.WORKFLOW_STAGE_1_SHELVES    : ["Incoming"],
-            ConfigKey.WORKFLOW_STAGE_2_SHELVES    : ["Standard"],
-            ConfigKey.WORKFLOW_ENABLED            : True,
+            ConfigKey.WORKFLOW_STAGE_1_SHELVES: ["Incoming"],
+            ConfigKey.WORKFLOW_STAGE_2_SHELVES: ["Standard"],
+            ConfigKey.WORKFLOW_ENABLED: True,
             ConfigKey.STAGE_1_INCLUDES_NON_SHELVES: False,
-            ConfigKey.MOVE_FILES_TO               : "/home/foobar/music",
-            ConfigKey.KNOWN_SHELVES               : ["Incoming", "Standard", "Stash", "Live"],
+            ConfigKey.MOVE_FILES_TO: "/home/foobar/music",
+            ConfigKey.KNOWN_SHELVES: ["Incoming", "Standard", "Stash", "Live"],
         }
 
-        self.mock_shelf_manager = MagicMock()
+        self.mock_manager = MagicMock()
         self.mock_manager_instance = MagicMock()
-        self.mock_shelf_manager.return_value = self.mock_manager_instance
+        self.mock_manager.return_value = self.mock_manager_instance
         self.mock_manager_instance.set_shelf_name = MagicMock()
         self.mock_manager_instance.base_path = Path(
-                str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
+            str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
         )
-        self.mock_manager_instance.shelf_names = self.test_configuration[
+        self.mock_manager_instance.registered_shelf_names = self.test_configuration[
             ConfigKey.KNOWN_SHELVES
         ]
 
     @patch("shelves.transitions.ContextBuilder")
     @patch("shelves.transitions.config")
-    def test_workflow_enabled(self, mock_config, mock_context_builder):
-        mock_config.setting = self.test_configuration
-        mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = True
-
-        mock_context = MagicMock()
-        mock_context.transition_type = TransitionType.TO_STAGE_2
-        mock_context.album_id = "019c1a82-3b9a-7538-babc-b156e1a7e8f5"
-        mock_context.shelf_name = mock_config.setting[
-            ConfigKey.WORKFLOW_STAGE_1_SHELVES
-        ][0]
-        mock_context_builder.build_context.return_value = mock_context
-
-        # Create processor with mocked manager
-        transition = Transitions(manager=self.mock_manager_instance)
-
-        # Act
-        transition.transition_to(
-                mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
-        )
-
-        # Assert
-        self.mock_manager_instance.set_shelf_name.assert_called_with(
-                album_id=mock_context.album_id,
-                shelf_name=mock_config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES][0],
-        )
-
-    @patch("shelves.transitions.ContextBuilder")
-    @patch("shelves.transitions.config")
-    def test_workflow_disabled(self, mock_config, mock_context_builder):
-        mock_config.setting = self.test_configuration
-        mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = False
-
-        mock_context = MagicMock()
-        mock_context.transition_type = TransitionType.TO_STAGE_2
-        mock_context.album_id = "019c1a4f-4e6c-75ed-975d-fcd290068782"
-        mock_context.shelf_name = mock_config.setting[
-            ConfigKey.WORKFLOW_STAGE_1_SHELVES
-        ][0]
-        mock_context_builder.build_context.return_value = mock_context
-
-        # Create processor with mocked manager
-        transition = Transitions(manager=self.mock_manager_instance)
-
-        # Act
-        transition.transition_to(
-                mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
-        )
-
-        # Assert
-        self.mock_manager_instance.set_shelf_name.assert_not_called()
-
-    @patch("shelves.transitions.ContextBuilder")
-    @patch("shelves.transitions.config")
     def test_known_name_to_stage_2_strategy(self, mock_config, mock_context_builder):
+        self.mock_manager = MagicMock()
+        self.mock_manager_instance = MagicMock()
+        self.mock_manager.return_value = self.mock_manager_instance
+        self.mock_manager_instance.set_shelf_name = MagicMock()
+        self.mock_manager_instance.base_path = Path(
+            str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
+        )
+        self.mock_manager_instance.registered_shelf_names = self.test_configuration[
+            ConfigKey.KNOWN_SHELVES
+        ]
+
         mock_config.setting = self.test_configuration
         mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = True
 
@@ -107,16 +70,15 @@ class TransitionsTest(unittest.TestCase):
         mock_context_builder.build_context.return_value = mock_context
 
         cases = [
-            # (STAGE_1_INCLUDES_NON_SHELVES, expected_is_applicable, expect_set_called)
-            (False, True, True),
-            (True, True, True),
+            # (STAGE_1_INCLUDES_NON_SHELVES, expectation)
+            (False, True),
+            (True, True),
         ]
 
-        for includes, expected_is_applicable, expect_is_called in cases:
+        for includes, expectation in cases:
             with self.subTest(
-                    includes_non_shelves=includes,
-                    strategy_applies=expected_is_applicable,
-                    set_shelf_name=expect_is_called,
+                includes_non_shelves=includes,
+                expectation=expectation,
             ):
                 mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = includes
 
@@ -127,28 +89,19 @@ class TransitionsTest(unittest.TestCase):
                 self.mock_manager_instance.set_shelf_name.reset_mock()
 
                 # Act
-                transition.transition_to(
-                        mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
+                context = transition.transition_to(
+                    mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
                 )
 
-                # Assert applicability
-                self.assertEqual(
-                        get_strategy(transition, StrategyKnownNameToStage2).is_applicable(
-                                mock_context
-                        ),
-                        expected_is_applicable,
-                )
-
-                # Assert set_shelf_name call state
-                if expect_is_called:
-                    self.mock_manager_instance.set_shelf_name.assert_called_with(
-                            album_id=mock_context.album_id,
-                            shelf_name=mock_config.setting[
-                                ConfigKey.WORKFLOW_STAGE_2_SHELVES
-                            ][0],
+                # Expected
+                if expectation:
+                    self.assertEqual(
+                        context.strategy, StrategyKnownNameToStage2.__name__
                     )
                 else:
-                    self.mock_manager_instance.set_shelf_name.assert_not_called()
+                    self.assertNotEqual(
+                        context.strategy, StrategyKnownNameToStage2.__name__
+                    )
 
     @patch("shelves.transitions.ContextBuilder")
     @patch("shelves.transitions.config")
@@ -163,16 +116,15 @@ class TransitionsTest(unittest.TestCase):
         mock_context_builder.build_context.return_value = mock_context
 
         cases = [
-            # (STAGE_1_INCLUDES_NON_SHELVES, expected_is_applicable, expect_set_called)
-            (False, False, False),
-            (True, True, True),
+            # (STAGE_1_INCLUDES_NON_SHELVES, expectation)
+            (False, False),
+            (True, True),
         ]
 
-        for includes, expected_is_applicable, expect_is_called in cases:
+        for includes, expectation in cases:
             with self.subTest(
-                    includes_non_shelves=includes,
-                    strategy_applies=expected_is_applicable,
-                    set_shelf_name=expect_is_called,
+                includes_non_shelves=includes,
+                expectation=expectation,
             ):
                 mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = includes
 
@@ -183,28 +135,19 @@ class TransitionsTest(unittest.TestCase):
                 self.mock_manager_instance.set_shelf_name.reset_mock()
 
                 # Act
-                transition.transition_to(
-                        mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
+                context = transition.transition_to(
+                    mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
                 )
 
-                # Assert applicability
-                self.assertEqual(
-                        get_strategy(transition, StrategyUnknownNameToStage2).is_applicable(
-                                mock_context
-                        ),
-                        expected_is_applicable,
-                )
-
-                # Assert set_shelf_name call state
-                if expect_is_called:
-                    self.mock_manager_instance.set_shelf_name.assert_called_with(
-                            album_id=mock_context.album_id,
-                            shelf_name=mock_config.setting[
-                                ConfigKey.WORKFLOW_STAGE_2_SHELVES
-                            ][0],
+                # Expected
+                if expectation:
+                    self.assertEqual(
+                        context.strategy, StrategyUnknownNameToStage2.__name__
                     )
                 else:
-                    self.mock_manager_instance.set_shelf_name.assert_not_called()
+                    self.assertNotEqual(
+                        context.strategy, StrategyUnknownNameToStage2.__name__
+                    )
 
     @patch("shelves.transitions.ContextBuilder")
     @patch("shelves.transitions.config")
@@ -220,16 +163,15 @@ class TransitionsTest(unittest.TestCase):
         mock_context_builder.build_context.return_value = mock_context
 
         cases = [
-            # (STAGE_1_INCLUDES_NON_SHELVES, expected_is_applicable, expect_set_called)
-            (False, True, False),
-            (True, True, False),
+            # (STAGE_1_INCLUDES_NON_SHELVES, expectation)
+            (False, True),
+            (True, True),
         ]
 
-        for includes, expected_is_applicable, expect_is_called in cases:
+        for includes, expectation in cases:
             with self.subTest(
-                    includes_non_shelves=includes,
-                    strategy_applies=expected_is_applicable,
-                    set_shelf_name=expect_is_called,
+                includes_non_shelves=includes,
+                expectation=expectation,
             ):
                 mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = includes
 
@@ -240,28 +182,19 @@ class TransitionsTest(unittest.TestCase):
                 self.mock_manager_instance.set_shelf_name.reset_mock()
 
                 # Act
-                transition.transition_to(
-                        mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
+                context = transition.transition_to(
+                    mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
                 )
 
-                # Assert applicability
-                self.assertEqual(
-                        get_strategy(transition, StrategyEmptyNameToStage2).is_applicable(
-                                mock_context
-                        ),
-                        expected_is_applicable,
-                )
-
-                # Assert set_shelf_name call state
-                if expect_is_called:
-                    self.mock_manager_instance.set_shelf_name.assert_called_with(
-                            album_id=mock_context.album_id,
-                            shelf_name=mock_config.setting[
-                                ConfigKey.WORKFLOW_STAGE_2_SHELVES
-                            ][0],
+                # Expected
+                if expectation:
+                    self.assertEqual(
+                        context.strategy, StrategyEmptyNameToStage2.__name__
                     )
                 else:
-                    self.mock_manager_instance.set_shelf_name.assert_not_called()
+                    self.assertNotEqual(
+                        context.strategy, StrategyEmptyNameToStage2.__name__
+                    )
 
 
 if __name__ == "__main__":

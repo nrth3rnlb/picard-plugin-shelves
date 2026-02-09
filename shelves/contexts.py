@@ -23,5 +23,6 @@ class TransitionContext:
     """Context for shelf workflow transitions."""
 
     transition_type: TransitionType
+    strategy: str
     album_id: str
     shelf_name: str

@@ -187,7 +187,7 @@ class OptionsPageTest(unittest.TestCase):
         _test_configuration = deepcopy(self.test_configuration)
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
-        mock_manager_instance.shelf_names = self.test_known_shelves
+        mock_manager_instance.registered_shelf_names = self.test_known_shelves
 
         mock_config.setting = {}
         for option in OptionsPage.options:
@@ -270,8 +270,8 @@ class OptionsPageTest(unittest.TestCase):
         mock_shelf_manager.return_value = mock_manager_instance
 
         shelf_names = deepcopy(self.test_known_shelves)
-        mock_manager_instance.shelf_names = shelf_names
-        popped = mock_manager_instance.shelf_names.pop()
+        mock_manager_instance.registered_shelf_names = shelf_names
+        popped = mock_manager_instance.registered_shelf_names.pop()
         mock_get_text.return_value = (popped, True)
 
         # Act
@@ -334,7 +334,7 @@ class OptionsPageTest(unittest.TestCase):
         ]
 
         # Act
-        self.options_page._management_action_remove_selected()
+        self.options_page._management_action_remove()
 
         # Assert
         expected_shelves = {selected_text}
@@ -376,7 +376,7 @@ class OptionsPageTest(unittest.TestCase):
         )
 
         # Act
-        self.options_page._management_action_remove_selected()
+        self.options_page._management_action_remove()
 
         # Assert - The dialog should have been called because there's a conflict
         mock_question.assert_called_once()
@@ -388,7 +388,7 @@ class OptionsPageTest(unittest.TestCase):
         # Arrange
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
-        mock_manager_instance.shelf_names = deepcopy(self.test_known_shelves)
+        mock_manager_instance.registered_shelf_names = deepcopy(self.test_known_shelves)
 
         mock_items = {}
         for name in self.test_known_shelves:

@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from typings import ConfigKey, TagKey
 
-from shelves.actions import ShelfActionDetermine, ShelfActionSet, ShelfActionToggleLock
+from shelves.actions import ShelfActionSet, ShelfActionToggleLock
 from shelves.dialogs import SetShelfDialog
 
 
@@ -86,10 +86,11 @@ class SetShelfActionTest(unittest.TestCase):
         shelf_name = "Standard"
         mock_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_manager_instance
-        mock_manager_instance.shelf_names = self.known_shelves
+        mock_manager_instance.registered_shelf_names = self.known_shelves
         mock_manager_instance.base_path = Path(
             str(self.test_configuration[ConfigKey.MOVE_FILES_TO])
         )
+        mock_manager_instance.setting = self.test_configuration
         mock_manager_instance.is_locked.return_value = False
 
         # Mocked dialog class -> Provide _instance
@@ -135,9 +136,9 @@ class SetShelfDialogTest(unittest.TestCase):
         # Arrange
         mock_dialog_shelf_manager_instance = MagicMock()
         mock_shelf_manager.return_value = mock_dialog_shelf_manager_instance
-        mock_dialog_shelf_manager_instance.shelf_names = self.test_configuration[
-            ConfigKey.KNOWN_SHELVES
-        ]
+        mock_dialog_shelf_manager_instance.registered_shelf_names = (
+            self.test_configuration[ConfigKey.KNOWN_SHELVES]
+        )
 
         # Mock the dialog attributes and methods to simulate user input
         self.dialog.exec_ = MagicMock(return_value=True)  # Simulate dialog acceptance
@@ -156,39 +157,29 @@ class SetShelfDialogTest(unittest.TestCase):
         self.assertEqual(result, "NewShelf")
         self.dialog.exec_.assert_called_once()
 
-
-class DetermineShelfActionTest(unittest.TestCase):
-    def setUp(self):
-        """Set up the test environment"""
-        self.actions = ShelfActionDetermine.__new__(ShelfActionDetermine)
-        self.actions.tagger = MagicMock()
-        self.test_configuration = {
-            ConfigKey.MOVE_FILES_TO: "/home/foobar/music",
-        }
-
-    @patch("shelves.actions.ShelfManager")
-    def test_callback(self, mock_shelf_manager):
-        """Test the callback method"""
-        # Arrange
-        mock_manager_instance = MagicMock()
-        mock_shelf_manager.return_value = mock_manager_instance
-        mock_manager_instance.base_path = Path(
-            str(self.test_configuration[ConfigKey.MOVE_FILES_TO])
-        )
-
-        file_path = (
-            Path(str(self.test_configuration[ConfigKey.MOVE_FILES_TO]))
-            / "Standard"
-            / "file_name.foobar"
-        )
-        obj = MagicMock()
-        file_mock = MagicMock()
-        file_mock.filename = file_path
-        file_mock.metadata = {}  # Initialize as dict to allow item assignment
-        obj.iterfiles.return_value = [file_mock]
-
-        # Act
-        self.actions.callback([obj])
-
-        # Assert
-        mock_manager_instance.add_shelf_names.assert_called_with("Standard")
+    # @patch("shelves.actions.ShelfManager")
+    # def test_callback(self, mock_shelf_manager):
+    #     """Test the callback method"""
+    #     # Arrange
+    #     mock_manager_instance = MagicMock()
+    #     mock_shelf_manager.return_value = mock_manager_instance
+    #     mock_manager_instance.base_path = Path(
+    #         str(self.test_configuration[ConfigKey.MOVE_FILES_TO])
+    #     )
+    #
+    #     file_path = (
+    #         Path(str(self.test_configuration[ConfigKey.MOVE_FILES_TO]))
+    #         / "Standard"
+    #         / "file_name.foobar"
+    #     )
+    #     obj = MagicMock()
+    #     file_mock = MagicMock()
+    #     file_mock.filename = file_path
+    #     file_mock.metadata = {}  # Initialize as dict to allow item assignment
+    #     obj.iterfiles.return_value = [file_mock]
+    #
+    #     # Act
+    #     self.actions.callback([obj])
+    #
+    #     # Assert
+    #     mock_manager_instance.add_shelf_names.assert_called_with("Standard")

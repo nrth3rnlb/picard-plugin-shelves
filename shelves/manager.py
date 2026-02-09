@@ -451,10 +451,10 @@ class ShelfManager:
         """Check if an album's shelf assignment is locked."""
         return self._lock_manager.is_locked(album_id)
 
-    # def is_likely_shelf_name(self, name: str) -> Tuple[bool, Optional[str]]:
-    #     """Check if a name is likely a valid shelf name."""
-    #     # Note: known_shelves parameter kept for backward compatibility but not used
-    #     return self._validator.is_likely_shelf_name(name)
+    def is_likely_shelf_name(self, name: str) -> Tuple[bool, Optional[str]]:
+        """Check if a name is likely a valid shelf name."""
+        # Note: known_shelves parameter kept for backward compatibility but not used
+        return self._validator.is_likely_shelf_name(name)
 
     def add_shelf_names(self, names: Set[str] | str) -> None:
         """Add shelf names to the registry."""

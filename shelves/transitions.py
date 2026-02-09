@@ -117,7 +117,7 @@ class Transitions:
     its own copy of the manager.
     """
 
-    TRANSITION_ORDER: Sequence[type[Strategy]] = [
+    STRATEGY_ORDER: Sequence[type[Strategy]] = [
         StrategyEmptyNameToStage2,
         StrategyUnknownNameToStage2,
         StrategyKnownNameToStage2,
@@ -126,7 +126,7 @@ class Transitions:
     def __init__(self, manager: Optional[ShelfManager] = None):
         """Initialize workflow with optional ShelfManager injection."""
         self.manager = manager or ShelfManager()
-        self.transitions = [cls(self.manager) for cls in self.TRANSITION_ORDER]
+        self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
     def transition_to(
         self, album_id: str, transition_type: TransitionType
@@ -143,8 +143,9 @@ class Transitions:
         )
         if not context:
             return None
-        for transition in self.transitions:
-            if transition.process(context):
+        for strategy in self.strategies:
+            if strategy.process(context):
+                context.strategy = strategy.__class__.__name__
                 break
         return context
 
