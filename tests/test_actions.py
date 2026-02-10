@@ -6,6 +6,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from picard.album import Album
+from picard.file import File
+from picard.track import Track
 from typings import ConfigKey, TagKey
 
 from shelves.actions import ShelfActionSet, ShelfActionToggleLock
@@ -97,23 +100,23 @@ class SetShelfActionTest(unittest.TestCase):
         self.actions.dialog = mock_dialog_cls.return_value
         self.actions.dialog.ask_for_shelf_name.return_value = shelf_name
 
-        file_mock = MagicMock()
+        file_mock = MagicMock(File)
         file_mock.filename = f"/home/foobar/music/{shelf_name}/test.mp3"
         file_mock.metadata = {
             TagKey.MUSICBRAINZ_ALBUMID: album_id,
             TagKey.SHELF: shelf_name,
         }
+        track_mock = MagicMock(Track)
+        track_mock.files = [file_mock]
 
-        obj = MagicMock()
-        obj.iterfiles.return_value = [file_mock]
+        album_mock = MagicMock(Album)
+        album_mock.tracks = [track_mock]
 
         # Act
-        self.actions.callback([obj])
+        self.actions.callback([album_mock])
 
         # Assert
-        mock_manager_instance.set_shelf_name.assert_called_with(
-            album_id=album_id, shelf_name=shelf_name
-        )
+        self.assertEqual(context.strategy, StrategyKnownNameToStage2.__name__)
 
 
 class SetShelfDialogTest(unittest.TestCase):
