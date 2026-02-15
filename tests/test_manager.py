@@ -11,11 +11,11 @@ to simulate external dependencies when necessary.
 import unittest
 from unittest.mock import patch
 
-from exceptions import ShelfNotFoundException
 from picard import config
 from typings import ConfigKey, VotingType
 
 import tests
+from shelves.exceptions import ShelfNotFoundException
 from shelves.manager import ShelfManager
 
 
