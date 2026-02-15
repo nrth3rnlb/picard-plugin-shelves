@@ -62,22 +62,21 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
     """Extract the shelf name from a file_path."""
     try:
         if not file_path.is_relative_to(base_path):
-            log.warning(_("Path '%s' is not under base directory."), file_path)
-            raise ShelfNotDeterminableException(filepath=file_path)
+            raise ShelfNotDeterminableException(
+                filepath=file_path, details="not relative to %s" % base_path
+            )
 
         relative_parts = file_path.relative_to(base_path).parts
         if not relative_parts or len(relative_parts) <= 1:
-            log.warning(_("File is directly in base directory."))
-            raise ShelfNotDeterminableException(filepath=file_path)
+            raise ShelfNotDeterminableException(filepath=file_path, details="too short")
         return relative_parts[0]
 
     except (KeyError, ValueError, OSError) as e:
-        log.error(
-            _("Error extracting shelf_name from file_path_str '%s': %s."),
-            file_path,
-            e,
+        raise ShelfNotDeterminableException(
+            filepath=file_path,
+            details=repr(e),
+            cause=e,
         )
-        raise ShelfNotDeterminableException(filepath=file_path, cause=e)
 
 
 def validate_shelf_name(name: str) -> Tuple[bool, str]:
@@ -273,9 +272,7 @@ def squeeze_the_parser(parser: ScriptParser) -> tuple[str, str]:
     if hasattr(parser.file, "metadata"):
         metadata_shelf = parser.file.metadata.get(TagKey.SHELF)
         metadata_shelf = get_shelf_name_from_tag(metadata_shelf)
-        log.debug("metadata_shelf = %s", metadata_shelf)
     if hasattr(parser, "context"):
         context_shelf = parser.context.get(TagKey.SHELF)
         context_shelf = get_shelf_name_from_tag(context_shelf)
-        log.debug("context_shelf = %s", context_shelf)
     return context_shelf, metadata_shelf

@@ -1,11 +1,22 @@
 """
-Tests for the processors.py module.
+Unit tests for the workflow transition logic, validating the behavior of
+various strategies under different configurations.
+
+This module includes tests to verify the assignment of appropriate
+transition strategies based on workflow settings and shelf configurations.
+The tests use mock objects and simulate different scenarios to ensure that
+the transitions work as expected.
+
+Classes:
+    TransitionsTest: Contains test cases for the behavior of workflow
+    transitions based on different strategies and configurations.
 """
 
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from contexts import TransitionContext
 from typings import ConfigKey
 
 from shelves.transitions import (
@@ -13,7 +24,6 @@ from shelves.transitions import (
     StrategyKnownNameToStage2,
     StrategyUnknownNameToStage2,
     Transitions,
-    TransitionType,
 )
 
 
@@ -25,7 +35,7 @@ class TransitionsTest(unittest.TestCase):
     """Tests for the workflow transition logic."""
 
     def setUp(self):
-        """Set up the test environment for workflow."""
+
         self.test_configuration = {
             ConfigKey.WORKFLOW_STAGE_1_SHELVES: ["Incoming"],
             ConfigKey.WORKFLOW_STAGE_2_SHELVES: ["Standard"],
@@ -49,22 +59,11 @@ class TransitionsTest(unittest.TestCase):
     @patch("shelves.transitions.ContextBuilder")
     @patch("shelves.transitions.config")
     def test_known_name_to_stage_2_strategy(self, mock_config, mock_context_builder):
-        self.mock_manager = MagicMock()
-        self.mock_manager_instance = MagicMock()
-        self.mock_manager.return_value = self.mock_manager_instance
-        self.mock_manager_instance.set_shelf_name = MagicMock()
-        self.mock_manager_instance.base_path = Path(
-            str(self.test_configuration[ConfigKey.MOVE_FILES_TO]),
-        )
-        self.mock_manager_instance.registered_shelf_names = self.test_configuration[
-            ConfigKey.KNOWN_SHELVES
-        ]
-
         mock_config.setting = self.test_configuration
         mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = True
 
         mock_context = MagicMock()
-        mock_context.transition_type = TransitionType.TO_STAGE_2
+        mock_context.transition_type = TransitionContext.TransitionType.TO_STAGE_2
         mock_context.album_id = "019c1a82-0a7d-7584-924c-e10e9d204402"
         mock_context.shelf_name = mock_config.setting[ConfigKey.KNOWN_SHELVES][0]
         mock_context_builder.build_context.return_value = mock_context
@@ -90,7 +89,8 @@ class TransitionsTest(unittest.TestCase):
 
                 # Act
                 context = transition.transition_to(
-                    mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
+                    mock_context.album_id,
+                    transition_type=TransitionContext.TransitionType.TO_STAGE_2,
                 )
 
                 # Expected
@@ -110,7 +110,7 @@ class TransitionsTest(unittest.TestCase):
         mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = True
 
         mock_context = MagicMock()
-        mock_context.transition_type = TransitionType.TO_STAGE_2
+        mock_context.transition_type = TransitionContext.TransitionType.TO_STAGE_2
         mock_context.album_id = "019c1a82-0a7d-7584-924c-e10e9d204402"
         mock_context.shelf_name = "UnknownShelf"
         mock_context_builder.build_context.return_value = mock_context
@@ -136,7 +136,8 @@ class TransitionsTest(unittest.TestCase):
 
                 # Act
                 context = transition.transition_to(
-                    mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
+                    mock_context.album_id,
+                    transition_type=TransitionContext.TransitionType.TO_STAGE_2,
                 )
 
                 # Expected
@@ -157,7 +158,7 @@ class TransitionsTest(unittest.TestCase):
         mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = True
 
         mock_context = MagicMock()
-        mock_context.transition_type = TransitionType.TO_STAGE_2
+        mock_context.transition_type = TransitionContext.TransitionType.TO_STAGE_2
         mock_context.album_id = "019c1a82-0a7d-7584-924c-e10e9d204402"
         mock_context.shelf_name = ""
         mock_context_builder.build_context.return_value = mock_context
@@ -183,7 +184,8 @@ class TransitionsTest(unittest.TestCase):
 
                 # Act
                 context = transition.transition_to(
-                    mock_context.album_id, transition_type=TransitionType.TO_STAGE_2
+                    mock_context.album_id,
+                    transition_type=TransitionContext.TransitionType.TO_STAGE_2,
                 )
 
                 # Expected
@@ -195,7 +197,3 @@ class TransitionsTest(unittest.TestCase):
                     self.assertNotEqual(
                         context.strategy, StrategyEmptyNameToStage2.__name__
                     )
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -1,3 +1,12 @@
+"""
+Unit tests for script_functions.py.
+
+This module contains unit tests for testing the functionalities
+provided by the `shelf` function in the script_functions module.
+The tests validate expected behaviors for both known and unknown
+shelf values in various scenarios.
+"""
+
 import unittest
 from copy import copy
 from typing import Set
@@ -8,7 +17,6 @@ from shelves.script_functions import shelf
 
 class ScriptFunctionsTest(unittest.TestCase):
     def setUp(self):
-        """Set up the test environment"""
         self.known_shelves: Set[str] = {
             "Incoming",
             "Standard",
@@ -34,7 +42,3 @@ class ScriptFunctionsTest(unittest.TestCase):
         invalid = f"Unknown{known_shelf}"
         self.assertNotEqual(invalid, result, f"Did not expect '{invalid}' but got it.")
         self.assertEqual(expected, result, f"Expected '{expected}' but got '{result}'")
-
-
-if __name__ == "__main__":
-    unittest.main()

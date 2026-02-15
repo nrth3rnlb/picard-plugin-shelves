@@ -1,30 +1,43 @@
-# -*- coding: utf-8 -*-
-
 """
-Tests for the utility functions.
+Unit tests for utility and validation functions related to shelf management.
+
+This module includes test cases for shelf-related utility functions and validation
+logic implemented in the `utils` module. These tests ensure that functions correctly
+filter, validate, and manipulate shelf names based on specific criteria, such as naming
+conventions, invalid characters, and path extraction.
+
+Classes:
+    - UtilsTest: Contains tests for utility functions such as shelf name extraction and
+      configured shelves filtering.
+    - UtilsValidationTest: Contains tests for validation functions related to shelf
+      name validity, invalid characters, naming rules, and length constraints.
+
+Note:
+    Some tests for maximum length and word count validation are currently skipped,
+    pending resolution of related TODOs in the `utils` module.
 """
 
 import math
 import random
 import unittest
 from pathlib import Path
-from unittest import skip
 from unittest.mock import MagicMock, patch
+
+from typings import ConfigKey
 
 from shelves import constants, utils
 from shelves.manager import ShelfManager
-from typings import ConfigKey
 
 
 class UtilsTest(unittest.TestCase):
     def setUp(self):
-        """Set up the test environment"""
+
         self.test_known_shelves = ["Incoming", "Standard", "Soundtracks", "Favorites"]
         self.test_configuration = {
-            ConfigKey.WORKFLOW_ENABLED        : True,
+            ConfigKey.WORKFLOW_ENABLED: True,
             ConfigKey.WORKFLOW_STAGE_1_SHELVES: ["Incoming"],
             ConfigKey.WORKFLOW_STAGE_2_SHELVES: ["Standard"],
-            ConfigKey.KNOWN_SHELVES           : self.test_known_shelves,
+            ConfigKey.KNOWN_SHELVES: self.test_known_shelves,
         }
 
     @patch("shelves.utils.validate_shelf_name", new_callable=MagicMock)
@@ -59,7 +72,7 @@ class UtilsTest(unittest.TestCase):
 
         # Act
         shelf_name = utils.get_shelf_name_from_path(
-                Path(f"/music/{shelf_sub_dir}/artist/album/track.mp3"), Path("/music")
+            Path(f"/music/{shelf_sub_dir}/artist/album/track.mp3"), Path("/music")
         )
 
         # Assert
@@ -107,13 +120,13 @@ class UtilsValidationTest(unittest.TestCase):
                 # Assert
                 self.assertFalse(is_valid)
                 self.assertIn(
-                        f"Cannot use '{invalid_shelf_name}' as shelf name.", message
+                    f"Cannot use '{invalid_shelf_name}' as shelf name.", message
                 )
                 self.assertIn(f"Not allowed are: {hr_invalidations}", message)  # type: ignore[arg-type]
 
                 self.assertIn(
-                        f"The name contains invalid character(s): {hr_found_invalidations}.",
-                        message,
+                    f"The name contains invalid character(s): {hr_found_invalidations}.",
+                    message,
                 )
 
     def test_validate_shelf_name_invalid_names(self):
@@ -134,12 +147,12 @@ class UtilsValidationTest(unittest.TestCase):
                 # Assert
                 self.assertFalse(is_valid)
                 self.assertIn(
-                        f"Cannot use '{invalid_shelf_name}' as shelf name.", message
+                    f"Cannot use '{invalid_shelf_name}' as shelf name.", message
                 )
                 self.assertIn(f"Not allowed are: {hr_invalidations}", message)  # type: ignore[arg-type]
 
                 self.assertIn(
-                        f"The name is an invalid name: {hr_found_invalidations}.", message
+                    f"The name is an invalid name: {hr_found_invalidations}.", message
                 )
 
     def test_validate_shelf_name_tokens(self):
@@ -164,27 +177,29 @@ class UtilsValidationTest(unittest.TestCase):
                 # Assert
                 self.assertFalse(is_valid)
                 self.assertIn(
-                        f"Cannot use '{invalid_shelf_name}' as shelf name.", message
+                    f"Cannot use '{invalid_shelf_name}' as shelf name.", message
                 )
                 self.assertIn(f"Not allowed are: {hr_invalidations}", message)  # type: ignore[arg-type]
 
                 self.assertIn(
-                        f"The name contains album indicator(s): {hr_found_invalidations}.",
-                        message,
+                    f"The name contains album indicator(s): {hr_found_invalidations}.",
+                    message,
                 )
 
-    @skip("TODO(#15): See utils.py:168 - decide if max length should be enforced")
+    @unittest.skip(
+        "TODO(#15): See utils.py:168 - decide if max length should be enforced"
+    )
     def test_validate_shelf_name_too_long(self):
         """Test that a name exceeding the max length is invalid."""
         invalidations = constants.MAX_SHELF_NAME_LENGTH
         hr_invalidations = f"{invalidations}"
         #
         factor = 1 + math.ceil(
-                constants.MAX_SHELF_NAME_LENGTH
-                / len(random.choice(list(self.test_known_shelf_names)))
+            constants.MAX_SHELF_NAME_LENGTH
+            / len(random.choice(list(self.test_known_shelf_names)))
         )
         invalid_shelf_name = (
-                factor * f"{chr(0x20)}{random.choice(list(self.test_known_shelf_names))}"
+            factor * f"{chr(0x20)}{random.choice(list(self.test_known_shelf_names))}"
         ).strip()
         with self.subTest(invalid=invalid_shelf_name):
             # Arrange
@@ -200,11 +215,13 @@ class UtilsValidationTest(unittest.TestCase):
             self.assertIn(f"Maximum allowed is {hr_found_invalidations}.", message)  # type: ignore[arg-type]
 
             self.assertIn(
-                    f"The name is too long with {len(invalid_shelf_name)} characters.",
-                    message,
+                f"The name is too long with {len(invalid_shelf_name)} characters.",
+                message,
             )
 
-    @skip("TODO(#16): See utils.py:177 - decide if max word count should be enforced")
+    @unittest.skip(
+        "TODO(#16): See utils.py:177 - decide if max word count should be enforced"
+    )
     def test_validate_shelf_name_too_many_words(self):
         """Test that a name with too many words is invalid."""
         is_valid, message = utils.validate_shelf_name("One Two Three Four")
@@ -228,57 +245,43 @@ class UtilsLikelyShelfTest(unittest.TestCase):
 
     def test_is_likely_good_new_name(self):
         """A new, valid name is likely."""
-        is_likely, reason = ShelfManager().is_likely_shelf_name(
-                "New Shelf"
-        )
+        is_likely, reason = ShelfManager().is_likely_shelf_name("New Shelf")
         self.assertTrue(is_likely)
         self.assertIsNone(reason)
 
     def test_is_likely_known_shelf(self):
         """A known shelf_name is always likely."""
-        is_likely, reason = ShelfManager().is_likely_shelf_name(
-                "Soundtracks"
-        )
+        is_likely, reason = ShelfManager().is_likely_shelf_name("Soundtracks")
         self.assertTrue(is_likely)
         self.assertIsNone(reason)
 
     def test_is_not_likely_album_indicator(self):
         """A name with 'Vol.' or 'Disc' is not likely."""
-        is_likely, reason = ShelfManager().is_likely_shelf_name(
-                "Greatest Hits Vol. 2"
-        )
+        is_likely, reason = ShelfManager().is_likely_shelf_name("Greatest Hits Vol. 2")
         self.assertFalse(is_likely)
         self.assertIn("contains album indicator", reason)  # type: ignore[arg-type]
 
-        is_likely, reason = ShelfManager().is_likely_shelf_name(
-                "The Album (Disc 1)"
-        )
+        is_likely, reason = ShelfManager().is_likely_shelf_name("The Album (Disc 1)")
         self.assertFalse(is_likely)
         self.assertIn("contains album indicator", reason)  # type: ignore[arg-type]
 
     def test_is_not_likely_artist_album_format(self):
         """A name with ' - ' is not likely."""
-        is_likely, reason = ShelfManager().is_likely_shelf_name(
-                "Artist - Album"
-        )
+        is_likely, reason = ShelfManager().is_likely_shelf_name("Artist - Album")
         self.assertFalse(is_likely)
         self.assertIn("contains ' - '", reason)  # type: ignore[arg-type]
 
     def test_is_not_likely_too_long(self):
         """A very long name is not likely."""
         long_name = "This is a very long name that is probably an album title"
-        is_likely, reason = ShelfManager().is_likely_shelf_name(
-                long_name
-        )
+        is_likely, reason = ShelfManager().is_likely_shelf_name(long_name)
         self.assertFalse(is_likely)
         self.assertIn("too long", reason)  # type: ignore[arg-type]
 
     def test_is_not_likely_too_many_words(self):
         """A name with many words is not likely."""
-        is_likely, reason = ShelfManager().is_likely_shelf_name("A Shelf With Too Many Words")
+        is_likely, reason = ShelfManager().is_likely_shelf_name(
+            "A Shelf With Too Many Words"
+        )
         self.assertFalse(is_likely)
         self.assertIn("too many words", reason)  # type: ignore[arg-type]
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -23,8 +23,9 @@ from picard import config, log
 
 from . import utils
 from .constants import ALBUM_INDICATORS, MAX_SHELF_NAME_LENGTH, MAX_WORD_COUNT
+from .contexts import ProcessingContext
 from .exceptions import ShelfNotFoundException
-from .typings import ConfigKey, ProcessingType, VotingType
+from .typings import ConfigKey, VotingType
 
 SHELF_NAME = "shelf_name"
 SHELF_LOCKED = "shelf_locked"
@@ -118,7 +119,7 @@ class ShelfAssignmentEngine:
         """Initialize the assignment engine."""
         self.registry = registry
         self._shelf_votes: Dict[str, Counter] = {}
-        self._shelf_processor: Dict[str, ProcessingType] = {}
+        self._shelf_processor: Dict[str, ProcessingContext.ProcessingType] = {}
         self._lock = threading.Lock()
 
     def vote(
@@ -128,11 +129,16 @@ class ShelfAssignmentEngine:
         voting_type: VotingType = VotingType.INITIAL,
     ):
         """
+        Executes a specific voting operation (upvote, downvote, or initial vote) for a given album on a specified shelf.
+        The operation is determined based on the `voting_type` parameter.
 
-        :param album_id:
-        :param shelf_name:
-        :param voting_type:
-        :return:
+        :param album_id: The unique identifier of the album to vote on.
+        :type album_id: str
+        :param shelf_name: The name of the shelf where the album is located.
+        :type shelf_name: str
+        :param voting_type: The type of voting operation to perform (e.g., upvote, downvote, or initialize voting).
+        :type voting_type: VotingType
+        :return: None
         """
         dispatch = {
             VotingType.DOWN: partial(
@@ -157,45 +163,95 @@ class ShelfAssignmentEngine:
 
     def _init_voting(self, album_id, shelf_name) -> None:
         """
-        Initialize the voting engine for album is and shelf name.
+        Initializes the voting system for a specific album and shelf. If the album
+        ID does not exist in the voting structure, or if the shelf name has
+        not been registered under that album, it initializes the corresponding
+        entry to track votes.
 
-        If the album id is already registered, the initialization will be ignored.
-
-        :param album_id:
-        :param shelf_name:
+        :param album_id: The unique identifier for the album.
+        :param shelf_name: The name of the shelf associated with the album.
+        :return: This method does not return a value.
         """
         if album_id not in self._shelf_votes:
-            self._shelf_votes[album_id] = Counter({shelf_name: 0})
+            log.debug("Initializing voting data for album %s", album_id)
+            self._shelf_votes[album_id] = Counter()
+        if shelf_name not in self._shelf_votes[album_id]:
+            log.debug("Initializing vote count for shelf %s", shelf_name)
+            self._shelf_votes[album_id][shelf_name] = 0
+        pass
 
     def _upvote(self, album_id, shelf_name) -> None:
         """
-        Register a vote for a shelf assignment.
+        Handles the upvoting of a specific album by its ID associated with a specified shelf.
 
-        :param album_id:
-        :param shelf_name:
+        This method processes the voting action by initializing the voting operation for
+        the specified album and shelf name. The vote is then registered within the internal
+        data structure that tracks shelf votes. Designed to work with internal components
+        only.
+
+        :param album_id: The unique identifier of the album to upvote.
+        :type album_id: str
+        :param shelf_name: The name of the shelf where the album is being voted on.
+        :type shelf_name: str
+        :return: This method does not return any value.
+        :rtype: None
         """
+        self._init_voting(album_id=album_id, shelf_name=shelf_name)
+        log.debug("Incrementing vote count for %s", shelf_name)
         self._shelf_votes[album_id].update({shelf_name})
 
     def _downvote(self, album_id, shelf_name) -> None:
         """
-        Unregister a vote for a shelf assignment.
+        Reduces the vote count for a specific shelf associated with an album. This method
+        ensures that the initialization of voting data is done before attempting the
+        vote decrement. If the specified shelf exists within the album's recorded
+        vote data, the vote count for that shelf will be decreased.
 
-        Elements that reach the number 0 are ignored.
+        The number of votes for a shelf cannot be less than 0.
 
-        :param album_id:
-        :param shelf_name:
+        This function assumes that votes are managed through a data structure
+        in which each album is linked to its associated shelves and their respective
+        vote counts.
+
+        :param album_id: Unique identifier of the album whose shelf vote is to be
+            decremented.
+        :type album_id: Any
+        :param shelf_name: Name of the shelf for which the vote count should be
+            reduced.
+        :type shelf_name: str
+        :return: This method does not return any value.
+        :rtype: None
         """
+        self._init_voting(album_id=album_id, shelf_name=shelf_name)
         if shelf_name in self._shelf_votes[album_id].elements():
+            log.debug("Decrementing vote count for %s", shelf_name)
             self._shelf_votes[album_id].subtract({shelf_name})
 
     def get_shelf_name_by_votes(self, album_id) -> Optional[str]:
-        """Determine the winning shelf based on vote counts."""
+        """
+        Get the most commonly voted shelf name for a given album.
+
+        This method retrieves the most frequently voted shelf name associated with the
+        provided album ID. If no votes are present for the album, the method returns None.
+        It also logs the album ID, the selected shelf name, and the current vote counts
+        for the album for debugging purposes.
+
+        :param album_id: The unique identifier of the album to find the most commonly
+            voted shelf name for.
+        :type album_id: Any
+        :return: The name of the most commonly voted shelf, or None if no votes exist.
+        :rtype: Optional[str]
+        """
         most_common = self._shelf_votes[album_id].most_common(1)
+        if not most_common:
+            return None
         shelf_name, count = most_common[0]
         log.debug("%s, %s, %s", album_id, shelf_name, self._shelf_votes[album_id])
         return shelf_name
 
-    def get_processing_type(self, album_id) -> Optional[ProcessingType]:
+    def get_processing_type(
+        self, album_id
+    ) -> Optional[ProcessingContext.ProcessingType]:
         """Determine the processor type based on vote counts."""
         return self._shelf_processor.get(album_id, None)
 
@@ -204,11 +260,17 @@ class ShelfAssignmentEngine:
         album_id: str,
     ) -> str:
         """
-        Retrieves the shelf name for a given album.
+        Retrieves the shelf name corresponding to a given album ID. The method first tries to
+        fetch the shelf name based on votes associated with the given album. If no shelf name
+        can be determined, it raises a ShelfNotFoundException.
 
-        This method determines the shelf name for an album based on the weighted or counted shelf
-        name computation. If neither a weighted nor counted shelf name can be identified, the method raises
-        a `ShelfNotFoundException`.
+        :param album_id: The ID of the album for which the shelf name is to be retrieved
+        :type album_id: str
+
+        :return: The name of the shelf associated with the given album ID
+        :rtype: str
+
+        :raises ShelfNotFoundException: If no shelf name is found for the provided album ID
         """
         with self._lock:
             if shelf_name := self.get_shelf_name_by_votes(album_id):
@@ -410,6 +472,19 @@ class ShelfManager:
         shelf_name: str,
         voting_type: VotingType = VotingType.INITIAL,
     ) -> None:
+        """
+        Registers a voting action for the specified album within the given shelf. This function allows
+        the system to handle voting operations based on the provided album identifier, shelf name,
+        and voting type.
+
+        :param album_id: Unique identifier of the album that is being voted on.
+        :type album_id: str
+        :param shelf_name: Name of the shelf where the album is located.
+        :type shelf_name: str
+        :param voting_type: The type of voting operation to perform. Defaults to VotingType.INITIAL.
+        :type voting_type: VotingType
+        :return: None
+        """
         self._assignment_engine.vote(
             album_id=album_id, shelf_name=shelf_name, voting_type=voting_type
         )
@@ -425,7 +500,9 @@ class ShelfManager:
     #     """Clear all votes and assignments for an album."""
     #     self._assignment_engine.clear_album(album_id)
 
-    def get_processing_type(self, album_id) -> Optional[ProcessingType]:
+    def get_processing_type(
+        self, album_id
+    ) -> Optional[ProcessingContext.ProcessingType]:
         """Determine the processor type based on vote counts."""
         return self._assignment_engine.get_processing_type(album_id)
 
@@ -467,3 +544,14 @@ class ShelfManager:
     def intersect_shelf_names(self, names: Set[str] | str) -> None:
         """Intersect shelf names with the provided set."""
         self._registry.intersect_shelf_names(names)
+
+
+_manager_singleton = None
+
+
+def instance() -> ShelfManager:
+    """Get the default global Processors instance."""
+    global _manager_singleton
+    if _manager_singleton is None:
+        _manager_singleton = ShelfManager()
+    return _manager_singleton

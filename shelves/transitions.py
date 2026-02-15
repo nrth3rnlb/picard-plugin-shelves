@@ -13,8 +13,9 @@ from typing import Optional, Sequence
 from picard import config, log
 
 from .contexts import TransitionContext
+from .exceptions import ShelfNotFoundException
 from .manager import ShelfManager
-from .typings import ConfigKey, TransitionType
+from .typings import ConfigKey
 
 
 class Strategy(ABC):
@@ -55,7 +56,7 @@ class StrategyEmptyNameToStage2(Strategy):
     def is_applicable(self, context: TransitionContext) -> bool:
         # noinspection PyTypeHints
         decision = (
-            context.transition_type == TransitionType.TO_STAGE_2
+            context.transition_type == TransitionContext.TransitionType.TO_STAGE_2
             and config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
             and context.shelf_name == ""
         )
@@ -71,7 +72,7 @@ class StrategyUnknownNameToStage2(Strategy):
     def is_applicable(self, context: TransitionContext) -> bool:
         # noinspection PyTypeHints
         decision = (
-            context.transition_type == TransitionType.TO_STAGE_2
+            context.transition_type == TransitionContext.TransitionType.TO_STAGE_2
             and config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
             and config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES]
             and context.shelf_name not in self.manager.registered_shelf_names
@@ -94,7 +95,7 @@ class StrategyKnownNameToStage2(Strategy):
         # noinspection PyTypeHints
 
         decision = (
-            context.transition_type == TransitionType.TO_STAGE_2
+            context.transition_type == TransitionContext.TransitionType.TO_STAGE_2
             and config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
             and context.shelf_name in self.manager.registered_shelf_names
             and context.shelf_name in config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
@@ -129,7 +130,7 @@ class Transitions:
         self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
     def transition_to(
-        self, album_id: str, transition_type: TransitionType
+        self, album_id: str, transition_type: TransitionContext.TransitionType
     ) -> Optional[TransitionContext]:
         """
         Handles the transition process for given album IDs based on the context and
@@ -155,18 +156,22 @@ class ContextBuilder:
 
     @staticmethod
     def build_context(
-        manager: ShelfManager, album_id: str, transition_type: TransitionType
+        manager: ShelfManager,
+        album_id: str,
+        transition_type: TransitionContext.TransitionType,
     ) -> Optional[TransitionContext]:
         """Build transition context from album_id."""
-        shelf_name = manager.get_shelf_name(album_id=album_id)
 
-        if shelf_name is None:
+        try:
+            shelf_name = manager.get_shelf_name(album_id=album_id)
+        except ShelfNotFoundException:
             return None
 
         return TransitionContext(
             album_id=album_id,
             shelf_name=shelf_name,
             transition_type=transition_type,
+            strategy=None,
         )
 
 

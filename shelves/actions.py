@@ -30,7 +30,7 @@ class ShelfActionUnset(BaseAction):
                 for file in track.files:
                     processors.action_unset_processor(file=file)
 
-        _set_album_metadata(albums)
+        _set_album_metadata(albums=albums)
 
 
 class ShelfActionSet(BaseAction):

@@ -1,5 +1,11 @@
 """
-Tests for the options options_page logic.
+This module contains tests for the functionalities and behaviors of the OptionsPage
+class, including configuration loading, saving, and UI integration.
+
+The OptionsPageTest class ensures that the `OptionsPage` is thoroughly tested for
+its integration with UI elements, configuration options, and associated logic flows.
+It includes tests for namespace correctness, complete configuration coverage,
+and correct state persistence in both generic and specific test scenarios.
 """
 
 import sys
@@ -35,7 +41,6 @@ class OptionsPageTest(unittest.TestCase):
             cls._app = QApplication(sys.argv)  # type: ignore[attr-defined]
 
     def setUp(self):
-        """Set up test fixtures."""
         self.options_page = OptionsPage()
 
         # Manually mock all UI elements that might be touched.
@@ -441,7 +446,3 @@ class OptionsPageTest(unittest.TestCase):
         # Assert
         expected_shelves = deepcopy(self.test_known_shelves)
         mock_manager_instance.add_shelf_names.assert_called_with(expected_shelves)
-
-
-if __name__ == "__main__":
-    unittest.main()

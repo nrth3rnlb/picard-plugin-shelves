@@ -34,6 +34,10 @@ class SetShelfDialog(QtWidgets.QDialog):
             QtWidgets.QLabel,
             LABEL_VALIDATION_NAME,
         )
+        if self.validation_label is not None:
+            self.validation_label.setText("")
+            self.validation_label.setStyleSheet("QLabel { color: red; }")
+
         self.shelf_combo: Optional[QtWidgets.QComboBox] = self.findChild(
             QtWidgets.QComboBox,
             COMBO_SHELF_NAME,
@@ -49,17 +53,14 @@ class SetShelfDialog(QtWidgets.QDialog):
             self.shelf_combo.setEditable(False)
             self.shelf_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
 
-        if self.validation_label is not None:
-            self.validation_label.setText("")
-            self.validation_label.setStyleSheet("QLabel { color: red; }")
+        if self.exec_() != QtWidgets.QDialog.Accepted:
+            return None
 
-        if self.exec_() == QtWidgets.QDialog.Accepted:
-            if self.shelf_combo is None:
-                return None
-            value = self.shelf_combo.currentText().strip()
-            return value if value else None
-
-        return None
+        value = self.shelf_combo.currentText().strip()
+        valid, msg = utils.validate_shelf_name(value)
+        if not valid:
+            return None
+        return value
 
     def _on_text_changed(self, text: str) -> None:
         if not self.validation_label:

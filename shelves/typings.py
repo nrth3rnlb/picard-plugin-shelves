@@ -13,24 +13,6 @@ class VotingType(IntEnum):
     INITIAL = UP | DOWN
 
 
-class ProcessingType(IntEnum):
-    """Processing types for shelf processing strategies."""
-
-    LOAD = 1
-    ADD = 2
-    SET = 4
-    SAVE = 8
-    REMOVE = 16
-    UNSET = 32
-
-
-class TransitionType(IntEnum):
-    """Transition types for shelf workflow."""
-
-    TO_STAGE_1 = 1
-    TO_STAGE_2 = 2
-
-
 class ConfigKey(StrEnum):
     """Configuration keys for the Shelves plugin."""
 
