@@ -23,7 +23,7 @@ class ProcessingContext:
     album_id: str
     name_from_path: str
     name_from_tag: str
-    processing_name: Optional[str]
+    processing_name: str
     is_locked: bool
 
 

@@ -375,17 +375,11 @@ class Processors:
         _release: Optional[Any],
     ) -> None:
         """Set a shelf name in track metadata from album's shelf assignment."""
-        album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID)
-        if not album_id:
-            return
-
+        album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID, "")
         context: TransitionContext = transitions.instance().transition_to(
             album_id=album_id,
             transition_type=TransitionContext.TransitionType.TO_STAGE_2,
         )
-        if not context:
-            return
-
         metadata[TagKey.SHELF] = context.shelf_name
         metadata[TagKey.SHELF_LOCKED] = self.manager.is_locked(album_id=album_id)
 
@@ -404,17 +398,14 @@ class ContextBuilder:
         manager: ShelfManager,
         file: File,
         processing_type: ProcessingContext.ProcessingType,
-        processing_name: str = None,
-    ) -> Optional[ProcessingContext]:
+        processing_name: Optional[str] = "",
+    ) -> ProcessingContext:
         """Build processing context from file"""
 
-        # utils.debug_track(file)
-        if not file.metadata[TagKey.MUSICBRAINZ_ALBUMID]:
-            return None
-
-        # Extract shelf name from path
         from . import utils
 
+        # utils.debug_track(file)
+        # Extract shelf name from path
         name_from_path = utils.get_shelf_name_from_path(
             file_path=Path(file.filename),
             base_path=manager.base_path,
@@ -425,7 +416,7 @@ class ContextBuilder:
             album_id=file.metadata[TagKey.MUSICBRAINZ_ALBUMID],
             name_from_path=name_from_path,
             name_from_tag=file.metadata[TagKey.SHELF],
-            processing_name=processing_name,
+            processing_name=processing_name or "",
             is_locked=file.metadata[TagKey.SHELF_LOCKED],
         )
 

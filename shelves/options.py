@@ -503,8 +503,10 @@ class OptionsPage(PicardOptions):
 
         # Check for full lists
         is_full_shelves_for_stages = (
-            max_count := self.shelves_for_stages.max_item_count
-        ) != QShelvesWidget.UNLIMITED and max_count <= self.shelves_for_stages.count()
+            (max_count := self.shelves_for_stages.max_item_count)
+            != QShelvesWidget.UNLIMITED
+            and max_count <= self.shelves_for_stages.count()
+        )
         is_full_stage_1 = (
             max_count := self.workflow_stage_1.max_item_count
         ) != QShelvesWidget.UNLIMITED and max_count <= self.workflow_stage_1.count()

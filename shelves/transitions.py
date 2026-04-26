@@ -13,7 +13,6 @@ from typing import Optional, Sequence
 from picard import config, log
 
 from .contexts import TransitionContext
-from .exceptions import ShelfNotFoundException
 from .manager import ShelfManager
 from .typings import ConfigKey
 
@@ -131,7 +130,7 @@ class Transitions:
 
     def transition_to(
         self, album_id: str, transition_type: TransitionContext.TransitionType
-    ) -> Optional[TransitionContext]:
+    ) -> TransitionContext:
         """
         Handles the transition process for given album IDs based on the context and
         available transitions. Each transition is evaluated in sequence until a
@@ -142,8 +141,6 @@ class Transitions:
             album_id=album_id,
             transition_type=transition_type,
         )
-        if not context:
-            return None
         for strategy in self.strategies:
             if strategy.process(context):
                 context.strategy = strategy.__class__.__name__
@@ -159,13 +156,9 @@ class ContextBuilder:
         manager: ShelfManager,
         album_id: str,
         transition_type: TransitionContext.TransitionType,
-    ) -> Optional[TransitionContext]:
+    ) -> TransitionContext:
         """Build transition context from album_id."""
-
-        try:
-            shelf_name = manager.get_shelf_name(album_id=album_id)
-        except ShelfNotFoundException:
-            return None
+        shelf_name = manager.get_shelf_name(album_id=album_id)
 
         return TransitionContext(
             album_id=album_id,

@@ -242,6 +242,8 @@ class ShelfAssignmentEngine:
         :return: The name of the most commonly voted shelf, or None if no votes exist.
         :rtype: Optional[str]
         """
+        if album_id not in self._shelf_votes:
+            return None
         most_common = self._shelf_votes[album_id].most_common(1)
         if not most_common:
             return None
@@ -299,7 +301,9 @@ class ShelfLockManager:
         :param assignment_engine: ShelfAssignmentEngine instance for vote clearing.
         """
         self.assignment_engine = assignment_engine
-        self._shelf_state: Dict[str, Dict[str, Any]] = defaultdict(dict)
+        self._shelf_state: Dict[str, Dict[str, Any]] = defaultdict(
+            Dict[str, Dict[str, Any]]
+        )
 
     def set_shelf_name(
         self, album_id: str, shelf_name: str, lock: bool = False
@@ -494,7 +498,7 @@ class ShelfManager:
         try:
             return self._assignment_engine.get_shelf_name(album_id)
         except ShelfNotFoundException:
-            raise
+            return ""
 
     # def clear_album(self, album_id: str) -> None:
     #     """Clear all votes and assignments for an album."""
