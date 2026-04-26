@@ -436,10 +436,9 @@ sdist = { url = "https://files.pythonhosted.org/packages/fe/47/b862776f0109bc2c2
 
 [[package]]
 name = "picard-plugin-shelves"
-version = "1.6.1"
+version = "1.7.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "mypy" },
     { name = "picard" },
 ]
 
@@ -460,7 +459,6 @@ release = [
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = "==26.1.0" },
     { name = "commitizen", marker = "extra == 'release'", specifier = "==4.13.6" },
-    { name = "mypy", specifier = "==1.19.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = "==1.19.1" },
     { name = "picard", specifier = "==2.13.3" },
     { name = "pydeps", marker = "extra == 'dev'", specifier = "==3.0.2" },
