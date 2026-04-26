@@ -223,7 +223,7 @@ class StrategyKnownNameFromPathDiffersFromTag(Strategy):
     in the tag.
 
     This situation addresses the following scenario:
-    The album has been relocated outside of the Picard application. This event warrants the
+    The album has been relocated outside the Picard application. This event warrants the
     utmost urgency.
     """
 
