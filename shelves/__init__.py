@@ -38,7 +38,7 @@ from .script_functions import shelf as _func_shelf_base
 # noinspection PyUnusedName
 PLUGIN_NAME = "Shelves"
 # noinspection PyUnusedName
-PLUGIN_AUTHOR = "nrth3rnlb"
+PLUGIN_AUTHOR = "nrthэrnlb"
 # noinspection PyUnusedName
 PLUGIN_DESCRIPTION = """
 The **Shelves** plugin adds virtual shelf_name management to MusicBrainz Picard, allowing you to
