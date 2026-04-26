@@ -53,7 +53,7 @@
           </sizepolicy>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>2</number>
          </property>
          <property name="tabsClosable">
           <bool>false</bool>
@@ -105,6 +105,12 @@
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
+                <property name="toolTip">
+                 <string>The names in this list are available to the workflow.</string>
+                </property>
+                <property name="sortingEnabled">
+                 <bool>true</bool>
+                </property>
                </widget>
               </item>
               <item>
@@ -143,6 +149,9 @@
                  </item>
                  <item>
                   <widget class="QPushButton" name="add_shelf_button">
+                   <property name="toolTip">
+                    <string>This action allows you to add a new shelf name.</string>
+                   </property>
                    <property name="text">
                     <string>Add Shelf...</string>
                    </property>
@@ -151,9 +160,7 @@
                  <item>
                   <widget class="QPushButton" name="scan_for_shelf_names_button">
                    <property name="toolTip">
-                    <string>Automatically detect shelves
-                                                                                    from your music library directory
-                                                                                </string>
+                    <string>This action searches the music directory for names to use as shelf names.</string>
                    </property>
                    <property name="text">
                     <string>Scan Music Directory</string>
@@ -165,6 +172,9 @@
                    <property name="enabled">
                     <bool>false</bool>
                    </property>
+                   <property name="toolTip">
+                    <string>This action lets you take a shelf name off the list.</string>
+                   </property>
                    <property name="text">
                     <string>Remove Selected</string>
                    </property>
@@ -173,7 +183,7 @@
                  <item>
                   <widget class="QPushButton" name="remove_unknown_shelves_button">
                    <property name="toolTip">
-                    <string>Remove virtual shelves that have no equivalent in the music directory.</string>
+                    <string>Removes the shelf names for which there is no corresponding entry in the music directory.</string>
                    </property>
                    <property name="text">
                     <string>Remove Unknown</string>
@@ -203,13 +213,7 @@
            <item>
             <widget class="QCheckBox" name="workflow_enabled">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When
-                                                            enabled, the workflow sets the album’s shelf automatically
-                                                            by the transition configuration.&lt;/p&gt;&lt;p&gt;Manual
-                                                            changes through the album's context menu override the
-                                                            defined
-                                                            transition. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
-                                                        </string>
+              <string>If this option is enabled, the workflow determines the album's shelf.</string>
              </property>
              <property name="text">
               <string>Use workflow transitions</string>
@@ -251,6 +255,10 @@
                  </property>
                  <item>
                   <widget class="QShelvesWidget" name="shelves_for_stages">
+                   <property name="toolTip">
+                    <string>This list shows all the shelf names that can be used for the workflow.
+The entries can be moved using drag and drop or the buttons.</string>
+                   </property>
                    <property name="dragDropMode">
                     <enum>QAbstractItemView::DragDrop</enum>
                    </property>
@@ -259,6 +267,9 @@
                    </property>
                    <property name="selectionMode">
                     <enum>QAbstractItemView::MultiSelection</enum>
+                   </property>
+                   <property name="sortingEnabled">
+                    <bool>true</bool>
                    </property>
                   </widget>
                  </item>
@@ -435,6 +446,9 @@
                        </property>
                        <item>
                         <widget class="QCheckBox" name="stage_1_includes_non_shelves">
+                         <property name="toolTip">
+                          <string>If this option is enabled, the name of the shelf for an album will be changed even if it is unknown to the workflow.</string>
+                         </property>
                          <property name="text">
                           <string>Include non-shelves</string>
                          </property>
@@ -458,6 +472,9 @@
                     </item>
                     <item>
                      <widget class="QShelvesWidget" name="workflow_stage_1">
+                      <property name="toolTip">
+                       <string>Albums whose shelf names appear in this list will be assigned the shelf name shown on the right.</string>
+                      </property>
                       <property name="dragDropMode">
                        <enum>QAbstractItemView::DragDrop</enum>
                       </property>
@@ -466,6 +483,9 @@
                       </property>
                       <property name="selectionMode">
                        <enum>QAbstractItemView::MultiSelection</enum>
+                      </property>
+                      <property name="sortingEnabled">
+                       <bool>true</bool>
                       </property>
                      </widget>
                     </item>
@@ -564,6 +584,9 @@
                     </item>
                     <item>
                      <widget class="QShelvesWidget" name="workflow_stage_2">
+                      <property name="toolTip">
+                       <string>This is the name of the shelf for an album when the current shelf name appears in the list on the left.</string>
+                      </property>
                       <property name="dragDropMode">
                        <enum>QAbstractItemView::DragDrop</enum>
                       </property>
@@ -572,6 +595,9 @@
                       </property>
                       <property name="selectionMode">
                        <enum>QAbstractItemView::MultiSelection</enum>
+                      </property>
+                      <property name="sortingEnabled">
+                       <bool>true</bool>
                       </property>
                      </widget>
                     </item>
@@ -617,6 +643,11 @@
                <width>0</width>
                <height>80</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>Use this sample code in your naming script to save the albums in the subdirectory named after the shelf.
+
+The $shelf() function returns the name of the shelf.</string>
              </property>
              <property name="readOnly">
               <bool>true</bool>

@@ -465,7 +465,6 @@ class OptionsPage(PicardOptions):
         """Refresh the shelves widget with the current shelf names."""
         self.shelf_management_shelves.clear()
         self.shelf_management_shelves.addItems(ShelfManager().registered_shelf_names)
-        self.shelf_management_shelves.sortItems()
 
     # ============================================================================
     # Event handlers
@@ -551,14 +550,6 @@ class OptionsPage(PicardOptions):
 
         self.button_all_to_stage_2.setToolTip(tooltip_to_stage_2)
         self.button_stage_1_to_stage_2.setToolTip(tooltip_to_stage_2)
-
-        # Sort lists
-        if has_items_shelves_for_stages:
-            self.shelves_for_stages.sortItems()
-        if has_items_stage_1:
-            self.workflow_stage_1.sortItems()
-        if has_items_stage_2:
-            self.workflow_stage_2.sortItems()
 
     @staticmethod
     def _tooltip_to_stage_is_full_or_not(
