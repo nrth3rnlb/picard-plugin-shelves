@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from picard import log
 from picard.file import (
     register_file_post_addition_to_track_processor,
     register_file_post_load_processor,
@@ -24,7 +23,7 @@ from picard.ui.options import register_options_page
 from . import processors
 
 # from .actions import (
-#     ShelfActionDetermine as _ShelfActionDetermine,
+#     ShelfActionDetermine as _ShelfActionDetermine
 # )
 from .actions import (
     ShelfActionSet as _ShelfActionSet,
