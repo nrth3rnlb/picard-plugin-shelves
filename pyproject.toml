@@ -10,82 +10,26 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
-    "mypy==1.19.1",
-    "picard==2.13.3",
+    "picard==2.13.*",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "black==26.1.0",
-    "mypy==1.19.1",
-    "ruff==0.15.0",
-    "pydeps==3.0.2",
-    "pylint==4.0.4",
+    "black>=26.3.1",
+    "commitizen>=4.13.10",
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+    "pytest-mock>=3.15.1",
+    "pre-commit>=4.6.0",
+    "pyqt5==5.15.*",
 ]
-
-release = [
-    "commitizen==4.13.6",
-    "python-semantic-release==10.5.3",
-]
-
-[tool.setuptools.packages.find]
-include = ["shelves*"]
-exclude = ["tests*"]
-
-[tool.coverage.run]
-source = ["shelves"]
-omit = [
-    "*/tests/*",
-    "*/__pycache__/*",
-    "*/ui_*.py",
-    "*_ui.py"
-]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "@abstractmethod"
-]
-
-[tool.mypy]
-exclude = [
-    "ui_.*\\.py$",
-    ".*_ui\\.py$",
-]
-ignore_missing_imports = true
-warn_unused_ignores = true
-check_untyped_defs = true
-
-[tool.ruff]
-exclude = [
-    "ui_*.py",
-    "*_ui.py",
-    "__pycache__",
-    ".git",
-    ".venv",
-    "venv"
-]
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "I"]
-ignore = ["E501"]  # Line too long
-
-
-[tool.pdm.scripts]
-precommit-install = "pre-commit install -t commit-msg"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "1.6.1"
 tag_format = "v$version"
+version_scheme = "semver2"
+version_provider = "uv"
 update_changelog_on_bump = true
-gpg_sign = true
 version_files = [
-    "pyproject.toml:version",
-    "shelves/__init__.py:PLUGIN_VERSION"
+    "shelves/__init__.py"
 ]
