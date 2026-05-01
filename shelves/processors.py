@@ -88,21 +88,6 @@ class Strategy(ABC):
         decision = context.processing_type == ProcessingContext.ProcessingType.UNSET
         return decision
 
-    @staticmethod
-    def decide_voting(context: ProcessingContext) -> VotingType:
-        """Whether this strategy should initialize the shelf assignment."""
-        if (
-            context.processing_type == ProcessingContext.ProcessingType.REMOVE
-            or context.processing_type == ProcessingContext.ProcessingType.UNSET
-        ):
-            return VotingType.DOWN
-        if (
-            context.processing_type == ProcessingContext.ProcessingType.ADD
-            or context.processing_type == ProcessingContext.ProcessingType.SET
-        ):
-            return VotingType.UP
-        return VotingType.INITIAL
-
     def apply_lock_state(self, context: ProcessingContext):
         """Apply manual lock/unlock state to the shelf assignment."""
         if self.should_lock(context):
