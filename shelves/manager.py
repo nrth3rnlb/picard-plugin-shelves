@@ -409,14 +409,6 @@ class ShelfManager:
     - ShelfValidator: Validates shelf names
     """
 
-    _instance = None
-    _lock = threading.Lock()
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
     def __init__(
         self,
         registry: Optional[ShelfRegistry] = None,
@@ -432,29 +424,27 @@ class ShelfManager:
         :param lock_manager: Optional ShelfLockManager instance (created if None)
         :param validator: Optional ShelfValidator instance (created if None)
         """
-        if not hasattr(self, "_initialized"):
-            self._initialized = True
 
-            # Initialize component hierarchy (use injected or create new)
-            self._registry = registry or ShelfRegistry()
-            self._assignment_engine = assignment_engine or ShelfAssignmentEngine(
-                self._registry,
-            )
-            self._lock_manager = lock_manager or ShelfLockManager(
-                self._assignment_engine,
-            )
-            self._validator = validator or ShelfValidator(self._registry)
+        # Initialize component hierarchy (use injected or create new)
+        self._registry = registry or ShelfRegistry()
+        self._assignment_engine = assignment_engine or ShelfAssignmentEngine(
+            self._registry,
+        )
+        self._lock_manager = lock_manager or ShelfLockManager(
+            self._assignment_engine,
+        )
+        self._validator = validator or ShelfValidator(self._registry)
 
-            # Initialize from config only if using default components
-            if registry is None:
-                # noinspection PyTypeHints
-                self._registry.base_path = Path(
-                    config.setting[ConfigKey.MOVE_FILES_TO],
-                )
-                # noinspection PyTypeHints
-                self._registry.shelf_names = set(
-                    config.setting[ConfigKey.KNOWN_SHELVES],
-                )
+        # Initialize from config only if using default components
+        if registry is None:
+            # noinspection PyTypeHints
+            self._registry.base_path = Path(
+                config.setting[ConfigKey.MOVE_FILES_TO],
+            )
+            # noinspection PyTypeHints
+            self._registry.shelf_names = set(
+                config.setting[ConfigKey.KNOWN_SHELVES],
+            )
 
     # ===== Properties (delegate to components) =====
 
@@ -550,11 +540,11 @@ class ShelfManager:
         self._registry.intersect_shelf_names(names)
 
 
-_manager_singleton = None
+_manager_singleton: Optional[ShelfManager] = None
 
 
 def instance() -> ShelfManager:
-    """Get the default global Processors instance."""
+    """Get the default global ShelfManager instance."""
     global _manager_singleton
     if _manager_singleton is None:
         _manager_singleton = ShelfManager()
