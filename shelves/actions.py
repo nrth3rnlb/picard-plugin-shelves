@@ -71,13 +71,13 @@ class ShelfActionToggleLock(BaseAction):
     """
 
     # noinspection PyUnusedName
-    NAME = "Lock/Unlock album's shelf assignment."
+    NAME = "Lock/Unlock album's shelf assignment"
 
     tagger: Any
 
     def callback(self, objs: List[Any]) -> None:
         """Toggle lock state of albums."""
-        shelf_manager = manager.instance()
+        shelf_manager = manager_module.instance()
         _locked: dict[str, bool] = {}
 
         for obj in objs:
