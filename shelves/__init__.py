@@ -78,8 +78,8 @@ class ShelfActionSet(_ShelfActionSet):
 #     """Wrapper class for ShelfActionDetermine to ensure proper plugin registration."""
 
 
-# class ShelfActionToggleLock(_ShelfActionToggleLock):
-#     """Wrapper class for ShelfActionToggleLock to ensure proper plugin registration."""
+class ShelfActionToggleLock(_ShelfActionToggleLock):
+    """Wrapper class for ShelfActionToggleLock to ensure proper plugin registration."""
 
 
 # Wrapper for script function
@@ -136,7 +136,7 @@ register_file_post_removal_from_track_processor(_file_post_removal_from_track_pr
 # Register context menu actions
 register_album_action(ShelfActionSet())
 # register_album_action(ShelfActionDetermine())
-# register_album_action(ShelfActionToggleLock())
+register_album_action(ShelfActionToggleLock())
 
 # Register options options_page
 register_options_page(ShelvesOptionsPage)
