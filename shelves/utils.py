@@ -7,14 +7,13 @@ from __future__ import annotations
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Set, Tuple
+from typing import Any, Set, Tuple, Optional
 from warnings import deprecated
 
 from picard import log
 from picard.script import ScriptParser
 
 from .constants import ALBUM_INDICATORS, INVALID_SHELF_NAME_CHARS, INVALID_SHELF_NAMES
-from .exceptions import ShelfNotDeterminableException
 from .typings import TagKey
 
 
@@ -276,3 +275,31 @@ def squeeze_the_parser(parser: ScriptParser) -> tuple[str, str]:
         context_shelf = parser.context.get(TagKey.SHELF)
         context_shelf = get_shelf_name_from_tag(context_shelf)
     return context_shelf, metadata_shelf
+
+
+class ShelfNotDeterminableException(Exception):
+    """Represents an exception raised when a shelf name cannot be determined from a given filepath."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        *,
+        filepath: Optional[str | Path],
+        details: Optional[str] = None,
+        cause: Optional[BaseException] = None,
+    ) -> None:
+        self.message = message
+        self.filepath = filepath
+        self.cause = cause
+        self.details = details
+
+        if self.message is None:
+            self.message = _("No shelf name can be determined from the file path.")
+
+        super().__init__(self.message, f"{filepath=!r}, {details=}")
+
+    def __str__(self) -> str:
+        base = super().__str__()
+        if self.cause:
+            return f"{base} (Cause: {self.cause!r})"
+        return base
