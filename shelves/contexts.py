@@ -18,13 +18,13 @@ class ProcessingContext:
         SAVE = 8
         REMOVE = 16
         UNSET = 32
+        TOGGLE_LOCK = 255
 
     processing_type: ProcessingType
     album_id: str
     name_from_path: str
     name_from_tag: str
     processing_name: str
-    is_locked: bool
 
 
 @dataclass
