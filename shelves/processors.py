@@ -14,14 +14,14 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
-from picard import log
+from picard import log, config
 from picard.file import File
 from picard.track import Track
 
 from . import transitions
 from .contexts import ProcessingContext, TransitionContext
 from .manager import ShelfManager
-from .typings import TagKey, VotingType
+from .typings import TagKey, VotingType, ConfigKey
 
 
 class Strategy(ABC):
@@ -239,6 +239,9 @@ class StrategyKnownNameFromPathDiffersFromTag(Strategy):
             return False
 
         if name_from_tag == name_from_path:
+            return False
+
+        if name_from_path in config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]:
             return False
 
         return name_from_path in self.manager.registered_shelf_names
