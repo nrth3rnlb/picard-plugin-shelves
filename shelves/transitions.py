@@ -44,7 +44,7 @@ class Strategy(ABC):
         if not self.is_applicable(context):
             return False
 
-        log.debug("strategy: %s", self.__class__.__name__)
+        log.debug("Strategy: %s, Context: %s", self.__class__.__name__, context)
         if self.apply_transition(context):
             context.shelf_name = config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES][0]
         return True
