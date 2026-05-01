@@ -37,7 +37,7 @@ class ShelfActionSet(BaseAction):
     """Manually set shelf_name"""
 
     # noinspection PyUnusedName
-    NAME: str = "Replace shelf name"
+    NAME: str = "Set album's shelf name"
 
     tagger: Any
 
