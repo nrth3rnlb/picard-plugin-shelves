@@ -411,63 +411,6 @@ class ContextBuilder:
             is_locked=file.metadata[TagKey.SHELF_LOCKED],
         )
 
-    # @staticmethod
-    # @deprecated(
-    #     "I'm not quite sure yet, but I think we can ignore the files per track."
-    # )
-    # def build_processing_context_by_file_and_track(
-    #     manager: ShelfManager,  #     processing_type: ProcessingContext.ProcessingType,
-    #     track: Track,
-    #     _file: File,
-    # ) -> Optional[ProcessingContext]:
-    #     """
-    #     Build a processing context for a file based on its metadata and the track it belongs to.
-    #     """
-    #     from . import utils
-    #
-    #     # utils.debug_track(track)
-    #
-    #     track_meta = getattr(track, "metadata", None)
-    #     if not track_meta:
-    #         return None
-    #
-    #     album_id = track_meta.get(TagKey.MUSICBRAINZ_ALBUMID)
-    #     if not album_id:
-    #         return None
-    #
-    #     names_from_path: set[str] = set()
-    #     for file_by_track in track.files:
-    #         log.debug(
-    #             "file_by_track: %s", file_by_track.filename
-    #         )  # Extract shelf name from path
-    #         names_from_path.union(
-    #             utils.get_shelf_name_from_path(
-    #                 file_path=Path(file_by_track.filename),
-    #                 base_path=manager.base_path,
-    #             )
-    #         )
-    #
-    #     name_from_tag = track_meta.get(TagKey.SHELF, None)
-    #     name_from_tag = utils.get_shelf_name_from_tag(name_from_tag)
-    #     is_locked = track_meta.get(TagKey.SHELF_LOCKED, None)
-    #
-    #     # log.debug(
-    #     #     f"Processing track: {track_meta['title']}, album_id: {album_id}, name_from_path: "
-    #     #     f"{names_from_path}, name_from_tag: {name_from_tag}, is_locked: {is_locked}"
-    #     # )
-    #
-    #     name_from_path = (
-    #         set(names_from_path).pop() if len(names_from_path) == 1 else "multiple"
-    #     )
-    #
-    #     return ProcessingContext(
-    #         processing_type=processing_type,
-    #         album_id=album_id,
-    #         name_from_path=name_from_path,
-    #         name_from_tag=name_from_tag,
-    #         is_locked=is_locked,
-    #     )
-
 
 # Global instance for lazy, shared access (avoids import-time config access).
 _processors_singleton = None
