@@ -228,23 +228,25 @@ class StrategyKnownNameFromPathDiffersFromTag(Strategy):
     """
 
     def is_applicable(self, context: ProcessingContext) -> bool:
-        processing_type = context.processing_type
-        name_from_path = context.name_from_path
-        name_from_tag = context.name_from_tag
-
-        if processing_type in {
+        # Early return for manual operations
+        if context.processing_type in (
             ProcessingContext.ProcessingType.SET,
             ProcessingContext.ProcessingType.UNSET,
-        }:
+        ):
             return False
 
-        if name_from_tag == name_from_path:
+        name_from_path = context.name_from_path
+
+        # Early return if names match
+        if name_from_path == context.name_from_tag:
             return False
 
-        if name_from_path in config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]:
+        # Check if it's a registered shelf name first (likely cheaper than config lookup)
+        if name_from_path not in self.manager.registered_shelf_names:
             return False
 
-        return name_from_path in self.manager.registered_shelf_names
+        # Final check: exclude workflow stage 1 shelves
+        return name_from_path not in config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
 
     def shelf_name(self, context: ProcessingContext) -> Optional[str]:
         return context.name_from_path
@@ -254,18 +256,19 @@ class StrategyUnknownNameFromPath(Strategy):
     """Strategy: Unknown shelf name from path."""
 
     def is_applicable(self, context: ProcessingContext) -> bool:
-        processing_type = context.processing_type
-        name_from_path = context.name_from_path
-
-        if processing_type in {
+        # Early return if it's a manual operation
+        if context.processing_type in {
             ProcessingContext.ProcessingType.SET,
             ProcessingContext.ProcessingType.UNSET,
         }:
             return False
 
+        # Early return if no name from path
+        name_from_path = context.name_from_path
         if not name_from_path:
             return False
 
+        # Check if it's NOT a registered shelf name (single membership test)
         return name_from_path not in self.manager.registered_shelf_names
 
     def shelf_name(self, context: ProcessingContext) -> Optional[str]:
