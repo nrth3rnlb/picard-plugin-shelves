@@ -9,7 +9,6 @@ from typing import Any, List, Optional
 from picard.album import Album, File, Track
 from picard.ui.itemviews import BaseAction
 
-from . import manager as manager_module
 from .dialogs import SetShelfDialog
 from .typings import TagKey
 
@@ -77,35 +76,18 @@ class ShelfActionToggleLock(BaseAction):
 
     def callback(self, objs: List[Any]) -> None:
         """Toggle lock state of albums."""
-        shelf_manager = manager_module.instance()
-        _locked: dict[str, bool] = {}
+        from . import processors
 
-        for obj in objs:
-            if hasattr(obj, "iterfiles"):
-                for file in list(obj.iterfiles()):
-                    metadata = file.metadata
-                    album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID)
-                    if not album_id:
-                        continue
-                    if album_id not in _locked:
-                        _locked[album_id] = shelf_manager.is_locked(album_id)
-                    if _locked[album_id]:
-                        shelf_manager.unlock(album_id)
-                    else:
-                        shelf_manager.lock(album_id)
-                    metadata[TagKey.SHELF_LOCKED] = shelf_manager.is_locked(album_id)
+        processors = processors.instance()
+        albums: list[Album] = list(filter(lambda o: isinstance(o, Album), objs))
+        for album in albums:
+            track: Track
+            for track in album.tracks:
+                file: File
+                for file in track.files:
+                    processors.action_toggle_lock_processor(file=file)
 
-                    self.tagger.window.set_statusbar_message(
-                        "Lock state of album %s is now %s."
-                        % (
-                            album_id,
-                            (
-                                "locked"
-                                if shelf_manager.is_locked(album_id)
-                                else "unlocked"
-                            ),
-                        )
-                    )
+        _set_album_metadata(albums)
 
 
 # class ShelfActionDetermine(BaseAction):
@@ -145,6 +127,8 @@ class ShelfActionToggleLock(BaseAction):
 
 
 def _set_album_metadata(albums: List[Album]):
+    from . import manager as manager_module
+
     shelf_manager = manager_module.instance()
 
     for album in albums:
