@@ -76,24 +76,16 @@ class Strategy(ABC):
 
         return []
 
-    @staticmethod
-    def should_lock(context: ProcessingContext) -> bool:
-        """Whether this strategy should lock the shelf assignment."""
-        decision = context.processing_type == ProcessingContext.ProcessingType.SET
-        return decision
-
-    @staticmethod
-    def should_unlock(context: ProcessingContext) -> bool:
-        """Whether this strategy should unlock the shelf assignment."""
-        decision = context.processing_type == ProcessingContext.ProcessingType.UNSET
-        return decision
-
-    def apply_lock_state(self, context: ProcessingContext):
+    def apply_lock_state(self, album_id: str, shelf_names: str | List[str]):
         """Apply manual lock/unlock state to the shelf assignment."""
-        if self.should_lock(context):
-            self.manager.lock(album_id=context.album_id)
-        if self.should_unlock(context):
-            self.manager.unlock(album_id=context.album_id)
+        if isinstance(shelf_names, str):
+            shelf_names = [shelf_names]
+
+        for shelf_name in shelf_names:
+            if self.manager.is_locked(album_id=album_id):
+                self.manager.unlock(album_id=album_id, shelf_name=shelf_name)
+            else:
+                self.manager.lock(album_id=album_id, shelf_name=shelf_name)
 
     def apply_votes(
         self, voting_type: VotingType, album_id: str, shelf_names: str | List[str]
@@ -112,7 +104,16 @@ class Strategy(ABC):
 
         if not self.is_applicable(context):
             return False
+
         log.debug("Strategy: %s, Context: %s", self.__class__.__name__, context)
+
+        if context.processing_type == ProcessingContext.ProcessingType.TOGGLE_LOCK:
+            log.debug("TOGGLE_LOCK: %s", self.shelf_name(context))
+            self.apply_lock_state(
+                album_id=context.album_id,
+                shelf_names=self.shelf_name(context),
+            )
+
         if context.processing_type == ProcessingContext.ProcessingType.LOAD:
             log.debug("INITIAL: %s", self.shelf_name(context))
             self.apply_votes(
@@ -308,6 +309,16 @@ class Processors:
             if strategy.process(context):
                 break
 
+    def action_toggle_lock_processor(self, file: File) -> None:
+        context = ContextBuilder.build(
+            self.manager,
+            file=file,
+            processing_type=ProcessingContext.ProcessingType.TOGGLE_LOCK,
+        )
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
     def file_post_load_processor(self, file: File) -> None:
         """Process a file after it has been loaded."""
         context = ContextBuilder.build(
@@ -408,7 +419,6 @@ class ContextBuilder:
             name_from_path=name_from_path,
             name_from_tag=file.metadata[TagKey.SHELF],
             processing_name=processing_name or "",
-            is_locked=file.metadata[TagKey.SHELF_LOCKED],
         )
 
 
