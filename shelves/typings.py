@@ -11,6 +11,8 @@ class VotingType(IntEnum):
     UP = 1
     DOWN = 2
     INITIAL = UP | DOWN
+    LOCK = 4
+    UNLOCK = 8
 
 
 class ConfigKey(StrEnum):
