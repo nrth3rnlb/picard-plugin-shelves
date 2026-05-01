@@ -62,7 +62,8 @@ class StrategyEmptyNameToStage2(Strategy):
         return decision
 
     def apply_transition(self, context: TransitionContext) -> bool:
-        return False
+        # An album is being loaded from MusicBrainz. It doesn't know about the files in the folder.
+        return True
 
 
 class StrategyUnknownNameToStage2(Strategy):
