@@ -9,8 +9,7 @@ from typing import Optional
 
 from PyQt5 import QtWidgets, uic
 
-from . import utils
-from .manager import ShelfManager
+from . import utils, manager
 
 LABEL_VALIDATION_NAME = "label_validation"
 COMBO_SHELF_NAME = "combo_shelves"
@@ -47,9 +46,11 @@ class SetShelfDialog(QtWidgets.QDialog):
 
     def ask_for_shelf_name(self) -> Optional[str]:
         """Ask for a name."""
+        shelf_manager = manager.instance()
+
         if self.shelf_combo is not None:
             self.shelf_combo.clear()
-            self.shelf_combo.addItems(sorted(ShelfManager().registered_shelf_names))
+            self.shelf_combo.addItems(sorted(shelf_manager.registered_shelf_names))
             self.shelf_combo.setEditable(False)
             self.shelf_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
 

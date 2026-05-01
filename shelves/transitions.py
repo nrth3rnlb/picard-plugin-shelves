@@ -15,6 +15,7 @@ from picard import config, log
 from .contexts import TransitionContext
 from .manager import ShelfManager
 from .typings import ConfigKey
+from . import manager as manager_module
 
 
 class Strategy(ABC):
@@ -126,7 +127,7 @@ class Transitions:
 
     def __init__(self, manager: Optional[ShelfManager] = None):
         """Initialize workflow with optional ShelfManager injection."""
-        self.manager = manager or ShelfManager()
+        self.manager = manager or manager_module.instance()
         self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
     def transition_to(

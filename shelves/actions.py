@@ -9,8 +9,8 @@ from typing import Any, List, Optional
 from picard.album import Album, File, Track
 from picard.ui.itemviews import BaseAction
 
+from . import manager
 from .dialogs import SetShelfDialog
-from .manager import ShelfManager
 from .typings import TagKey
 
 
@@ -77,6 +77,7 @@ class ShelfActionToggleLock(BaseAction):
 
     def callback(self, objs: List[Any]) -> None:
         """Toggle lock state of albums."""
+        shelf_manager = manager.instance()
         _locked: dict[str, bool] = {}
 
         for obj in objs:
@@ -87,20 +88,22 @@ class ShelfActionToggleLock(BaseAction):
                     if not album_id:
                         continue
                     if album_id not in _locked:
-                        _locked[album_id] = ShelfManager().is_locked(album_id)
+                        _locked[album_id] = shelf_manager.is_locked(album_id)
                     if _locked[album_id]:
-                        ShelfManager().unlock(album_id)
+                        shelf_manager.unlock(album_id)
                     else:
-                        ShelfManager().lock(album_id)
-                    metadata[TagKey.SHELF_LOCKED] = ShelfManager().is_locked(album_id)
+                        shelf_manager.lock(album_id)
+                    metadata[TagKey.SHELF_LOCKED] = shelf_manager.is_locked(album_id)
 
                     self.tagger.window.set_statusbar_message(
                         "Lock state of album %s is now %s."
                         % (
                             album_id,
-                            "locked"
-                            if ShelfManager().is_locked(album_id)
-                            else "unlocked",
+                            (
+                                "locked"
+                                if shelf_manager.is_locked(album_id)
+                                else "unlocked"
+                            ),
                         )
                     )
 
@@ -142,12 +145,13 @@ class ShelfActionToggleLock(BaseAction):
 
 
 def _set_album_metadata(albums: List[Album]):
+    shelf_manager = manager.instance()
     for album in albums:
         track: Track
         for track in album.tracks:
             file: File
             for file in track.files:
-                file.metadata[TagKey.SHELF] = ShelfManager().get_shelf_name(
+                file.metadata[TagKey.SHELF] = shelf_manager.get_shelf_name(
                     album.metadata[TagKey.MUSICBRAINZ_ALBUMID]
                 )
                 file.update()

@@ -14,8 +14,7 @@ from picard.config import BoolOption, IntOption, ListOption, Option
 from picard.ui.options import OptionsPage as PicardOptions
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
-from . import constants, utils
-from .manager import ShelfManager
+from . import constants, utils, manager
 from .typings import ConfigKey
 from .widgets import QShelvesWidget
 
@@ -153,25 +152,27 @@ class OptionsPage(PicardOptions):
     # noinspection PyTypeHints
     def save(self) -> None:
         """Save configuration."""
+        shelf_manager = manager.instance()
+
         config.setting[ConfigKey.KNOWN_SHELVES] = [
             item.text()
             for i in range(self.shelf_management_shelves.count())
             if (item := self.shelf_management_shelves.item(i)) is not None
-            and item.text() in ShelfManager().registered_shelf_names
+            and item.text() in shelf_manager.registered_shelf_names
         ]
 
         config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES] = [
             item.text()
             for i in range(self.workflow_stage_1.count())
             if (item := self.workflow_stage_1.item(i)) is not None
-            and item.text() in ShelfManager().registered_shelf_names
+            and item.text() in shelf_manager.registered_shelf_names
         ]
 
         config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES] = [
             item.text()
             for i in range(self.workflow_stage_2.count())
             if (item := self.workflow_stage_2.item(i)) is not None
-            and item.text() in ShelfManager().registered_shelf_names
+            and item.text() in shelf_manager.registered_shelf_names
         ]
 
         config.setting[ConfigKey.ACTIVE_TAB] = self.plugin_configuration.currentIndex()
@@ -183,6 +184,7 @@ class OptionsPage(PicardOptions):
 
     def _management_action_add(self) -> None:
         """Add a new shelf name and update the UI."""
+        shelf_manager = manager.instance()
         shelf_name, ok = QtWidgets.QInputDialog.getText(
             self,
             _(TITLE_ADD_SHELF_NAME),
@@ -200,12 +202,13 @@ class OptionsPage(PicardOptions):
             )
             return
 
-        ShelfManager().add_shelf_names(shelf_name)
+        shelf_manager.add_shelf_names(shelf_name)
         self._management_build_list()
 
     def _management_action_remove(self) -> None:
         """Remove the selected shelf names and update the UI."""
         selected_items = self.shelf_management_shelves.selectedItems()
+        shelf_manager = manager.instance()
         if not selected_items:
             return
         selected_names: set[str] = set(item.text() for item in selected_items)
@@ -237,21 +240,23 @@ class OptionsPage(PicardOptions):
             if reply == QtWidgets.QMessageBox.No:
                 return
 
-        ShelfManager().remove_shelf_names(selected_names)
+        shelf_manager.remove_shelf_names(selected_names)
         self._management_build_list()
 
     def _management_action_scan(self) -> None:
         """Scan Picard's target directory for shelf names and update the UI."""
-        shelf_names: set[str] = utils.get_shelf_dirs(base_path=ShelfManager().base_path)
+        shelf_manager = manager.instance()
+        shelf_names: set[str] = utils.get_shelf_dirs(base_path=shelf_manager.base_path)
 
-        ShelfManager().add_shelf_names(shelf_names)
+        shelf_manager.add_shelf_names(shelf_names)
         self._management_build_list()
 
     def _management_action_intersect(self) -> None:
         """Remove shelf_names that no longer exist in the music directory."""
-        shelf_names: set[str] = utils.get_shelf_dirs(base_path=ShelfManager().base_path)
+        shelf_manager = manager.instance()
+        shelf_names: set[str] = utils.get_shelf_dirs(base_path=shelf_manager.base_path)
 
-        ShelfManager().intersect_shelf_names(shelf_names)
+        shelf_manager.intersect_shelf_names(shelf_names)
         self._management_build_list()
 
     # ============================================================================
@@ -418,26 +423,25 @@ class OptionsPage(PicardOptions):
     # noinspection PyTypeHints
     def _workflow_build_shelves_for_stages(self) -> None:
         # Build shelves for stages and trigger an initial state change
+        shelf_manager = manager.instance()
 
         self.shelves_for_stages.clear()
         self.shelves_for_stages.addItems(
-            ShelfManager()
-            .registered_shelf_names.difference(
+            shelf_manager.registered_shelf_names.difference(
                 config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
-            )
-            .difference(
+            ).difference(
                 config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES],
             )
         )
         self.workflow_stage_1.clear()
         self.workflow_stage_1.addItems(
-            ShelfManager().registered_shelf_names.intersection(
+            shelf_manager.registered_shelf_names.intersection(
                 config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
             )
         )
         self.workflow_stage_2.clear()
         self.workflow_stage_2.addItems(
-            ShelfManager().registered_shelf_names.intersection(
+            shelf_manager.registered_shelf_names.intersection(
                 config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
             )
         )
@@ -463,8 +467,9 @@ class OptionsPage(PicardOptions):
 
     def _management_build_list(self):
         """Refresh the shelves widget with the current shelf names."""
+        shelf_manager = manager.instance()
         self.shelf_management_shelves.clear()
-        self.shelf_management_shelves.addItems(ShelfManager().registered_shelf_names)
+        self.shelf_management_shelves.addItems(shelf_manager.registered_shelf_names)
 
     # ============================================================================
     # Event handlers

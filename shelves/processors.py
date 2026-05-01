@@ -22,6 +22,7 @@ from . import transitions
 from .contexts import ProcessingContext, TransitionContext
 from .manager import ShelfManager
 from .typings import TagKey, VotingType, ConfigKey
+from . import manager as manager_module
 
 
 class Strategy(ABC):
@@ -299,7 +300,7 @@ class Processors:
 
     def __init__(self, manager: Optional[ShelfManager] = None):
         """Initialize processors with optional ShelfManager injection."""
-        self.manager = manager or ShelfManager()
+        self.manager = manager or manager_module.instance()
         self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
     def action_unset_processor(self, file: File) -> None:

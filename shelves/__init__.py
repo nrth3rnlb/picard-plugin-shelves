@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from picard import log
 from picard.file import (
     register_file_post_addition_to_track_processor,
     register_file_post_load_processor,
@@ -108,11 +109,13 @@ def _file_post_save_processor(file: Any) -> None:
 # Wrapper functions that pass shelf_manager to processors
 def _file_post_load_processor(file: Any) -> None:
     """Wrapper for file_post_load_processor."""
+    log.debug("_file_post_load_processor")
     processors.instance().file_post_load_processor(file=file)
 
 
 def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
+    log.debug("_file_post_addition_to_track_processor")
     processors.instance().file_post_addition_to_track_processor(track=track, file=file)
 
 
