@@ -24,7 +24,6 @@ from picard import config, log
 from . import utils
 from .constants import ALBUM_INDICATORS, MAX_SHELF_NAME_LENGTH, MAX_WORD_COUNT
 from .contexts import ProcessingContext
-from .exceptions import ShelfNotFoundException
 from .typings import ConfigKey, VotingType
 
 SHELF_NAME = "shelf_name"
@@ -558,3 +557,31 @@ def _reset_instance() -> None:
     """
     global _manager_singleton
     _manager_singleton = None
+
+
+class ShelfNotFoundException(Exception):
+    """Represents an exception raised when a specific shelf name cannot be found in a given context."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        *,
+        album_id: Optional[str] = None,
+        details: Optional[str] = None,
+        cause: Optional[BaseException] = None,
+    ) -> None:
+        self.message = message
+        self.album_id = album_id
+        self.details = details
+        self.cause = cause
+
+        if message is None:
+            message = "Shelf for the album cannot be determined."
+
+        super().__init__(self.message, f"{album_id=!r}, {details=}")
+
+    def __str__(self) -> str:
+        base = super().__str__()
+        if self.cause:
+            return f"{base} (Cause: {self.cause!r})"
+        return base
