@@ -36,7 +36,6 @@ class Strategy(ABC):
     def __init__(self, manager: ShelfManager):
         """Initialize with ShelfManager."""
         self.manager = manager
-        self.strategy = self
 
     @abstractmethod
     def is_applicable(self, context: ProcessingContext) -> bool:
@@ -126,28 +125,28 @@ class Strategy(ABC):
     def process(self, context: ProcessingContext) -> bool:
         """Process the shelf assignment based on the strategy."""
 
-        if not self.strategy.is_applicable(context):
+        if not self.is_applicable(context):
             return False
         log.debug("Strategy: %s, Context: %s", self.__class__.__name__, context)
         if context.processing_type == ProcessingContext.ProcessingType.LOAD:
-            log.debug("INITIAL: %s", self.strategy.shelf_name(context))
+            log.debug("INITIAL: %s", self.shelf_name(context))
             self.apply_votes(
                 voting_type=VotingType.INITIAL,
                 album_id=context.album_id,
-                shelf_names=self.strategy.shelf_name(context),
+                shelf_names=self.shelf_name(context),
             )
         else:
-            log.debug("UP: %s", self.strategy.upvote_shelf_names(context))
+            log.debug("UP: %s", self.upvote_shelf_names(context))
             self.apply_votes(
                 voting_type=VotingType.UP,
                 album_id=context.album_id,
-                shelf_names=self.strategy.upvote_shelf_names(context),
+                shelf_names=self.upvote_shelf_names(context),
             )
-            log.debug("DOWN: %s", self.strategy.downvote_shelf_names(context))
+            log.debug("DOWN: %s", self.downvote_shelf_names(context))
             self.apply_votes(
                 voting_type=VotingType.DOWN,
                 album_id=context.album_id,
-                shelf_names=self.strategy.downvote_shelf_names(context),
+                shelf_names=self.downvote_shelf_names(context),
             )
 
         return True
