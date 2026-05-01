@@ -9,7 +9,7 @@ from typing import Any, List, Optional
 from picard.album import Album, File, Track
 from picard.ui.itemviews import BaseAction
 
-from . import manager
+from . import manager as manager_module
 from .dialogs import SetShelfDialog
 from .typings import TagKey
 
@@ -145,7 +145,8 @@ class ShelfActionToggleLock(BaseAction):
 
 
 def _set_album_metadata(albums: List[Album]):
-    shelf_manager = manager.instance()
+    shelf_manager = manager_module.instance()
+
     for album in albums:
         track: Track
         for track in album.tracks:

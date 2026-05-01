@@ -19,17 +19,17 @@ from picard.file import File
 from picard.track import Track
 
 from . import transitions
+from . import manager as manager_module
 from .contexts import ProcessingContext, TransitionContext
 from .manager import ShelfManager
 from .typings import TagKey, VotingType, ConfigKey
-from . import manager as manager_module
 
 
 class Strategy(ABC):
     """
     Base class for shelf processing strategies.
 
-    Uses Template Method pattern: subclasses implement is_applicable() and resolve_shelf_name(),
+    Uses Template Method pattern: subclasses implement is_applicable() and shelf_name(),
     while the base class handles common logic.
     """
 

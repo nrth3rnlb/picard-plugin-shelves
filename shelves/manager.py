@@ -446,14 +446,6 @@ class ShelfManager:
                 config.setting[ConfigKey.KNOWN_SHELVES],
             )
 
-    def _reset_instance() -> None:
-        """Reset the default global ShelfManager instance.
-
-        Intended for tests only.
-        """
-        global _manager_singleton
-        _manager_singleton = None
-
     # ===== Properties (delegate to components) =====
 
     @property
@@ -557,3 +549,12 @@ def instance() -> ShelfManager:
     if _manager_singleton is None:
         _manager_singleton = ShelfManager()
     return _manager_singleton
+
+
+def _reset_instance() -> None:
+    """Reset the default global ShelfManager instance.
+
+    Intended for tests only.
+    """
+    global _manager_singleton
+    _manager_singleton = None

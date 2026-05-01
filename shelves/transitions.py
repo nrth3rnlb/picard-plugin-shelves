@@ -12,10 +12,10 @@ from typing import Optional, Sequence
 
 from picard import config, log
 
+from . import manager as manager_module
 from .contexts import TransitionContext
 from .manager import ShelfManager
 from .typings import ConfigKey
-from . import manager as manager_module
 
 
 class Strategy(ABC):
