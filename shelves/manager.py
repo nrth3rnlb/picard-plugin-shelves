@@ -126,6 +126,7 @@ class ShelfAssignmentEngine:
         album_id: str,
         shelf_name: str,
         voting_type: VotingType = VotingType.INITIAL,
+        shelf_locked: bool = False,
     ):
         """
         Executes a specific voting operation (upvote, downvote, or initial vote) for a given album on a specified shelf.
@@ -137,8 +138,18 @@ class ShelfAssignmentEngine:
         :type shelf_name: str
         :param voting_type: The type of voting operation to perform (e.g., upvote, downvote, or initialize voting).
         :type voting_type: VotingType
+        :param shelf_locked: Indicates if the shelf is locked and cannot be modified. Defaults to False.
+        :type shelf_locked: bool
         :return: None
         """
+        if shelf_locked:
+            log.debug(
+                "Shelf %s is locked, fallback to initial voting: %s",
+                shelf_name,
+                album_id,
+            )
+            voting_type = VotingType.INITIAL
+
         dispatch = {
             VotingType.DOWN: partial(
                 self._downvote, album_id=album_id, shelf_name=shelf_name
@@ -147,6 +158,12 @@ class ShelfAssignmentEngine:
                 self._upvote, album_id=album_id, shelf_name=shelf_name
             ),
             VotingType.INITIAL: partial(
+                self._init_voting, album_id=album_id, shelf_name=shelf_name
+            ),
+            VotingType.LOCK: partial(
+                self._init_voting, album_id=album_id, shelf_name=shelf_name
+            ),
+            VotingType.UNLOCK: partial(
                 self._init_voting, album_id=album_id, shelf_name=shelf_name
             ),
         }
@@ -177,7 +194,6 @@ class ShelfAssignmentEngine:
         if shelf_name not in self._shelf_votes[album_id]:
             log.debug("Initializing vote count for shelf %s", shelf_name)
             self._shelf_votes[album_id][shelf_name] = 0
-        pass
 
     def _upvote(self, album_id, shelf_name) -> None:
         """
@@ -304,32 +320,21 @@ class ShelfLockManager:
             Dict[str, Dict[str, Any]]
         )
 
-    def set_shelf_name(
-        self, album_id: str, shelf_name: str, lock: bool = False
-    ) -> None:
-        """Set the shelf for an album with optional locking."""
-        state = self._shelf_state.setdefault(album_id, {})
-
-        # Manually locked => can only be overwritten manually
-        if state.get(SHELF_LOCKED):
-            log.warning("Album %s is locked, skipping shelf assignment", album_id)
-            return
-
-        state[SHELF_NAME] = shelf_name
-        if lock:
-            self.lock(album_id)
-        else:
-            self.unlock(album_id)
-
-    def lock(self, album_id: str) -> None:
+    def lock(self, album_id: str, shelf_name: str) -> None:
         """Set the manual override/lock for an album's shelf assignment."""
         state = self._shelf_state.setdefault(album_id, {})
         state[SHELF_LOCKED] = True
+        self.assignment_engine.vote(
+            album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.LOCK
+        )
 
-    def unlock(self, album_id: str) -> None:
+    def unlock(self, album_id: str, shelf_name: str) -> None:
         """Clear the manual override/lock for an album's shelf assignment."""
         state = self._shelf_state.setdefault(album_id, {})
         state[SHELF_LOCKED] = False
+        self.assignment_engine.vote(
+            album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.UNLOCK
+        )
 
     def is_locked(self, album_id: str) -> bool:
         """Check if an album's shelf assignment is locked."""
@@ -464,6 +469,7 @@ class ShelfManager:
         album_id: str,
         shelf_name: str,
         voting_type: VotingType = VotingType.INITIAL,
+        shelf_locked: bool = False,
     ) -> None:
         """
         Registers a voting action for the specified album within the given shelf. This function allows
@@ -476,18 +482,24 @@ class ShelfManager:
         :type shelf_name: str
         :param voting_type: The type of voting operation to perform. Defaults to VotingType.INITIAL.
         :type voting_type: VotingType
+        :param shelf_locked: Indicates if the shelf is locked and cannot be modified. Defaults to False.
+        :type shelf_locked: bool
         :return: None
         """
         self._assignment_engine.vote(
-            album_id=album_id, shelf_name=shelf_name, voting_type=voting_type
+            album_id=album_id,
+            shelf_name=shelf_name,
+            voting_type=voting_type,
+            shelf_locked=shelf_locked,
         )
 
-    def get_shelf_name(self, album_id: str) -> str:
+    def get_shelf_name(self, album_id: str) -> Optional[str]:
         """Determine the shelf for an album."""
         try:
             return self._assignment_engine.get_shelf_name(album_id)
         except ShelfNotFoundException:
-            return ""
+            log.error("Shelf not found for album %s", album_id)
+            return None
 
     # def clear_album(self, album_id: str) -> None:
     #     """Clear all votes and assignments for an album."""
@@ -509,13 +521,13 @@ class ShelfManager:
     #     """
     #     self._lock_manager.set_shelf_name(album_id, shelf_name)
 
-    def lock(self, album_id: str) -> None:
+    def lock(self, album_id: str, shelf_name: str = None) -> None:
         """Set the manual lock for an album's shelf assignment."""
-        self._lock_manager.lock(album_id)
+        self._lock_manager.lock(album_id, shelf_name)
 
-    def unlock(self, album_id: str) -> None:
+    def unlock(self, album_id: str, shelf_name: str = None) -> None:
         """Clear the manual lock for an album's shelf assignment."""
-        self._lock_manager.unlock(album_id)
+        self._lock_manager.unlock(album_id, shelf_name)
 
     def is_locked(self, album_id: str) -> bool:
         """Check if an album's shelf assignment is locked."""
