@@ -10,7 +10,7 @@ from typing import Optional
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import Qt
 
-from . import utils, manager
+from . import manager, utils
 
 LABEL_VALIDATION_NAME = "label_validation"
 COMBO_SHELF_NAME = "combo_shelves"

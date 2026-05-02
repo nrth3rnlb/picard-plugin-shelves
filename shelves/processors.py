@@ -14,15 +14,15 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
-from picard import log, config
+from picard import config, log
 from picard.file import File
 from picard.track import Track
 
-from . import transitions
 from . import manager as manager_module
+from . import transitions
 from .contexts import ProcessingContext, TransitionContext
 from .manager import ShelfManager
-from .typings import TagKey, VotingType, ConfigKey
+from .typings import ConfigKey, TagKey, VotingType
 
 
 class Strategy(ABC):
