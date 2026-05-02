@@ -54,7 +54,7 @@ collection, one for incoming/unprocessed music, one for Christmas music, etc.
 - **Script function `$shelf()`** for file naming integration
 """
 # noinspection PyUnusedName
-PLUGIN_VERSION = "1.7.0"
+PLUGIN_VERSION = "2.0.0"
 # noinspection PyUnusedName
 PLUGIN_API_VERSIONS = ["2.0"]
 # noinspection PyUnusedName

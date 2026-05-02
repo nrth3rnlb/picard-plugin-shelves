@@ -2,6 +2,141 @@
 
 <!-- version list -->
 
+## v2.0.0 (2026-05-02)
+
+### BREAKING CHANGE
+
+- `get_processors_singleton` has been deprecated; use `processors.instance` for singleton access.
+- `ConfigKey.ALBUM_SHELF` has been deprecated, and processors now use a singleton pattern for initialization.
+- `constants` is no longer used for configuration and tagging; migrated to `ConfigKey` and `TagKey`.
+- The labeling of the manual setting of a shelf name is stored in a separate tag. Existing tags are taken into account and automatically corrected until further notice.
+- Configuration updates require manual adjustments. Reconfiguration of workflows and shelves is needed.
+- The configuration has been changed, and the plugin must be reconfigured. An automatic migration is not provided, so manual configuration adjustments are necessary.
+
+### Feat
+
+- **workflow**: add transition strategy for empty shelf names in workflow
+- **typings**: add typings for Shelves plugin including processing and transition types
+- **tagger**: Separation of shelf names and labeling as 'manual'.
+- **processors**: implement strategy pattern for shelf name processing
+- **options, ui**: refactor shelf and workflow management for clarity and usability
+- **tests**: expand test coverage for shelves and workflows
+- Configuration adjustments required
+- **shelves**: enhance shelf and workflow management
+- **shelves**: enhance shelf management and add functionality
+
+### Fix
+
+- **processors**: skip path check for shelves in stage 1 workflow configuration
+- **transitions**: correct return value in `apply_transition` method for StrategyEmptyNameToStage2
+- **shelves**: correct the version number
+- **workflow**: adjust shelf transition logic and enhance test cases
+- **workflow**: correct shelf transition logic and enhance test coverage
+- **manager**: ShelfNotFoundException import
+- **constants**: rename the tag name from `shelf_name` to `shelf`
+- **options**: remove unused dependencies and update shelf logic
+- **options**: refactor shelf management logic and improve UI bindings
+- **options**: improve shelf management logic and update dependencies
+- **options**: change shelf scanning logic
+- **options**: update shelf scanning
+- **manager**: improve log message formatting for uncertain shelf determination
+fix(tests): update shelf parameter name in mock assertion for clarity
+- **script_functions**: Sicher stellen, dass immer ein String zurück gegeben wird, wenn "musicbrainz_albumid" gesetzt ist.
+- **script_functions**: Ensure that a string is always returned if "musicbrainz_albumid" is set.
+
+### Refactor
+
+- **shelves**: remove unused `ShelfActionDetermine` logic
+- **shelves**: add `shelf_locked` parameter to voting methods and streamline lock/unlock logic
+- **shelves**: improve debug logging in `transitions.py` to include context information
+- **processors**: simplify lock state handling and add toggle lock strategy
+- **typings**: add `LOCK` and `UNLOCK` to `Direction` enum
+- **contexts**: add `TOGGLE_LOCK` to `ProcessingType` enum
+- **shelves**: streamline `ShelfActionToggleLock` logic and update album metadata handling
+- **shelves**: standardize `manager` import and update `NAME` attribute in `actions.py`
+- **shelves**: enable `ShelfActionToggleLock` and register it in album actions
+- **shelves**: update `NAME` attribute to clarify purpose in `actions.py`
+- **processors**: remove deprecated `build_processing_context_by_file_and_track` method
+- **shelves**: remove `exceptions` module and delete unused custom exception classes
+- **shelves**: move `ShelfNotDeterminableException` to `utils` and enhance its implementation
+- **shelves**: relocate `ShelfNotFoundException` to `manager.py` from `exceptions`
+- **processors**: remove unused `decide_voting` method from shelf processors
+- **processors**: remove `strategy` attribute and streamline method calls for shelf processing
+- **shelves**: standardize `manager` imports as `manager_module` across all modules
+- **shelves**: replace direct `ShelfManager` usage with singleton instance method
+- **shelves**: remove singleton pattern and redundant initialization checks in `ShelfManager`
+- **processors**: streamline `is_applicable` checks and improve early return logic
+- simplify shelf processing and remove redundant checks
+- **ui**: remove redundant sort calls in shelf management sections
+- **ui**: improve tooltips for clarity and enable sorting for shelf lists
+- remove unused `log` import and cleanup commented code in `shelves/__init__.py`
+- adjust stage shelf capacity checks and fix exception import in tests
+- **tests**: enhance unit tests for processor strategies and shelf actions
+- **tests**: add mocks for Album, Track, and File in callback test
+- **tests**: rename variables and refactor tests with strategy and manager updates
+- Refactor the shelf processing strategy and voting system
+- Optimize and simplify
+- **tests**: streamline transition tests
+- **tests**: streamline transition tests and enhance strategy applicability checks
+- **processors**: rename classes and update context handling for shelf processing strategies
+- **tests**: remove redundant workflow transition tests from processors workflow
+- **workflow**: implement workflow transition strategies
+- **readme**: update shelf management features and improve documentation clarity
+- **processors**: update should_lock method in StrategyKnownNameFromPathDiffersFromTag
+- **options, tests**: consolidate widget updates and improve shelf handling logic
+- **manager, options, processors, tests**: simplify method docstrings, rename strategy class, and clean up test cases
+- **manager, tests**: reorganize imports, simplify method signatures, and clean up test cases
+- **script_functions, tests**: simplify shelf function return logic and clean up test cases
+- **processors, init**: replace singleton getter with `instance` method and update related wrappers
+- **script_functions**: streamline shelf function and remove logging
+- **options, dependencies, processors, tests**: remove unused config setting, update dependencies, and refactor processors
+- **options, actions, tests**: replace constants usage with ConfigKey and TagKey, streamline imports
+- **constants, actions, manager, processors**: streamline shelf-related constants and improve method signatures
+- **manager, actions, processors**: rename shelf-related methods and enhance shelf handling logic
+- **processors**: enhance shelf name check in voting logic
+- **processors, docs**: improve voting logic comments and add documentation files
+- **manager, processors, utils**: streamline shelf voting logic and enhance debug functionality
+- **actions, processors**: rename unlock and lock actions to toggle lock and streamline logic
+- **actions, manager, processors**: rename shelf action classes and improve locking logic
+- **manager, exceptions, processors**: simplify shelf handling and improve exception clarity
+- **manager**: streamline shelf assignment logic and update source handling
+- **actions**: rename shelf action classes for consistency and clarity
+- **manager**: enhance documentation and support dependency injection in ShelfManager
+- **tests**: enhance `shelf` function tests for clarity and coverage
+- **manager**: replace classmethod delegation with instance methods
+- **manager**: restructure ShelfManager into modular components
+- **script_functions**: rename func_shelf to shelf for clarity
+- **tests**: unify constants import across test modules
+- **constants**: unify constants import across modules
+- **actions, dialogs**: improve shelf name handling and UI interactions
+- **actions, dialogs**: improve shelf name handling and UI interactions
+- **tests**: update imports to reflect `shelves.options` namespace change
+- **script_functions**: rename `$shelf_name()` to `$shelf()` in docstring
+- **options**: enhance shelf management and streamline UI workflows
+- **options**: enhance shelf management and improve workflow logic
+- **options**: streamline workflow widget logic and remove redundant methods
+- **shelf, processors, actions, options, utils, tests**: update shelf name extraction and handling to use Path objects and improve strategy logic
+- **init, options, widgets, actions.ui, pyproject**: improve code style, fix argument naming, and remove flake8 config
+- **options, processors, utils, tests**: update shelf config key usage and improve shelf management logic
+- **manager, processors, actions, tests**: implement ShelfManager singleton pattern and update state handling
+- **shelves**: remove _ShelfManager singleton, use ShelfManager class directly and update references
+- **shelves**: update imports for relative paths and centralize processor usage
+- **shelves**: centralize shelf manager usage and update processors integration
+- **shelves**: move shelf state logic to manager and update processors integration
+- **options, actions, utils**: move shelf config logic to utils and update options page integration
+- **options, test**: migrate config.setting to config.settings and update usage
+- **options**: remove unused imports and update shelves title string
+- **options, ui**: standardize method and button naming for workflow stages
+- **options, ui**: enhance workflow management with new widget
+- **options**: add buttons for workflow stage transitions
+- **options**: add standard icons for workflow stage buttons
+- **tests,-ui**: streamline shelves management and update workflows
+- **utils**: remove unused method get_shelf_name_from_tag
+- **manager**: remove wildcard imports and streamline dependencies
+- **constants**: introduce shelf source constants for clarity
+- **processors**: improve type hints and simplify file processing logic
+- **ui**: update widget names and improve layout in shelves.ui
+
 ## v1.7.0 (2025-11-28)
 
 ### Chores
