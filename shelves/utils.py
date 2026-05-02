@@ -1,314 +1,305 @@
-# -*- coding: utf-8 -*-
-
 """
-Utility functions for managing shelves.
+Utility functions
 """
 
 from __future__ import annotations
 
+import logging
+from gettext import gettext as _
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Set, Tuple, Optional
+from warnings import deprecated
 
-from picard import config, log
+from picard import log
+from picard.script import ScriptParser
 
-from . import PLUGIN_NAME
-from .constants import DEFAULT_SHELVES, ShelfConstants
+from .constants import ALBUM_INDICATORS, INVALID_SHELF_NAME_CHARS, INVALID_SHELF_NAMES
+from .typings import TagKey
 
 
-class ShelfUtils:
+def validate_shelf_names(shelf_names: set[str]) -> set[str]:
     """
-    Utility functions for shelf management.
-    Call set_shelf_manager() during plugin initialization to set the ShelfManager instance.
+    Checks a list of shelf_name names and returns a list of valid names.
+    :param shelf_names:
+    :return:
     """
+    log.debug("Known shelf_names from config: %s", shelf_names)
+    # Validate each shelf_name name
+    valid_shelves: set[str] = set()
+    for shelf_name in shelf_names:
+        is_valid, message = validate_shelf_name(shelf_name)
+        if is_valid or not message:  # Allow warnings
+            valid_shelves.add(shelf_name)
+        else:
+            log.warning("Ignoring invalid shelf_name '%s': %s", shelf_name, message)
 
-    @staticmethod
-    def _determine_shelf_recursive(path, known_shelves, base_path):
-        """
-        Recursively determine the shelf from a given path.
+    return valid_shelves
 
-        Args:
-            path: The file path to analyze
-            known_shelves: List of known shelf names (passed from caller to avoid redundant calls)
-            base_path: The base path to use for relative calculations
-        """
-        workflow_stage_1 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]  # type: ignore[index]
-        workflow_stage_2 = config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_KEY]  # type: ignore[index]
-        try:
-            log.debug("%s: Extracting shelf from path: %s", PLUGIN_NAME, path)
 
-            path_obj = Path(path).resolve()
-            base_obj = Path(base_path).resolve()
+@deprecated(
+    "Is only mandatory until version 1.7.0. As of version 2, the use of the tag has changed. The function is  "
+    "used from version 2 to continue processing existing tags and will be removed in a later version will be "
+    "removed."
+)
+def get_shelf_name_from_tag(tag_value: str) -> str:
+    """
+    Extract the shelf name from a tag value.
 
-            # Check if a path is under base_path
-            try:
-                relative = path_obj.relative_to(base_obj)
-            except ValueError:
-                log.debug(
-                    "%s: Path '%s' is not under base directory '%s', setting shelf to '%s'",
-                    PLUGIN_NAME,
-                    path,
-                    base_path, workflow_stage_1
-                )
-                return workflow_stage_1
+    In addition to the name of the shelf, the tag can also contain the suffix "; manual",
+    This function removes this suffix.
+    """
+    if not tag_value:
+        return ""
+    MANUAL_SHELF_SUFFIX = "; manual"
+    tag = tag_value.strip()
+    if tag.endswith(MANUAL_SHELF_SUFFIX):
+        return tag[: -len(MANUAL_SHELF_SUFFIX)].strip()
+    return tag
 
-            # The first directory component is the shelf
-            parts = relative.parts
-            if not parts or parts[0] == path_obj.name:
-                # File is directly in the base directory
-                log.debug("%s: File is in base directory, setting shelf to '%s'", PLUGIN_NAME,
-                          workflow_stage_2)
-                return workflow_stage_2
 
-            shelf_name = parts[0]
-            log.debug("%s: Found potential shelf: %s", PLUGIN_NAME, shelf_name)
-
-            is_likely, reason = ShelfUtils.is_likely_shelf_name(shelf_name, known_shelves=known_shelves)
-            if not is_likely:
-                log.warning(
-                    "%s: '%s' doesn't look like a shelf (%s). Using '%s' instead. "
-                    "If this is actually a shelf, add it in plugin settings.",
-                    PLUGIN_NAME,
-                    shelf_name,
-                    reason,
-                    workflow_stage_2,
-                )
-                return workflow_stage_2
-
-            log.debug("%s: Confirmed shelf: %s", PLUGIN_NAME, shelf_name)
-            return shelf_name
-
-        except (OSError, ValueError, AttributeError) as e:
-            log.error(
-                "%s: Error extracting shelf from path '%s': %s", PLUGIN_NAME, path, e
-            )
-            return workflow_stage_2
-
-    @staticmethod
-    def validate_shelf_name(name: str) -> Tuple[bool, str]:
-        """
-        Validate a shelf name for use as a directory name by processing a list of validation rules.
-
-        Args:
-            name: The shelf name to validate
-
-        Returns:
-            Tuple of (is_valid, warning_or_error_message)
-        """
-        stripped_name = name.strip()
-        if not stripped_name:
-            return False, "Shelf name cannot be empty"
-
-        def check_reserved_names(n):
-            if n in (".", ".."):
-                return False, "Cannot use '.' or '..' as shelf name", True
-            return True, None, False
-
-        def check_invalid_chars(n):
-            invalid = [c for c in ShelfConstants.INVALID_PATH_CHARS if c in n]
-            if invalid:
-                return False, f"Contains invalid characters: {', '.join(invalid)}", True
-            return True, None, False
-
-        def check_length(n):
-            if len(n) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
-                return False, f"Shelf name too long ({len(n)} chars, maximum is {ShelfConstants.MAX_SHELF_NAME_LENGTH})", True
-            return True, None, False
-
-        def check_word_count(n):
-            words = n.split()
-            if len(words) > ShelfConstants.MAX_WORD_COUNT:
-                return False, f"Shelf name has too many words ({len(words)}, maximum is {ShelfConstants.MAX_WORD_COUNT})", True
-            return True, None, False
-
-        def check_album_indicators(n):
-            found_indicators: List[str] = []
-            for indicator in ShelfConstants.ALBUM_INDICATORS:
-                if indicator in n:
-                    found_indicators.append(n)
-
-            if found_indicators:
-                return False, f"Shelf name contains album indicator(s): {found_indicators}, album indicators are {ShelfConstants.ALBUM_INDICATORS}", True
-
-            return True, None, False
-
-        def check_dots(n):
-            if n.startswith(".") or n.endswith("."):
-                return True, "Warning: Names starting or ending with '.' may cause issues on some systems", False
-            return True, None, False
-
-        validation_functions = [
-            check_reserved_names,
-            check_invalid_chars,
-            check_length,
-            check_word_count,
-            check_album_indicators,
-            check_dots,
-        ]
-
-        warning_message = ""
-        for func in validation_functions:
-            is_valid, message, is_error_message = func(stripped_name)
-            if not is_valid:
-                return False, message
-            if message:
-                warning_message = message
-
-        return True, warning_message
-
-    @staticmethod
-    def is_likely_shelf_name(name: str, known_shelves: List[str]) -> Tuple[bool, Optional[str]]:
-        """
-        Check if a name is likely a shelf name or an artist/album name.
-
-        Args:
-            name: The name to validate
-            known_shelves: List of known shelf names
-
-        Returns:
-            Tuple of (is_likely_shelf, reason_if_not)
-        """
-        if not name:
-            return False, "Empty name"
-
-        # Default shelves are always valid
-        if name in DEFAULT_SHELVES.values():
-            return True, None
-
-        if name in known_shelves:
-            return True, None
-
-        # Heuristics for suspicious names
-        suspicious_reasons = []
-
-        # Contains ` - ` (typical for "Artist - Album")
-        if " - " in name:
-            suspicious_reasons.append(
-                "contains ' - ' (typical for 'Artist - Album' format)"
+def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
+    """Extract the shelf name from a file_path."""
+    try:
+        if not file_path.is_relative_to(base_path):
+            raise ShelfNotDeterminableException(
+                filepath=file_path, details="not relative to %s" % base_path
             )
 
-        # Too long
-        if len(name) > ShelfConstants.MAX_SHELF_NAME_LENGTH:
-            suspicious_reasons.append(f"too long ({len(name)} chars)")
+        relative_parts = file_path.relative_to(base_path).parts
+        if not relative_parts or len(relative_parts) <= 1:
+            raise ShelfNotDeterminableException(filepath=file_path, details="too short")
+        return relative_parts[0]
 
-        # Too many words
-        word_count = len(name.split())
-        if word_count > ShelfConstants.MAX_WORD_COUNT:
-            suspicious_reasons.append(f"too many words ({word_count})")
+    except (KeyError, ValueError, OSError) as e:
+        raise ShelfNotDeterminableException(
+            filepath=file_path,
+            details=repr(e),
+            cause=e,
+        )
 
-        # Contains album indicators
-        if any(indicator in name for indicator in ShelfConstants.ALBUM_INDICATORS):
-            suspicious_reasons.append("contains album indicator (Vol., Disc, etc.)")
 
-        if suspicious_reasons:
-            return False, "; ".join(suspicious_reasons)
+def validate_shelf_name(name: str) -> Tuple[bool, str]:
+    """Validate a shelf name."""
+    if not isinstance(name, str) or not name.strip():
+        return False, _("Shelf name cannot be empty")
 
-        return True, None
+    shelf_name = name.strip()
 
-    @staticmethod
-    def get_known_shelves() -> List[str]:
-        """
-        Retrieve the list of known shelves from config with validation.
-        Returns:
-            List of unique, validated shelf names
-        """
-        shelves = config.setting[ShelfConstants.CONFIG_SHELVES_KEY]  # type: ignore[index]
+    invalid_names_used = [
+        name_used
+        for name_used in shelf_name.split()
+        if name_used in INVALID_SHELF_NAMES
+    ]
+    if invalid_names_used:
+        hr_invalid_names_used = f"{', '.join(repr(c) for c in set(invalid_names_used))}"
+        hr_invalid_names = f"{', '.join(repr(c) for c in INVALID_SHELF_NAMES)}"
+        return (
+            False,
+            f"Cannot use '{shelf_name}' as shelf name."
+            f" The name is an invalid name: {hr_invalid_names_used}."
+            f" Not allowed are: {hr_invalid_names}.",
+        )
 
-        # Handle string format (legacy)
-        if isinstance(shelves, str):
-            shelves = [s.strip() for s in shelves.split(",") if s.strip()]
-        elif not isinstance(shelves, list):
-            log.error(
-                "%s: Invalid shelf config type (%s), resetting to defaults",
-                PLUGIN_NAME,
-                type(shelves).__name__,
-            )
-            shelves = list(DEFAULT_SHELVES.values())
+    invalid_chars_used = [
+        char_used for char_used in shelf_name if char_used in INVALID_SHELF_NAME_CHARS
+    ]
+    if invalid_chars_used:
+        hr_invalid_chars_used = f"{', '.join(repr(c) for c in set(invalid_chars_used))}"
+        hr_invalid_name_chars = (
+            f"{', '.join(repr(c) for c in INVALID_SHELF_NAME_CHARS)}"
+        )
+        return (
+            False,
+            f"Cannot use '{shelf_name}' as shelf name."
+            f" The name contains invalid character(s): {hr_invalid_chars_used}."
+            f" Not allowed are: {hr_invalid_name_chars}.",
+        )
 
-        # Validate each shelf name
-        valid_shelves = []
-        for shelf in shelves:
-            if not isinstance(shelf, str):
-                log.warning(
-                    "%s: Ignoring non-string shelf: %s", PLUGIN_NAME, repr(shelf)
-                )
-                continue
+    invalid_tokens_used = [
+        token_used
+        for token_used in shelf_name.split()
+        if token_used.lower() in [token.lower() for token in ALBUM_INDICATORS]
+    ]
 
-            is_valid, message = ShelfUtils.validate_shelf_name(shelf)
-            if is_valid or not message:  # Allow warnings
-                valid_shelves.append(shelf)
-            else:
-                log.warning(
-                    "%s: Ignoring invalid shelf '%s': %s", PLUGIN_NAME, shelf, message
-                )
-        log.debug("%s: Known shelves: %s", PLUGIN_NAME, valid_shelves)
-        return sorted(list(set(valid_shelves)))
+    if invalid_tokens_used:
+        hr_invalid_tokens_used = (
+            f"{', '.join(repr(c) for c in set(invalid_tokens_used))}"
+        )
+        hr_invalid_name_tokens = f"{', '.join(repr(c) for c in ALBUM_INDICATORS)}"
+        return (
+            False,
+            f"Cannot use '{shelf_name}' as shelf name."
+            f" The name contains album indicator(s): {hr_invalid_tokens_used}."
+            f" Not allowed are: {hr_invalid_name_tokens}.",
+        )
 
-    @staticmethod
-    def get_existing_dirs() -> list[str]:
-        """
-        Load existing directories from the music directory.
-        Returns: List of directory names
-        """
-        music_dir_str = config.setting["move_files_to"]  # type: ignore[index]
-        music_dir = Path(music_dir_str)
+    # TODO(#15): Decide if max length validation should be enforced
+    # if len(shelf_name) > MAX_SHELF_NAME_LENGTH:
+    #     return (
+    #         False,
+    #         f"Cannot use '{shelf_name}' as shelf name."
+    #         f" The name is too long with {len(shelf_name)} characters."
+    #         f" Maximum allowed is {MAX_SHELF_NAME_LENGTH}.",
+    #     )
 
-        shelves_found = [entry.name for entry in music_dir.iterdir() if entry.is_dir()]
-        return shelves_found
+    # TODO(#16): Decide if max word count validation should be enforced
+    # if len(shelf_name.split()) > MAX_WORD_COUNT:
+    #     return (
+    #         False,
+    #         f"Cannot use '{shelf_name}' as shelf name."
+    #         f" Shelf name is too long with {len(shelf_name.split())} words."
+    #         f" Maximum allowed is {MAX_WORD_COUNT}.",
+    #     )
 
-    @staticmethod
-    def add_known_shelf(shelf_name: str) -> None:
-        """
-        Add a shelf name to the list of known shelves.
-        Args:
-            shelf_name: Name of the shelf to add
-        """
-        if not shelf_name or not shelf_name.strip():
-            return
+    return True, "Valid shelf name"
 
-        shelves = ShelfUtils.get_known_shelves()
-        if shelf_name not in shelves:
-            shelves.append(shelf_name)
-            config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = sorted(shelves)  # type: ignore[index]
-            log.debug("%s: Added shelf '%s' to known shelves", PLUGIN_NAME, shelf_name)
 
-    @staticmethod
-    def remove_known_shelf(shelf_name: str) -> None:
-        """
-        Remove a shelf name from the list of known shelves.
+def get_shelf_dirs(base_path: Path) -> Set[str]:
+    """Get a set of subdirectories in the given base path."""
+    shelf_sub_dirs: Set[str] = set()
+    try:
+        shelf_sub_dirs = set(
+            entry.name for entry in base_path.iterdir() if entry.is_dir()
+        )
 
-        Args:
-            shelf_name: Name of the shelf to remove
-        """
-        shelves = ShelfUtils.get_known_shelves()
-        if shelf_name in shelves:
-            shelves.remove(shelf_name)
-            config.setting[ShelfConstants.CONFIG_SHELVES_KEY] = shelves  # type: ignore[index]
-            log.debug(
-                "%s: Removed shelf '%s' from known shelves", PLUGIN_NAME, shelf_name
-            )
+    except (OSError, PermissionError) as e:
+        log.error("Error scanning directory: %s", e)
+    return shelf_sub_dirs
 
-    @staticmethod
-    def get_shelf_from_path(path: str, known_shelves: List[str], base_path: Optional[str] = None) -> str:
-        """
-        Extract the shelf name from a file path relative to the configured base path.
-        This uses Picard's configured base directory to determine which top-level folder represents the shelf.
 
-        Args:
-            known_shelves: List of known shelf names
-            path: Full file path
-            base_path: Optional base path override (uses Picard config if not provided)
+def debug_track(track: Any):
+    """Debug track object for logging."""
+    if log.get_effective_level() > logging.DEBUG:
+        return
 
-        Returns:
-            Extracted shelf name or "Standard" as fallback
-        """
-        if base_path is None:
-            try:
-                base_path = config.setting["move_files_to"]  # type: ignore[index]
-            except KeyError:
-                log.warning(
-                    "%s: No base path configured in Picard settings, set shelf to '%s'",
-                    PLUGIN_NAME, config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]  # type: ignore[index]
-                )
-                return config.setting[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_KEY]  # type: ignore[index]
+    log.debug("=" * 60)
+    log.debug("TRACK DEBUG START")
 
-        return ShelfUtils._determine_shelf_recursive(path, known_shelves, base_path)
+    log.debug("track = %s", track)
+
+    if hasattr(track, "metadata"):
+        log.debug("✓\ttrack HAS metadata")
+        log.debug("\tKeys: %s", sorted(list(track.metadata.keys())))
+        log.debug(
+            "\tTagKey.SHELF: %s",
+            track.metadata.get(TagKey.SHELF, "(not set)"),
+        )
+        log.debug(
+            "\tTagKey.SHELF_LOCKED: %s",
+            track.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
+        )
+
+    log.debug("TRACK DEBUG END")
+    log.debug("=" * 60)
+
+
+def debug_file(file: Any):
+    """Debug file object for logging."""
+    if log.get_effective_level() > logging.DEBUG:
+        return
+
+    log.debug("=" * 60)
+    log.debug("FILE DEBUG START")
+
+    log.debug("file = %s", file)
+
+    if hasattr(file, "metadata"):
+        log.debug("✓\tfile HAS metadata")
+        log.debug("\tKeys: %s", sorted(list(file.metadata.keys())))
+        log.debug("\tTagKey.SHELF: %s", file.metadata.get(TagKey.SHELF, "(not set)"))
+        log.debug(
+            "\tTagKey.SHELF_LOCKED: %s",
+            file.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
+        )
+
+    log.debug("FILE DEBUG END")
+    log.debug("=" * 60)
+
+
+def debug_parser(parser: ScriptParser):
+    """Debugs the internal state of a `ScriptParser` object."""
+    if log.get_effective_level() > logging.DEBUG:
+        return
+
+    log.debug("=" * 60)
+    log.debug("PARSER DEBUG START")
+
+    # What is parser.file?
+    log.debug("parser.file = %s", parser.file)
+    log.debug("parser.file type = %s", type(parser.file))
+
+    # Does it have .metadata?
+    if hasattr(parser.file, "metadata"):
+        log.debug("✓\tparser.file HAS metadata")
+        log.debug("\tKeys: %s", sorted(list(parser.file.metadata.keys())))
+        log.debug(
+            "\tTagKey.SHELF: %s",
+            parser.file.metadata.get(TagKey.SHELF, "(not set)"),
+        )
+        log.debug(
+            "\tTagKey.SHELF_LOCKED: %s",
+            parser.file.metadata.get(TagKey.SHELF_LOCKED, "(not set)"),
+        )
+
+    # What is parser.context?
+    if hasattr(parser, "context"):
+        log.debug("✓\tparser HAS context")
+        log.debug("\tKeys: %s", sorted(list(parser.context.keys())))
+        log.debug(
+            "\tTagKey.SHELF: %s",
+            parser.context.get(TagKey.SHELF, "(not set)"),
+        )
+        log.debug(
+            "\tTagKey.SHELF_LOCKED: %s",
+            parser.context.get(TagKey.SHELF_LOCKED, "(not set)"),
+        )
+
+    log.debug("PARSER DEBUG END")
+    log.debug("=" * 60)
+
+
+def squeeze_the_parser(parser: ScriptParser) -> tuple[str, str]:
+    """
+    Extracts and processes the metadata and context tags from the given parser and
+    returns their corresponding shelf names. If the required attributes are not
+    present in the parser, the corresponding shelf name will be an empty string.
+    """
+    # debug_parser(parser)
+
+    metadata_shelf: str = ""
+    context_shelf: str = ""
+    if hasattr(parser.file, "metadata"):
+        metadata_shelf = parser.file.metadata.get(TagKey.SHELF)
+        metadata_shelf = get_shelf_name_from_tag(metadata_shelf)
+    if hasattr(parser, "context"):
+        context_shelf = parser.context.get(TagKey.SHELF)
+        context_shelf = get_shelf_name_from_tag(context_shelf)
+    return context_shelf, metadata_shelf
+
+
+class ShelfNotDeterminableException(Exception):
+    """Represents an exception raised when a shelf name cannot be determined from a given filepath."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        *,
+        filepath: Optional[str | Path],
+        details: Optional[str] = None,
+        cause: Optional[BaseException] = None,
+    ) -> None:
+        self.message = message
+        self.filepath = filepath
+        self.cause = cause
+        self.details = details
+
+        if self.message is None:
+            self.message = _("No shelf name can be determined from the file path.")
+
+        super().__init__(self.message, f"{filepath=!r}, {details=}")
+
+    def __str__(self) -> str:
+        base = super().__str__()
+        if self.cause:
+            return f"{base} (Cause: {self.cause!r})"
+        return base

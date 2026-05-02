@@ -125,7 +125,7 @@
 
 ### Features
 
-- Add DetermineShelfAction to determine shelf from storage location
+- Add ShelfActionDetermine to determine shelf from storage location
   ([`2e14dd5`](https://github.com/nrth3rnlb/picard-plugin-shelves/commit/2e14dd56a5a9cc6af42ccc0af6ef136da10b6a9e))
 
 ## v1.2.2 (2025-10-31)
