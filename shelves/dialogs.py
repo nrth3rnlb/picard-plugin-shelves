@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import Qt
 
 from . import utils, manager
 
@@ -29,6 +30,8 @@ class SetShelfDialog(QtWidgets.QDialog):
         ui_dir: Path = Path(__file__).parent
         ui_file = ui_dir / "ui" / "actions.ui"
         uic.loadUi(ui_file, self)
+
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
 
         self.validation_label: Optional[QtWidgets.QLabel] = self.findChild(
             QtWidgets.QLabel,
