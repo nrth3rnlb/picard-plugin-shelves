@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Set, Tuple, Optional
+from typing import Any, Optional, Set, Tuple
 from warnings import deprecated
 
 from picard import log

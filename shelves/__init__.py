@@ -22,7 +22,6 @@ from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
 from . import processors
-
 from .actions import (
     ShelfActionSet as _ShelfActionSet,
 )
