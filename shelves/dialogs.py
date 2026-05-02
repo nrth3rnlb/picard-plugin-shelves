@@ -23,8 +23,8 @@ class SetShelfDialog(QtWidgets.QDialog):
     # noinspection PyUnusedName
     NAME = "Set shelf names"
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(parent)
 
         ui_dir: Path = Path(__file__).parent
         ui_file = ui_dir / "ui" / "actions.ui"
