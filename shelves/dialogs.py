@@ -4,10 +4,11 @@ Dialogs for the Shelves plugin.
 
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from typing import Optional
 
 from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import Qt
 
 from . import utils, manager
 
@@ -23,11 +24,14 @@ class SetShelfDialog(QtWidgets.QDialog):
     # noinspection PyUnusedName
     NAME = "Set shelf names"
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(parent)
 
-        ui_file = os.path.join(os.path.dirname(__file__), "ui", "actions.ui")
+        ui_dir: Path = Path(__file__).parent
+        ui_file = ui_dir / "ui" / "actions.ui"
         uic.loadUi(ui_file, self)
+
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
 
         self.validation_label: Optional[QtWidgets.QLabel] = self.findChild(
             QtWidgets.QLabel,

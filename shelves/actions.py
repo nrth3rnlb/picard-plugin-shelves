@@ -13,25 +13,6 @@ from .dialogs import SetShelfDialog
 from .typings import TagKey
 
 
-class ShelfActionUnset(BaseAction):
-    # noinspection PyUnusedName
-    NAME: str = "Unset shelf name"
-
-    def callback(self, objs) -> None:
-        from . import processors
-
-        processors = processors.instance()
-        albums: list[Album] = list(filter(lambda o: isinstance(o, Album), objs))
-        for album in albums:
-            track: Track
-            for track in album.tracks:
-                file: File
-                for file in track.files:
-                    processors.action_unset_processor(file=file)
-
-        _set_album_metadata(albums=albums)
-
-
 class ShelfActionSet(BaseAction):
     """Manually set shelf_name"""
 

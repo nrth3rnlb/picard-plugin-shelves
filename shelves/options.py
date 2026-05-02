@@ -4,9 +4,9 @@ Options page for the Shelves plugin.
 
 from __future__ import annotations
 
-import os
 import sys
 from gettext import gettext as _
+from pathlib import Path
 from typing import Optional
 
 from picard import config, log
@@ -108,11 +108,11 @@ class OptionsPage(PicardOptions):
             parent: Parent widget
         """
         super().__init__(parent)
-        ui_dir = os.path.dirname(__file__)
-        ui_file = os.path.join(ui_dir, "ui/options.ui")
+        ui_dir: Path = Path(__file__).parent
+        ui_file = ui_dir / "ui" / "options.ui"
 
         # We briefly add the directory to the path so that uic can find the custom widgets
-        sys.path.insert(0, ui_dir)
+        sys.path.insert(0, str(ui_dir))
         try:
             uic.loadUi(ui_file, self)
         finally:
