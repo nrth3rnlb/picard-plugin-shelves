@@ -17,7 +17,7 @@
             <item>
                 <widget class="QLabel" name="label_instructions">
                     <property name="text">
-                        <string>Select an existing or enter a new shelf name:</string>
+                        <string>Select an existing shelf name</string>
                     </property>
                 </widget>
             </item>

@@ -1,180 +1,434 @@
-# -*- coding: utf-8 -*-
-
 """
-File processors for loading and saving shelf information.
+File processors for loading and saving shelf_name information.
+
+Architecture:
+- Context: Holds file/track data and extracted shelf names
+- Strategy (ABC): Base class for processing strategies
+- Concrete strategies: KnownFromPath, KnownFromTagAndManual, etc.
+- Processors: Main processor facade with dependency injection support
 """
 
 from __future__ import annotations
 
-import traceback
-from typing import Any, Dict, Optional
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence
 
-from picard import config, log
+from picard import log, config
+from picard.file import File
+from picard.track import Track
 
-from . import PLUGIN_NAME, clear_album, vote_for_shelf, get_album_shelf, _shelf_manager
-from .constants import ShelfConstants
+from . import transitions
+from . import manager as manager_module
+from .contexts import ProcessingContext, TransitionContext
 from .manager import ShelfManager
-from .utils import ShelfUtils
+from .typings import TagKey, VotingType, ConfigKey
 
 
-def _apply_workflow_transition(shelf: Optional[str]) -> Optional[str]:
+class Strategy(ABC):
     """
-    Applies the workflow transition to a shelf name if the workflow is enabled.
+    Base class for shelf processing strategies.
+
+    Uses Template Method pattern: subclasses implement is_applicable() and shelf_name(),
+    while the base class handles common logic.
     """
-    if not shelf:
-        return shelf
 
-    try:
-        settings: Any = config.setting
-        if not settings[ShelfConstants.CONFIG_WORKFLOW_ENABLED_KEY]:
-            return shelf
+    def __init__(self, manager: ShelfManager):
+        """Initialize with ShelfManager."""
+        self.manager = manager
 
-        workflow_stage_1 = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_1_SHELVES_KEY]
-        workflow_stage_2_list = settings[ShelfConstants.CONFIG_WORKFLOW_STAGE_2_SHELVES_KEY]
+    @abstractmethod
+    def is_applicable(self, context: ProcessingContext) -> bool:
+        """Check if this strategy should be applied."""
+        raise NotImplementedError
 
-        # Check for wildcard or direct match
-        apply_transition = (ShelfConstants.WORKFLOW_STAGE_1_WILDCARD in workflow_stage_1) or (shelf in workflow_stage_1)
+    @abstractmethod
+    def shelf_name(self, context: ProcessingContext) -> str:
+        """Get the shelf name to assign."""
+        raise NotImplementedError
 
-        if apply_transition and workflow_stage_2_list:
-            destination_shelf = workflow_stage_2_list[0]
-            # Avoid transitioning to the same shelf
-            if shelf != destination_shelf:
-                log.debug(
-                    "%s: Applying workflow transition: '%s' -> '%s'",
-                    PLUGIN_NAME,
-                    shelf,
-                    destination_shelf,
-                )
-                return destination_shelf
-    except KeyError as e:
-        log.debug("%s: Workflow configuration key not found (%s), skipping transition.", PLUGIN_NAME, e)
-    except Exception as e:
-        log.debug("%s: Failed to evaluate workflow transition: %s", PLUGIN_NAME, e)
-        log.debug("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
+    def upvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        if (
+            context.processing_type == ProcessingContext.ProcessingType.ADD
+            or context.processing_type == ProcessingContext.ProcessingType.SET
+        ):
+            return [context.name_from_path]
+        if (
+            context.processing_type == ProcessingContext.ProcessingType.REMOVE
+            or context.processing_type == ProcessingContext.ProcessingType.UNSET
+        ):
+            return []
+        return []
 
-    return shelf
+    def downvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        if (
+            context.processing_type == ProcessingContext.ProcessingType.ADD
+            or context.processing_type == ProcessingContext.ProcessingType.SET
+        ):
+            return list(
+                self.manager.registered_shelf_names.difference([context.name_from_path])
+            )
+        if (
+            context.processing_type == ProcessingContext.ProcessingType.REMOVE
+            or context.processing_type == ProcessingContext.ProcessingType.UNSET
+        ):
+            return [context.name_from_path]
 
+        return []
 
-def file_post_save_processor(file: Any) -> None:
-    """
-    Process a file after Picard has saved it.
-    """
-    try:
-        log.debug("%s: Processing file: %s", PLUGIN_NAME, file.filename)
-        album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
-        if album_id:
-            clear_album(album_id)
-    except (KeyError, AttributeError, ValueError) as e:
-        log.error("%s: Error in file processor: %s", PLUGIN_NAME, e)
-        log.error("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
+    def apply_lock_state(self, album_id: str, shelf_names: str | List[str]):
+        """Apply manual lock/unlock state to the shelf assignment."""
+        if isinstance(shelf_names, str):
+            shelf_names = [shelf_names]
 
+        for shelf_name in shelf_names:
+            if self.manager.is_locked(album_id=album_id):
+                self.manager.unlock(album_id=album_id, shelf_name=shelf_name)
+            else:
+                self.manager.lock(album_id=album_id, shelf_name=shelf_name)
 
-def _set_metadata(obj: Any, key: str, value: Any, label: str) -> None:
-    """Safely sets metadata on a Picard object."""
-    meta = getattr(obj, "metadata", None)
-    filename = getattr(obj, "filename", "<unknown>")
-    if meta is None:
-        log.debug("%s: %s metadata missing for: %s", PLUGIN_NAME, label, filename)
-        return
-    try:
-        meta[key] = value
-    except TypeError as e:
-        log.debug("%s: Failed to set %s metadata for: %s; %s", PLUGIN_NAME, label, filename, e)
+    def apply_votes(
+        self, voting_type: VotingType, album_id: str, shelf_names: str | List[str]
+    ):
+        """Initialize voting, apply upvote/downvote to the shelf assignment."""
+        if isinstance(shelf_names, str):
+            shelf_names = [shelf_names]
 
+        for shelf_name in shelf_names:
+            self.manager.vote(
+                voting_type=voting_type, album_id=album_id, shelf_name=shelf_name
+            )
 
-def file_post_load_processor(file: Any) -> None:
-    """
-    Process a file after Picard has scanned it.
-    """
-    file_post_addition_to_track_processor(file=file, track=None)
+    def process(self, context: ProcessingContext) -> bool:
+        """Process the shelf assignment based on the strategy."""
 
+        if not self.is_applicable(context):
+            return False
 
-def file_post_addition_to_track_processor(track: Optional[Any], file: Any) -> None:
-    """
-    Process a file after it has been added to a track, with a clear priority model.
-    """
-    try:
-        file_meta = getattr(file, "metadata", None)
-        if file_meta is None:
-            return
+        log.debug("Strategy: %s, Context: %s", self.__class__.__name__, context)
 
-        shelf_name: Optional[str]
-        shelf_tag: Optional[str]
-        shelf_from_path: Optional[str]
+        if context.processing_type == ProcessingContext.ProcessingType.TOGGLE_LOCK:
+            log.debug("TOGGLE_LOCK: %s", self.shelf_name(context))
+            self.apply_lock_state(
+                album_id=context.album_id,
+                shelf_names=self.shelf_name(context),
+            )
 
-        known_shelves = ShelfManager.get_configured_shelves()
-        shelf_from_path, was_explicitly_found = ShelfUtils.get_shelf_from_path(path=file.filename,
-                                                                               known_shelves=known_shelves)
-        existing_tag = file_meta.get(ShelfConstants.TAG_KEY, "")
-        is_manual_in_tag = isinstance(existing_tag, str) and ShelfConstants.MANUAL_SHELF_SUFFIX in existing_tag
-
-        # PRIORITY 1: Physical location
-        if shelf_from_path and was_explicitly_found:
-            shelf_name = shelf_from_path
-            shelf_tag = shelf_name
-            log.debug("%s: Priority 1: Physical location in specific shelf '%s' wins.", PLUGIN_NAME, shelf_name)
-
-        # PRIORITY 2: Persistent manual tag
-        elif is_manual_in_tag:
-            shelf_name = ShelfUtils.get_shelf_name_from_tag(existing_tag)
-            shelf_tag = existing_tag
-            log.debug("%s: Priority 2: Persisted manual tag '%s' wins.", PLUGIN_NAME, shelf_tag)
-
-        # PRIORITY 3: Standard logic
+        if context.processing_type == ProcessingContext.ProcessingType.LOAD:
+            log.debug("INITIAL: %s", self.shelf_name(context))
+            self.apply_votes(
+                voting_type=VotingType.INITIAL,
+                album_id=context.album_id,
+                shelf_names=self.shelf_name(context),
+            )
         else:
-            shelf_name = _apply_workflow_transition(shelf_from_path)
-            shelf_tag = shelf_name
-            log.debug("%s: Priority 3: Default logic. Path shelf '%s', final shelf '%s'.", PLUGIN_NAME, shelf_from_path,
-                      shelf_name)
+            log.debug("UP: %s", self.upvote_shelf_names(context))
+            self.apply_votes(
+                voting_type=VotingType.UP,
+                album_id=context.album_id,
+                shelf_names=self.upvote_shelf_names(context),
+            )
+            log.debug("DOWN: %s", self.downvote_shelf_names(context))
+            self.apply_votes(
+                voting_type=VotingType.DOWN,
+                album_id=context.album_id,
+                shelf_names=self.downvote_shelf_names(context),
+            )
 
-        # Set metadata and update manager state
-        if shelf_name:
-            _set_metadata(file, ShelfConstants.TAG_KEY, shelf_tag, "file")
-            if track:
-                _set_metadata(track, ShelfConstants.TAG_KEY, shelf_tag, "track")
-
-            ShelfUtils.add_known_shelf(shelf_name)
-
-            album_id = file_meta.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
-            if album_id:
-                # If the decision was based on a physical or persisted manual tag, lock it in.
-                if was_explicitly_found or is_manual_in_tag:
-                    _shelf_manager.set_album_shelf(album_id, shelf_name, source=ShelfConstants.SHELF_SOURCE_MANUAL,
-                                                   lock=True)
-                else:
-                    vote_for_shelf(album_id, shelf_name)
-
-            log.debug("%s: Final shelf for %s is '%s'", PLUGIN_NAME, file.filename, shelf_name)
-
-    except Exception as e:
-        log.error("%s: Error in file processor: %s", PLUGIN_NAME, e)
-        log.error("%s: Traceback: %s", PLUGIN_NAME, traceback.format_exc())
+        return True
 
 
-def file_post_removal_from_track_processor(track: Any, file: Any) -> None:
+class StrategyManualUnset(Strategy):
+    def is_applicable(self, context: ProcessingContext) -> bool:
+        return context.processing_type == ProcessingContext.ProcessingType.UNSET
+
+    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+        return context.name_from_path
+
+    def upvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        return [context.name_from_path]
+
+    def downvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        return list(
+            self.manager.registered_shelf_names.difference([context.name_from_path])
+        )
+
+
+class StrategyManualSet(Strategy):
+    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+        return context.processing_name
+
+    def is_applicable(self, context: ProcessingContext) -> bool:
+        if context.processing_type != ProcessingContext.ProcessingType.SET:
+            return False
+
+        return context.processing_name in self.manager.registered_shelf_names
+
+    def upvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        return [context.processing_name]
+
+    def downvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+        return list(
+            self.manager.registered_shelf_names.difference([context.processing_name])
+        )
+
+
+class StrategyKnownIdenticalNames(Strategy):
     """
-    Process a file after it has been removed from a track.
+    Strategy: Matching shelf names in path and tag.
+
+    When the shelf name found in the file path is the same as the shelf name specified in the tag,
+    no further action is required.
     """
-    log.debug("%s: (file_post_removal_from_track_processor) Processing file: %s", PLUGIN_NAME, file.filename)
-    album_id = file.metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
-    if album_id:
-        clear_album(album_id)
+
+    def is_applicable(self, context: ProcessingContext) -> bool:
+        processing_type = context.processing_type
+        name_from_path = context.name_from_path
+        name_from_tag = context.name_from_tag
+        if processing_type in {
+            ProcessingContext.ProcessingType.SET,
+            ProcessingContext.ProcessingType.UNSET,
+        }:
+            return False
+
+        if name_from_path != name_from_tag:
+            return False
+
+        return name_from_path in self.manager.registered_shelf_names
+
+    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+        return context.name_from_path
 
 
-def set_shelf_in_metadata(
-        _album: Any, metadata: Dict[str, Any], _track: Any, _release: Any
-) -> None:
+class StrategyKnownNameFromPathDiffersFromTag(Strategy):
     """
-    Set a shelf in track metadata from album assignment.
-    """
-    album_id = metadata.get(ShelfConstants.MUSICBRAINZ_ALBUMID)
-    if not album_id:
-        return
+    Strategy: The shelf name detected in the file path does not match the shelf name indicated
+    by the tag.
 
-    shelf_name, source = get_album_shelf(album_id)
-    if shelf_name is not None:
-        log.debug("%s: Setting shelf '%s' on track from source '%s'", PLUGIN_NAME, shelf_name, source)
-        if source == ShelfConstants.SHELF_SOURCE_MANUAL:
-            metadata[ShelfConstants.TAG_KEY] = f"{shelf_name}{ShelfConstants.MANUAL_SHELF_SUFFIX}"
-        else:
-            metadata[ShelfConstants.TAG_KEY] = shelf_name
+    The name of the shelf within the file's path is recognized and contrasts with the name present
+    in the tag.
+
+    This situation addresses the following scenario:
+    The album has been relocated outside the Picard application. This event warrants the
+    utmost urgency.
+    """
+
+    def is_applicable(self, context: ProcessingContext) -> bool:
+        # Early return for manual operations
+        if context.processing_type in (
+            ProcessingContext.ProcessingType.SET,
+            ProcessingContext.ProcessingType.UNSET,
+        ):
+            return False
+
+        name_from_path = context.name_from_path
+
+        # Early return if names match
+        if name_from_path == context.name_from_tag:
+            return False
+
+        # Check if it's a registered shelf name first (likely cheaper than config lookup)
+        if name_from_path not in self.manager.registered_shelf_names:
+            return False
+
+        # Final check: exclude workflow stage 1 shelves
+        return name_from_path not in config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
+
+    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+        return context.name_from_path
+
+
+class StrategyUnknownNameFromPath(Strategy):
+    """Strategy: Unknown shelf name from path."""
+
+    def is_applicable(self, context: ProcessingContext) -> bool:
+        # Early return if it's a manual operation
+        if context.processing_type in {
+            ProcessingContext.ProcessingType.SET,
+            ProcessingContext.ProcessingType.UNSET,
+        }:
+            return False
+
+        # Early return if no name from path
+        name_from_path = context.name_from_path
+        if not name_from_path:
+            return False
+
+        # Check if it's NOT a registered shelf name (single membership test)
+        return name_from_path not in self.manager.registered_shelf_names
+
+    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+        return context.name_from_path
+
+
+class Processors:
+    """
+    Manages and orchestrates the processing strategies for shelf-related operations
+    on files and tracks. Provides mechanisms to handle file post-loading, addition,
+    removal, saving processes, as well as track metadata processing, applying
+    various shelf strategies for their resolution.
+
+    The purpose of this class is to encapsulate the application of various shelf
+    strategies in a prioritized manner to manage shelf assignments and metadata
+    within a music processing context. Operations performed by this class include
+    post-loading, addition, and removal of files from tracks, as well as processing
+    of metadata. Strategies are applied sequentially according to the defined order.
+    """
+
+    STRATEGY_ORDER: Sequence[type[Strategy]] = [
+        StrategyManualUnset,
+        StrategyManualSet,
+        StrategyKnownIdenticalNames,
+        StrategyKnownNameFromPathDiffersFromTag,
+        StrategyUnknownNameFromPath,
+    ]
+
+    def __init__(self, manager: Optional[ShelfManager] = None):
+        """Initialize processors with optional ShelfManager injection."""
+        self.manager = manager or manager_module.instance()
+        self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
+
+    def action_unset_processor(self, file: File) -> None:
+        context = ContextBuilder.build(
+            self.manager,
+            file=file,
+            processing_type=ProcessingContext.ProcessingType.UNSET,
+        )
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
+    def action_set_processor(self, file: File, shelf_name: str) -> None:
+        context = ContextBuilder.build(
+            self.manager,
+            file=file,
+            processing_type=ProcessingContext.ProcessingType.SET,
+            processing_name=shelf_name,
+        )
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
+    def action_toggle_lock_processor(self, file: File) -> None:
+        context = ContextBuilder.build(
+            self.manager,
+            file=file,
+            processing_type=ProcessingContext.ProcessingType.TOGGLE_LOCK,
+        )
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
+    def file_post_load_processor(self, file: File) -> None:
+        """Process a file after it has been loaded."""
+        context = ContextBuilder.build(
+            self.manager,
+            file=file,
+            processing_type=ProcessingContext.ProcessingType.LOAD,
+        )
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
+    def file_post_save_processor(self, file: File) -> None:
+        """Process a file after it has been saved."""
+        context = ContextBuilder.build(
+            self.manager,
+            file=file,
+            processing_type=ProcessingContext.ProcessingType.SAVE,
+        )
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
+    # noinspection PyUnusedLocal
+    def file_post_addition_to_track_processor(
+        self,
+        track: Track,
+        file: File,
+    ) -> None:
+        """Process a file after it has been added to a track."""
+        context = ContextBuilder.build(
+            self.manager,
+            file=file,
+            processing_type=ProcessingContext.ProcessingType.ADD,
+        )
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
+    # noinspection PyUnusedLocal
+    def file_post_removal_from_track_processor(self, track: Track, file: File) -> None:
+        """Process a file after it has been removed from a track."""
+        context = ContextBuilder.build(
+            self.manager,
+            file=file,
+            processing_type=ProcessingContext.ProcessingType.REMOVE,
+        )
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
+    def track_metadata_processor(
+        self,
+        _album: Optional[Any],
+        metadata: Dict[str, Any],
+        _track: Optional[Any],
+        _release: Optional[Any],
+    ) -> None:
+        """Set a shelf name in track metadata from album's shelf assignment."""
+        album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID, "")
+        context: TransitionContext = transitions.instance().transition_to(
+            album_id=album_id,
+            transition_type=TransitionContext.TransitionType.TO_STAGE_2,
+        )
+        metadata[TagKey.SHELF] = context.shelf_name
+        metadata[TagKey.SHELF_LOCKED] = self.manager.is_locked(album_id=album_id)
+
+        log.debug(
+            "shelf name: %s, locked: %s",
+            metadata[TagKey.SHELF],
+            metadata[TagKey.SHELF_LOCKED],
+        )
+
+
+class ContextBuilder:
+    """Helper class for building processing contexts."""
+
+    @staticmethod
+    def build(
+        manager: ShelfManager,
+        file: File,
+        processing_type: ProcessingContext.ProcessingType,
+        processing_name: Optional[str] = "",
+    ) -> ProcessingContext:
+        """Build processing context from file"""
+
+        from . import utils
+
+        # utils.debug_track(file)
+        # Extract shelf name from path
+        name_from_path = utils.get_shelf_name_from_path(
+            file_path=Path(file.filename),
+            base_path=manager.base_path,
+        )
+
+        return ProcessingContext(
+            processing_type=processing_type,
+            album_id=file.metadata[TagKey.MUSICBRAINZ_ALBUMID],
+            name_from_path=name_from_path,
+            name_from_tag=file.metadata[TagKey.SHELF],
+            processing_name=processing_name or "",
+        )
+
+
+# Global instance for lazy, shared access (avoids import-time config access).
+_processors_singleton = None
+
+
+def instance() -> Processors:
+    """Get the default global Processors instance."""
+    global _processors_singleton
+    if _processors_singleton is None:
+        _processors_singleton = Processors()
+    return _processors_singleton
