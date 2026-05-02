@@ -65,9 +65,7 @@ class ShelfActionSet(BaseAction):
 
 
 class ShelfActionToggleLock(BaseAction):
-    """
-    Restore automatic shelf_name
-    """
+    """Restore automatic shelf_name"""
 
     # noinspection PyUnusedName
     NAME = "Lock/Unlock album's shelf assignment"
@@ -88,42 +86,6 @@ class ShelfActionToggleLock(BaseAction):
                     processors.action_toggle_lock_processor(file=file)
 
         _set_album_metadata(albums)
-
-
-# class ShelfActionDetermine(BaseAction):
-#     """
-#     Determine shelf_name
-#     """
-#
-#     # noinspection PyUnusedName
-#     NAME = "Determine shelf name"
-#
-#     tagger: Any
-#
-#     def callback(self, objs: List[Any]) -> None:
-#         """
-#         Determine the shelf name
-#         :param objs:
-#         :type objs:
-#         :return:
-#         :rtype:
-#         """
-#         for obj in objs:
-#             if hasattr(obj, "iterfiles"):
-#                 for file in obj.iterfiles():
-#                     file_path = Path(file.filename).resolve()
-#                     base_path = ShelfManager().base_path
-#                     shelf_name = utils.get_shelf_name_from_path(
-#                         file_path=file_path,
-#                         base_path=base_path,
-#                     )
-#                     if shelf_name is not None:
-#                         file.metadata[TagKey.SHELF] = shelf_name
-#                         self.tagger.window.set_statusbar_message(
-#                             f"Set shelf name to '{shelf_name}' for file '{file.filename}'"
-#                         )
-#
-#                         ShelfManager().add_shelf_names(shelf_name)
 
 
 def _set_album_metadata(albums: List[Album]):
