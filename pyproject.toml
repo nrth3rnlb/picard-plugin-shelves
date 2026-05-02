@@ -4,14 +4,12 @@ version = "1.7.0"
 readme = "README.md"
 description = "A MusicBrainz Picard plugin to organize your music into shelves."
 keywords = ["musicbrainz", "picard", "plugin", "shelves", "music", "organization"]
-license-files = ["LISENCE"]
+license-files = ["LICENSE"]
 authors = [
     { name = "nrth3rnlb" }
 ]
 requires-python = ">=3.14"
-dependencies = [
-    "picard==2.13.*",
-]
+dependencies = []
 
 [dependency-groups]
 dev = [
@@ -22,6 +20,7 @@ dev = [
     "pytest-mock>=3.15.1",
     "pre-commit>=4.6.0",
     "pyqt5==5.15.*",
+    "picard==2.13.*",
 ]
 
 [tool.commitizen]
@@ -31,5 +30,6 @@ version_scheme = "semver2"
 version_provider = "uv"
 update_changelog_on_bump = true
 version_files = [
-    "shelves/__init__.py"
+    "shelves/__init__.py:PLUGIN_VERSION",
+    "project:version"
 ]
