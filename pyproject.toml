@@ -9,7 +9,9 @@ authors = [
     { name = "nrth3rnlb" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "picard==2.13.*",
+]
 
 [dependency-groups]
 dev = [
@@ -20,7 +22,6 @@ dev = [
     "pytest-mock>=3.15.1",
     "pre-commit>=4.6.0",
     "pyqt5==5.15.*",
-    "picard==2.13.*",
 ]
 
 [tool.commitizen]
