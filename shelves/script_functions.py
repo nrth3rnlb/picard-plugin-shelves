@@ -1,27 +1,18 @@
-# -*- coding: utf-8 -*-
-
 """
 Script functions for the Shelves plugin.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from picard.script import ScriptParser
 
-from . import ShelfUtils
-from .constants import ShelfConstants
+from . import utils
 
 
-def func_shelf(parser: Any) -> str:
-    """
-    Picard script function: `$shelf()`
-    Returns the clean shelf name from the file's metadata, removing any internal suffixes.
-    """
-    shelf_tag = parser.context[ShelfConstants.TAG_KEY]
-    if not isinstance(shelf_tag, str):
+def shelf(parser: ScriptParser) -> str:
+    """Picard script function: `$shelf()`"""
+    context_shelf, metadata_shelf = utils.squeeze_the_parser(parser)
+    if not metadata_shelf and not context_shelf:
         return ""
 
-    shelf_name = ShelfUtils.get_shelf_name_from_tag(shelf_tag)
-    if not shelf_name:
-        return ""
-    return shelf_tag
+    return metadata_shelf or context_shelf
