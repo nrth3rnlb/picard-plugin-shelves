@@ -612,6 +612,49 @@ The entries can be moved using drag and drop or the buttons.</string>
            </item>
           </layout>
          </widget>
+         <widget class="QWidget" name="tab_release_type_shelf_mapping">
+          <attribute name="title">
+           <string>Release Type / Shelf Mapping</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_7">
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;More about
+                                 Release Types &lt;a href=&quot;https://musicbrainz.org/doc/Release_Group/Type&quot;&gt;&lt;span
+                                 style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;here.&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+                             </string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTableWidget" name="releasetype_shelf_mapping_table">
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="horizontalScrollMode">
+              <enum>QAbstractItemView::ScrollPerPixel</enum>
+             </property>
+             <property name="sortingEnabled">
+              <bool>true</bool>
+             </property>
+             <attribute name="horizontalHeaderMinimumSectionSize">
+              <number>100</number>
+             </attribute>
+             <column>
+              <property name="text">
+               <string>Release type</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Shelves</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
+         </widget>
          <widget class="QWidget" name="tab_script_snippet">
           <attribute name="title">
            <string>Script Snippet</string>
