@@ -16,6 +16,7 @@ from PyQt5 import QtGui, QtWidgets, uic
 from . import constants
 from . import manager as manager_module
 from .options_management import ManagementOptionsMixin
+from .options_releasetype import ReleaseTypeOptionsMixin
 from .options_workflow import WorkflowOptionsMixin
 from .typings import ConfigKey
 from .widgets import QShelvesWidget
@@ -31,7 +32,9 @@ def _shelf_names_from_widget(
     ]
 
 
-class OptionsPage(ManagementOptionsMixin, WorkflowOptionsMixin, PicardOptions):
+class OptionsPage(
+    ManagementOptionsMixin, WorkflowOptionsMixin, ReleaseTypeOptionsMixin, PicardOptions
+):
     """Options options_page for the Shelves plugin."""
 
     # noinspection PyUnusedName
@@ -96,11 +99,6 @@ class OptionsPage(ManagementOptionsMixin, WorkflowOptionsMixin, PicardOptions):
     go_down_icon = QtGui.QIcon.fromTheme(":/images/16x16/go-down.png")
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
-        """
-        Initialize the option options_page.
-        Args:
-            parent: Parent widget
-        """
         super().__init__(parent)
         ui_dir: Path = Path(__file__).parent
         ui_file = ui_dir / "ui" / "options.ui"
@@ -115,6 +113,7 @@ class OptionsPage(ManagementOptionsMixin, WorkflowOptionsMixin, PicardOptions):
         self._management_setup_connections()
         self._workflow_setup_connections()
         self._workflow_customize_buttons()
+        self._releasetype_setup_connections()
 
     # ============================================================================
     # Load/Save methods
