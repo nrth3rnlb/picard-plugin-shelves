@@ -8,7 +8,7 @@ from PyQt5 import QtWidgets
 from .. import manager as manager_module
 from .. import utils
 from ..typings import ConfigKey
-from ..widgets import QShelvesWidget
+from ..ui.widgets import QShelvesWidget
 from .constants import (
     MESSAGE_INVALID_SHELF_NAME,
     MESSAGE_PROVIDE_SHELF_NAME,

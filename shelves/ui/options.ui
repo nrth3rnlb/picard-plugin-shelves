@@ -668,7 +668,7 @@ The $shelf() function returns the name of the shelf.</string>
   <customwidget>
    <class>QShelvesWidget</class>
    <extends>QListWidget</extends>
-   <header>widgets</header>
+   <header>ui.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

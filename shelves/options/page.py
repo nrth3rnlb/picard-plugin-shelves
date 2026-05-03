@@ -16,7 +16,7 @@ from PyQt5 import QtGui, QtWidgets, uic
 from .. import constants
 from .. import manager as manager_module
 from ..typings import ConfigKey
-from ..widgets import QShelvesWidget
+from ..ui.widgets import QShelvesWidget
 from .management import ManagementOptionsMixin
 from .releasetype import ReleaseTypeOptionsMixin
 from .workflow import WorkflowOptionsMixin
