@@ -2,22 +2,38 @@ from __future__ import annotations
 
 from typing import Optional
 
-from picard import config, log
+from picard import log
 from PyQt5 import QtCore, QtWidgets
 
-from . import manager as manager_module
 from .options_constants import (
+    MESSAGE_MOVE_SELECTED_ITEMS_DISABLED,
+    MESSAGE_MOVE_SELECTED_ITEMS_ENABLED,
     NAME_WORKFLOW_STAGE_1,
     NAME_WORKFLOW_STAGE_2,
     NAME_WORKFLOW_STAGE_ALL,
-    MESSAGE_MOVE_SELECTED_ITEMS_DISABLED,
-    MESSAGE_MOVE_SELECTED_ITEMS_ENABLED,
 )
-from .typings import ConfigKey
 from .widgets import QShelvesWidget
 
 
 class WorkflowOptionsMixin:
+    shelves_for_stages: QShelvesWidget
+    workflow_stage_1: QShelvesWidget
+    workflow_stage_2: QShelvesWidget
+    button_all_to_stage_1: QtWidgets.QPushButton
+    button_all_to_stage_2: QtWidgets.QPushButton
+    button_stage_1_to_all: QtWidgets.QPushButton
+    button_stage_1_to_stage_2: QtWidgets.QPushButton
+    button_stage_2_to_stage_1: QtWidgets.QPushButton
+    label_workflow_stage_1: QtWidgets.QLabel
+    label_workflow_stage_2: QtWidgets.QLabel
+    workflow_enabled: QtWidgets.QCheckBox
+    button_stage_2_to_all: QtWidgets.QPushButton
+    button_stage_2_to_stage_1: QtWidgets.QPushButton
+    go_down_icon: QtWidgets.QIcon
+    go_previous_icon: QtWidgets.QIcon
+    go_up_icon: QtWidgets.QIcon
+    go_next_icon: QtWidgets.QIcon
+
     def _workflow_action_move_item_all_to_stage_1(self):
         """Move selected item from all shelves to stage 1."""
         self._workflow_move_selected_items(
@@ -155,32 +171,6 @@ class WorkflowOptionsMixin:
         self.button_all_to_stage_2.setToolTip(tooltip_to_stage_2)
         self.button_stage_1_to_all.setToolTip(tooltip_to_all)
         self.button_stage_2_to_all.setToolTip(tooltip_to_all)
-
-    # noinspection PyTypeHints
-    def _workflow_build_shelves_for_stages(self) -> None:
-        # Build shelves for stages and trigger an initial state change
-        shelf_manager = manager_module.instance()
-
-        self.shelves_for_stages.clear()
-        self.shelves_for_stages.addItems(
-            shelf_manager.registered_shelf_names.difference(
-                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
-            ).difference(
-                config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES],
-            )
-        )
-        self.workflow_stage_1.clear()
-        self.workflow_stage_1.addItems(
-            shelf_manager.registered_shelf_names.intersection(
-                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
-            )
-        )
-        self.workflow_stage_2.clear()
-        self.workflow_stage_2.addItems(
-            shelf_manager.registered_shelf_names.intersection(
-                config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
-            )
-        )
 
     # ============================================================================
     # Workflow - Helper methods

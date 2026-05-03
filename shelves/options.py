@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Protocol
 
 from picard import config
 from picard.config import BoolOption, IntOption, ListOption, Option
@@ -30,6 +30,12 @@ def _shelf_names_from_widget(
         for i in range(widget.count())
         if (item := widget.item(i)) is not None and item.text() in allowed_names
     ]
+
+
+class ManagementOptionsPageProtocol(Protocol):
+    shelf_management_shelves: QShelvesWidget
+    add_shelf_button: QtWidgets.QPushButton
+    remove_shelves_button: QtWidgets.QPushButton
 
 
 class OptionsPage(

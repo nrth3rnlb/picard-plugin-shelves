@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from gettext import gettext as _
 
+from picard import config
 from PyQt5 import QtWidgets
 
 from . import manager as manager_module
@@ -13,9 +14,21 @@ from .options_constants import (
     TITLE_ADD_SHELF_NAME,
     TITLE_REMOVE_SHELF_NAMES,
 )
+from .typings import ConfigKey
+from .widgets import QShelvesWidget
 
 
 class ManagementOptionsMixin:
+    add_shelf_button: QtWidgets.QPushButton
+    on_workflow_enabled: bool
+    remove_shelves_button: QtWidgets.QPushButton
+    remove_unknown_shelves_button: QtWidgets.QPushButton
+    scan_for_shelf_names_button: QtWidgets.QPushButton
+    shelf_management_shelves: QShelvesWidget
+    shelves_for_stages: QShelvesWidget
+    workflow_stage_1: QShelvesWidget
+    workflow_stage_2: QShelvesWidget
+
     def _management_setup_connections(self) -> None:
         """Setup shelf management UI components and connect signals."""
         self.shelf_management_shelves.setSelectionMode(
@@ -129,10 +142,36 @@ class ManagementOptionsMixin:
         Rebuild shelf names for stages.
         Normally linked to an event, an explicit call should not be necessary.
         """
-        self._workflow_build_shelves_for_stages()
+        self._management_build_shelves_for_stages()
 
     def _management_on_list_selection_changed(self) -> None:
         """Enable / disable the remove button based on selection."""
         self.remove_shelves_button.setEnabled(
             len(self.shelf_management_shelves.selectedItems()) > 0,
+        )
+
+    # noinspection PyTypeHints
+    def _management_build_shelves_for_stages(self) -> None:
+        # Build shelves for stages and trigger an initial state change
+        shelf_manager = manager_module.instance()
+
+        self.shelves_for_stages.clear()
+        self.shelves_for_stages.addItems(
+            shelf_manager.registered_shelf_names.difference(
+                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
+            ).difference(
+                config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES],
+            )
+        )
+        self.workflow_stage_1.clear()
+        self.workflow_stage_1.addItems(
+            shelf_manager.registered_shelf_names.intersection(
+                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
+            )
+        )
+        self.workflow_stage_2.clear()
+        self.workflow_stage_2.addItems(
+            shelf_manager.registered_shelf_names.intersection(  # noqa: F821
+                config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
+            )
         )
