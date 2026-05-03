@@ -28,7 +28,7 @@ from .actions import (
 from .actions import (
     ShelfActionToggleLock as _ShelfActionToggleLock,
 )
-from .options import OptionsPage as _ShelvesOptionsPageBase
+from .options.page import OptionsPage as _ShelvesOptionsPageBase
 from .script_functions import shelf as _func_shelf_base
 
 # Plugin metadata

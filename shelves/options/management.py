@@ -5,17 +5,17 @@ from gettext import gettext as _
 from picard import config
 from PyQt5 import QtWidgets
 
-from . import manager as manager_module
-from . import utils
-from .options_constants import (
+from .. import manager as manager_module
+from .. import utils
+from ..typings import ConfigKey
+from ..widgets import QShelvesWidget
+from .constants import (
     MESSAGE_INVALID_SHELF_NAME,
     MESSAGE_PROVIDE_SHELF_NAME,
     MESSAGE_USED_SHELF_NAME,
     TITLE_ADD_SHELF_NAME,
     TITLE_REMOVE_SHELF_NAMES,
 )
-from .typings import ConfigKey
-from .widgets import QShelvesWidget
 
 
 class ManagementOptionsMixin:

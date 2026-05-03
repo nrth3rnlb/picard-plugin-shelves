@@ -5,14 +5,14 @@ from typing import Optional
 from picard import log
 from PyQt5 import QtCore, QtWidgets
 
-from .options_constants import (
+from .constants import (
     MESSAGE_MOVE_SELECTED_ITEMS_DISABLED,
     MESSAGE_MOVE_SELECTED_ITEMS_ENABLED,
     NAME_WORKFLOW_STAGE_1,
     NAME_WORKFLOW_STAGE_2,
     NAME_WORKFLOW_STAGE_ALL,
 )
-from .widgets import QShelvesWidget
+from ..widgets import QShelvesWidget
 
 
 class WorkflowOptionsMixin:

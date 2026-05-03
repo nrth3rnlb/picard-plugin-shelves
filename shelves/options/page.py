@@ -13,13 +13,13 @@ from picard.config import BoolOption, IntOption, ListOption, Option
 from picard.ui.options import OptionsPage as PicardOptions
 from PyQt5 import QtGui, QtWidgets, uic
 
-from . import constants
-from . import manager as manager_module
-from .options_management import ManagementOptionsMixin
-from .options_releasetype import ReleaseTypeOptionsMixin
-from .options_workflow import WorkflowOptionsMixin
-from .typings import ConfigKey
-from .widgets import QShelvesWidget
+from .. import constants
+from .. import manager as manager_module
+from ..typings import ConfigKey
+from ..widgets import QShelvesWidget
+from .management import ManagementOptionsMixin
+from .releasetype import ReleaseTypeOptionsMixin
+from .workflow import WorkflowOptionsMixin
 
 
 def _shelf_names_from_widget(
@@ -106,7 +106,7 @@ class OptionsPage(
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
-        ui_dir: Path = Path(__file__).parent
+        ui_dir: Path = Path(__file__).parent.parent
         ui_file = ui_dir / "ui" / "options.ui"
 
         # We briefly add the directory to the path so that uic can find the custom widgets
