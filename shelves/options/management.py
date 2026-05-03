@@ -62,7 +62,12 @@ class ManagementOptionsMixin:
         if not ok or not shelf_name:
             return
 
-        is_valid, message = utils.validate_shelf_name(shelf_name)
+        is_valid, message = utils.validate_shelf_name(
+            shelf_name,
+            manager_module.ALBUM_INDICATORS,
+            manager_module.INVALID_SHELF_NAMES,
+            manager_module.INVALID_SHELF_NAME_CHARS,
+        )
         if not is_valid:
             QtWidgets.QMessageBox.warning(
                 self,

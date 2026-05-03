@@ -7,33 +7,13 @@ from __future__ import annotations
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Optional, Set, Tuple
+from typing import Any, FrozenSet, Optional, Set, Tuple
 from warnings import deprecated
 
 from picard import log
 from picard.script import ScriptParser
 
-from .constants import ALBUM_INDICATORS, INVALID_SHELF_NAME_CHARS, INVALID_SHELF_NAMES
 from .typings import TagKey
-
-
-def validate_shelf_names(shelf_names: set[str]) -> set[str]:
-    """
-    Checks a list of shelf_name names and returns a list of valid names.
-    :param shelf_names:
-    :return:
-    """
-    log.debug("Known shelf_names from config: %s", shelf_names)
-    # Validate each shelf_name name
-    valid_shelves: set[str] = set()
-    for shelf_name in shelf_names:
-        is_valid, message = validate_shelf_name(shelf_name)
-        if is_valid or not message:  # Allow warnings
-            valid_shelves.add(shelf_name)
-        else:
-            log.warning("Ignoring invalid shelf_name '%s': %s", shelf_name, message)
-
-    return valid_shelves
 
 
 @deprecated(
@@ -78,7 +58,12 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
         )
 
 
-def validate_shelf_name(name: str) -> Tuple[bool, str]:
+def validate_shelf_name(
+    name: str,
+    album_indicators: FrozenSet[str],
+    invalid_shelf_names,
+    invalid_shelf_name_chars,
+) -> Tuple[bool, str]:
     """Validate a shelf name."""
     if not isinstance(name, str) or not name.strip():
         return False, _("Shelf name cannot be empty")
@@ -88,11 +73,11 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
     invalid_names_used = [
         name_used
         for name_used in shelf_name.split()
-        if name_used in INVALID_SHELF_NAMES
+        if name_used in invalid_shelf_names
     ]
     if invalid_names_used:
         hr_invalid_names_used = f"{', '.join(repr(c) for c in set(invalid_names_used))}"
-        hr_invalid_names = f"{', '.join(repr(c) for c in INVALID_SHELF_NAMES)}"
+        hr_invalid_names = f"{', '.join(repr(c) for c in invalid_shelf_names)}"
         return (
             False,
             f"Cannot use '{shelf_name}' as shelf name."
@@ -101,12 +86,12 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
         )
 
     invalid_chars_used = [
-        char_used for char_used in shelf_name if char_used in INVALID_SHELF_NAME_CHARS
+        char_used for char_used in shelf_name if char_used in invalid_shelf_name_chars
     ]
     if invalid_chars_used:
         hr_invalid_chars_used = f"{', '.join(repr(c) for c in set(invalid_chars_used))}"
         hr_invalid_name_chars = (
-            f"{', '.join(repr(c) for c in INVALID_SHELF_NAME_CHARS)}"
+            f"{', '.join(repr(c) for c in invalid_shelf_name_chars)}"
         )
         return (
             False,
@@ -118,14 +103,14 @@ def validate_shelf_name(name: str) -> Tuple[bool, str]:
     invalid_tokens_used = [
         token_used
         for token_used in shelf_name.split()
-        if token_used.lower() in [token.lower() for token in ALBUM_INDICATORS]
+        if token_used.lower() in [token.lower() for token in album_indicators]
     ]
 
     if invalid_tokens_used:
         hr_invalid_tokens_used = (
             f"{', '.join(repr(c) for c in set(invalid_tokens_used))}"
         )
-        hr_invalid_name_tokens = f"{', '.join(repr(c) for c in ALBUM_INDICATORS)}"
+        hr_invalid_name_tokens = f"{', '.join(repr(c) for c in album_indicators)}"
         return (
             False,
             f"Cannot use '{shelf_name}' as shelf name."

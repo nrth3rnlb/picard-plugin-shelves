@@ -9,7 +9,7 @@ from typing import Any, List, Optional
 from picard.album import Album, File, Track
 from picard.ui.itemviews import BaseAction
 
-from .dialogs import SetShelfDialog
+from .ui.dialogs import SetShelfDialog
 from .typings import TagKey
 
 

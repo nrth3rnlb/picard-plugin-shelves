@@ -43,3 +43,10 @@ SECONDARY_RELEASE_TYPES: dict[str, str] = {
     "Spoken word": "Spoken word",
     "Mixtape/Street": "Mixtape/Street",
 }
+
+# noinspection SpellCheckingInspection
+RENAME_SNIPPET: str = """$set(_shelffolder,$shelf())
+$set(_shelffolder,$if($not($eq(%_shelffolder%,)),%_shelffolder%/))
+
+%_shelffolder%
+$if2(%albumartist%,%artist%)/%album%/%title%"""

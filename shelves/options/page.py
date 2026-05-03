@@ -13,10 +13,10 @@ from picard.config import BoolOption, IntOption, ListOption, Option
 from picard.ui.options import OptionsPage as PicardOptions
 from PyQt5 import QtGui, QtWidgets, uic
 
-from .. import constants
 from .. import manager as manager_module
 from ..typings import ConfigKey
 from ..ui.widgets import QShelvesWidget
+from . import constants
 from .management import ManagementOptionsMixin
 from .releasetype import ReleaseTypeOptionsMixin
 from .workflow import WorkflowOptionsMixin

@@ -22,12 +22,16 @@ from typing import Any, Dict, Optional, Set, Tuple
 from picard import config, log
 
 from . import utils
-from .constants import ALBUM_INDICATORS, MAX_SHELF_NAME_LENGTH, MAX_WORD_COUNT
 from .contexts import ProcessingContext
 from .typings import ConfigKey, VotingType
 
 SHELF_NAME = "shelf_name"
 SHELF_LOCKED = "shelf_locked"
+MAX_SHELF_NAME_LENGTH: int = 30
+MAX_WORD_COUNT: int = 3
+ALBUM_INDICATORS: frozenset[str] = frozenset(["Vol.", "Volume", "Disc", "CD", "Part"])
+INVALID_SHELF_NAME_CHARS: set[str] = set()
+INVALID_SHELF_NAMES: frozenset[str] = frozenset([".", ".."])
 
 
 class ShelfRegistry:
@@ -56,7 +60,15 @@ class ShelfRegistry:
         :param names: Set of shelf names to register.
         """
         self._shelf_names = set(
-            filter(lambda name: utils.validate_shelf_name(name)[0], names),
+            filter(
+                lambda name: utils.validate_shelf_name(
+                    name,
+                    ALBUM_INDICATORS,
+                    INVALID_SHELF_NAMES,
+                    INVALID_SHELF_NAME_CHARS,
+                )[0],
+                names,
+            ),
         )
 
     @property
