@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import QApplication
 from typings import ConfigKey, TagKey
 
 from shelves import constants
-from shelves.options import OptionsPage
+from options.__init__ import OptionsPage
 
 
 class OptionsPageTest(unittest.TestCase):

@@ -16,25 +16,20 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 from . import constants, utils
 from . import manager as manager_module
+from .options_constants import (
+    MESSAGE_INVALID_SHELF_NAME,
+    MESSAGE_MOVE_SELECTED_ITEMS_DISABLED,
+    MESSAGE_MOVE_SELECTED_ITEMS_ENABLED,
+    MESSAGE_PROVIDE_SHELF_NAME,
+    MESSAGE_USED_SHELF_NAME,
+    NAME_WORKFLOW_STAGE_1,
+    NAME_WORKFLOW_STAGE_2,
+    NAME_WORKFLOW_STAGE_ALL,
+    TITLE_ADD_SHELF_NAME,
+    TITLE_REMOVE_SHELF_NAMES,
+)
 from .typings import ConfigKey
 from .widgets import QShelvesWidget
-
-MESSAGE_INVALID_SHELF_NAME: str = _("Shelf name is not valid.")
-MESSAGE_MOVE_SELECTED_ITEMS_ENABLED: str = _(
-    "Move selected shelf names to the list of the {name_of_target_stage}.",
-)
-MESSAGE_MOVE_SELECTED_ITEMS_DISABLED: str = _(
-    "The list of {name_of_target_stage} is full, no further elements possible.",
-)
-NAME_WORKFLOW_STAGE_ALL: str = _("Available shelf names")
-MESSAGE_PROVIDE_SHELF_NAME: str = _("Provide a name for the new shelf:")
-MESSAGE_USED_SHELF_NAME: str = _(
-    "The shelf names '{list_of_shelf_names}' are used in your workflow. Are you sure you want to remove them?",
-)
-NAME_WORKFLOW_STAGE_1: str = _("origin shelves")
-NAME_WORKFLOW_STAGE_2: str = _("target shelves")
-TITLE_ADD_SHELF_NAME: str = _("Add a shelf name.")
-TITLE_REMOVE_SHELF_NAMES: str = _("Remove shelf names?")
 
 
 class OptionsPage(PicardOptions):
