@@ -26,7 +26,7 @@ from .actions import (
     ShelfActionSet as _ShelfActionSet,
 )
 from .actions import (
-    ShelfActionToggleLock as _ShelfActionToggleLock,
+    ShelfActionLock as _ShelfActionToggleLock,
 )
 from .options.page import OptionsPage as _ShelvesOptionsPageBase
 from .script_functions import shelf as _func_shelf_base
@@ -70,7 +70,7 @@ class ShelfActionSet(_ShelfActionSet):
     """Wrapper class for ShelfActionSet to ensure proper plugin registration."""
 
 
-class ShelfActionToggleLock(_ShelfActionToggleLock):
+class ShelfActionLock(_ShelfActionToggleLock):
     """Wrapper class for ShelfActionToggleLock to ensure proper plugin registration."""
 
 
@@ -127,7 +127,7 @@ register_file_post_removal_from_track_processor(_file_post_removal_from_track_pr
 
 # Register context menu actions
 register_album_action(ShelfActionSet())
-register_album_action(ShelfActionToggleLock())
+register_album_action(ShelfActionLock())
 
 # Register options page
 register_options_page(ShelvesOptionsPage)

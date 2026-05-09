@@ -76,16 +76,21 @@ class Strategy(ABC):
 
         return []
 
-    def apply_lock_state(self, album_id: str, shelf_names: str | List[str]):
-        """Apply manual lock/unlock state to the shelf assignment."""
+    def unlock_shelf_names(self, album_id: str, shelf_names: str | List[str]):
+        """Apply manual unlock state to the shelf assignment."""
         if isinstance(shelf_names, str):
             shelf_names = [shelf_names]
 
         for shelf_name in shelf_names:
-            if self.manager.is_locked(album_id=album_id):
-                self.manager.unlock(album_id=album_id, shelf_name=shelf_name)
-            else:
-                self.manager.lock(album_id=album_id, shelf_name=shelf_name)
+            self.manager.unlock(album_id=album_id, shelf_name=shelf_name)
+
+    def lock_shelf_names(self, album_id: str, shelf_names: str | List[str]):
+        """Apply manual lock state to the shelf assignment."""
+        if isinstance(shelf_names, str):
+            shelf_names = [shelf_names]
+
+        for shelf_name in shelf_names:
+            self.manager.lock(album_id=album_id, shelf_name=shelf_name)
 
     def apply_votes(
         self, voting_type: VotingType, album_id: str, shelf_names: str | List[str]
@@ -107,9 +112,16 @@ class Strategy(ABC):
 
         log.debug("Strategy: %s, Context: %s", self.__class__.__name__, context)
 
-        if context.processing_type == ProcessingContext.ProcessingType.TOGGLE_LOCK:
-            log.debug("TOGGLE_LOCK: %s", self.shelf_name(context))
-            self.apply_lock_state(
+        if context.processing_type == ProcessingContext.ProcessingType.LOCK:
+            log.debug("LOCK: %s", self.shelf_name(context))
+            self.lock_shelf_names(
+                album_id=context.album_id,
+                shelf_names=self.shelf_name(context),
+            )
+
+        if context.processing_type == ProcessingContext.ProcessingType.UNLOCK:
+            log.debug("UNLOCK: %s", self.shelf_name(context))
+            self.unlock_shelf_names(
                 album_id=context.album_id,
                 shelf_names=self.shelf_name(context),
             )
@@ -289,7 +301,7 @@ class Processors:
         self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
     def action_unset_processor(self, file: File) -> None:
-        context = ContextBuilder.build(
+        context = build_processing_context(
             self.manager,
             file=file,
             processing_type=ProcessingContext.ProcessingType.UNSET,
@@ -299,7 +311,7 @@ class Processors:
                 break
 
     def action_set_processor(self, file: File, shelf_name: str) -> None:
-        context = ContextBuilder.build(
+        context = build_processing_context(
             self.manager,
             file=file,
             processing_type=ProcessingContext.ProcessingType.SET,
@@ -309,19 +321,31 @@ class Processors:
             if strategy.process(context):
                 break
 
-    def action_toggle_lock_processor(self, file: File) -> None:
-        context = ContextBuilder.build(
+    def action_lock_processor(self, file: File) -> None:
+        context = build_processing_context(
             self.manager,
             file=file,
-            processing_type=ProcessingContext.ProcessingType.TOGGLE_LOCK,
+            processing_type=ProcessingContext.ProcessingType.LOCK,
         )
+        log.debug("action_lock_processor: %s", context)
+        for strategy in self.strategies:
+            if strategy.process(context):
+                break
+
+    def action_unlock_processor(self, file: File) -> None:
+        context = build_processing_context(
+            self.manager,
+            file=file,
+            processing_type=ProcessingContext.ProcessingType.UNLOCK,
+        )
+        log.debug("action_unlock_processor: %s", context)
         for strategy in self.strategies:
             if strategy.process(context):
                 break
 
     def file_post_load_processor(self, file: File) -> None:
         """Process a file after it has been loaded."""
-        context = ContextBuilder.build(
+        context = build_processing_context(
             self.manager,
             file=file,
             processing_type=ProcessingContext.ProcessingType.LOAD,
@@ -332,7 +356,7 @@ class Processors:
 
     def file_post_save_processor(self, file: File) -> None:
         """Process a file after it has been saved."""
-        context = ContextBuilder.build(
+        context = build_processing_context(
             self.manager,
             file=file,
             processing_type=ProcessingContext.ProcessingType.SAVE,
@@ -348,7 +372,7 @@ class Processors:
         file: File,
     ) -> None:
         """Process a file after it has been added to a track."""
-        context = ContextBuilder.build(
+        context = build_processing_context(
             self.manager,
             file=file,
             processing_type=ProcessingContext.ProcessingType.ADD,
@@ -360,7 +384,7 @@ class Processors:
     # noinspection PyUnusedLocal
     def file_post_removal_from_track_processor(self, track: Track, file: File) -> None:
         """Process a file after it has been removed from a track."""
-        context = ContextBuilder.build(
+        context = build_processing_context(
             self.manager,
             file=file,
             processing_type=ProcessingContext.ProcessingType.REMOVE,
@@ -383,7 +407,7 @@ class Processors:
             transition_type=TransitionContext.TransitionType.TO_STAGE_2,
         )
         metadata[TagKey.SHELF] = context.shelf_name
-        metadata[TagKey.SHELF_LOCKED] = self.manager.is_locked(album_id=album_id)
+        metadata[TagKey.SHELF_LOCKED] = self.manager.get_shelf_locked(album_id=album_id)
 
         log.debug(
             "shelf name: %s, locked: %s",
@@ -392,34 +416,31 @@ class Processors:
         )
 
 
-class ContextBuilder:
-    """Helper class for building processing contexts."""
+def build_processing_context(
+    manager: ShelfManager,
+    file: File,
+    processing_type: ProcessingContext.ProcessingType,
+    processing_name: Optional[str] = "",
+) -> ProcessingContext:
+    """Build processing context from file"""
 
-    @staticmethod
-    def build(
-        manager: ShelfManager,
-        file: File,
-        processing_type: ProcessingContext.ProcessingType,
-        processing_name: Optional[str] = "",
-    ) -> ProcessingContext:
-        """Build processing context from file"""
+    from . import utils
 
-        from . import utils
+    # utils.debug_track(file)
+    # Extract shelf name from path
+    name_from_path = utils.get_shelf_name_from_path(
+        file_path=Path(file.filename),
+        base_path=manager.base_path,
+    )
 
-        # utils.debug_track(file)
-        # Extract shelf name from path
-        name_from_path = utils.get_shelf_name_from_path(
-            file_path=Path(file.filename),
-            base_path=manager.base_path,
-        )
-
-        return ProcessingContext(
-            processing_type=processing_type,
-            album_id=file.metadata[TagKey.MUSICBRAINZ_ALBUMID],
-            name_from_path=name_from_path,
-            name_from_tag=file.metadata[TagKey.SHELF],
-            processing_name=processing_name or "",
-        )
+    return ProcessingContext(
+        processing_type=processing_type,
+        album_id=file.metadata[TagKey.MUSICBRAINZ_ALBUMID],
+        name_from_path=name_from_path,
+        name_from_tag=file.metadata[TagKey.SHELF],
+        processing_name=processing_name or "",
+        locked=file.metadata.get(TagKey.SHELF_LOCKED, False),
+    )
 
 
 # Global instance for lazy, shared access (avoids import-time config access).

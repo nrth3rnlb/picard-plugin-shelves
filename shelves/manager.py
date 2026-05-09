@@ -328,32 +328,32 @@ class ShelfLockManager:
         :param assignment_engine: ShelfAssignmentEngine instance for vote clearing.
         """
         self.assignment_engine = assignment_engine
-        self._shelf_state: Dict[str, Dict[str, Any]] = defaultdict(
-            Dict[str, Dict[str, Any]]
-        )
+        self._shelf_locked: Dict[str, bool] = {}
 
     def lock(self, album_id: str, shelf_name: str) -> None:
         """Set the manual override/lock for an album's shelf assignment."""
-        state = self._shelf_state.setdefault(album_id, {})
-        state[SHELF_LOCKED] = True
+        self._shelf_locked[album_id] = True
+        log.debug("Locking album %s to shelf %s", album_id, shelf_name)
         self.assignment_engine.vote(
             album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.LOCK
         )
 
     def unlock(self, album_id: str, shelf_name: str) -> None:
         """Clear the manual override/lock for an album's shelf assignment."""
-        state = self._shelf_state.setdefault(album_id, {})
-        state[SHELF_LOCKED] = False
+        self._shelf_locked[album_id] = False
+        log.debug("Unlocking album %s from shelf %s", album_id, shelf_name)
         self.assignment_engine.vote(
             album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.UNLOCK
         )
 
     def is_locked(self, album_id: str) -> bool:
         """Check if an album's shelf assignment is locked."""
-        state = self._shelf_state.get(album_id, {})
-        if state is None:
-            return False
-        return state.get(SHELF_LOCKED, False)
+        log.debug(
+            "Lock status for album %s: %s",
+            album_id,
+            self._shelf_locked.get(album_id, False),
+        )
+        return self._shelf_locked.get(album_id, False)
 
 
 class ShelfValidator:
@@ -532,7 +532,7 @@ class ShelfManager:
         """Clear the manual lock for an album's shelf assignment."""
         self._lock_manager.unlock(album_id, shelf_name)
 
-    def is_locked(self, album_id: str) -> bool:
+    def get_shelf_locked(self, album_id: str) -> bool:
         """Check if an album's shelf assignment is locked."""
         return self._lock_manager.is_locked(album_id)
 
