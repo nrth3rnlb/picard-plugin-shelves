@@ -176,7 +176,7 @@ class ManagementOptionsMixin:
         )
         self.workflow_stage_2.clear()
         self.workflow_stage_2.addItems(
-            shelf_manager.registered_shelf_names.intersection(  # noqa: F821
+            shelf_manager.registered_shelf_names.intersection(
                 config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
             )
         )

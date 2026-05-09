@@ -482,22 +482,13 @@ class ShelfManager:
         shelf_name: str,
         voting_type: VotingType = VotingType.INITIAL,
         shelf_locked: bool = False,
-    ) -> None:
+    ):
         """
         Registers a voting action for the specified album within the given shelf. This function allows
         the system to handle voting operations based on the provided album identifier, shelf name,
         and voting type.
-
-        :param album_id: Unique identifier of the album that is being voted on.
-        :type album_id: str
-        :param shelf_name: Name of the shelf where the album is located.
-        :type shelf_name: str
-        :param voting_type: The type of voting operation to perform. Defaults to VotingType.INITIAL.
-        :type voting_type: VotingType
-        :param shelf_locked: Indicates if the shelf is locked and cannot be modified. Defaults to False.
-        :type shelf_locked: bool
-        :return: None
         """
+
         self._assignment_engine.vote(
             album_id=album_id,
             shelf_name=shelf_name,
