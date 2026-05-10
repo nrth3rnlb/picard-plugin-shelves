@@ -10,8 +10,9 @@ from picard import log
 from picard.album import Album, File, Track
 from picard.ui.itemviews import BaseAction
 
-from .ui.dialogs import SetShelfDialog
+from . import runtime
 from .typings import TagKey
+from .ui.dialogs import SetShelfDialog
 
 
 class ShelfActionSet(BaseAction):
@@ -26,9 +27,8 @@ class ShelfActionSet(BaseAction):
         shelf_name = self._ask_for_shelf_name()
         if not shelf_name:
             return
-        from . import processors
 
-        processors = processors.instance()
+        processors = runtime.processor_instance()
         albums: list[Album] = list(filter(lambda o: isinstance(o, Album), objs))
         for album in albums:
             track: Track
@@ -64,9 +64,8 @@ class ShelfActionLock(BaseAction):
 
     def callback(self, objs: List[Any]) -> None:
         """Toggle lock state of albums."""
-        from . import processors
 
-        processors = processors.instance()
+        processors = runtime.processor_instance()
         albums: list[Album] = list(filter(lambda o: isinstance(o, Album), objs))
         for album in albums:
             track: Track
@@ -87,19 +86,17 @@ class ShelfActionLock(BaseAction):
 
 
 def _set_album_metadata(albums: List[Album]):
-    from . import manager as manager_module
-
-    shelf_manager = manager_module.instance()
+    manager = runtime.manager_instance()
 
     for album in albums:
         track: Track
         for track in album.tracks:
             file: File
             for file in track.files:
-                file.metadata[TagKey.SHELF] = shelf_manager.get_shelf_name(
+                file.metadata[TagKey.SHELF] = manager.get_shelf_name(
                     album.metadata[TagKey.MUSICBRAINZ_ALBUMID]
                 )
-                file.metadata[TagKey.SHELF_LOCKED] = shelf_manager.get_shelf_locked(
+                file.metadata[TagKey.SHELF_LOCKED] = manager.get_shelf_locked(
                     album.metadata[TagKey.MUSICBRAINZ_ALBUMID]
                 )
                 file.update()

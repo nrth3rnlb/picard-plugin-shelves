@@ -7,34 +7,12 @@ from __future__ import annotations
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, FrozenSet, Optional, Set, Tuple
-from warnings import deprecated
+from typing import Any, FrozenSet, Set, Tuple, Optional, Union
 
 from picard import log
 from picard.script import ScriptParser
 
 from .typings import TagKey
-
-
-@deprecated(
-    "Is only mandatory until version 1.7.0. As of version 2, the use of the tag has changed. The function is  "
-    "used from version 2 to continue processing existing tags and will be removed in a later version will be "
-    "removed."
-)
-def get_shelf_name_from_tag(tag_value: str) -> str:
-    """
-    Extract the shelf name from a tag value.
-
-    In addition to the name of the shelf, the tag can also contain the suffix "; manual",
-    This function removes this suffix.
-    """
-    if not tag_value:
-        return ""
-    MANUAL_SHELF_SUFFIX = "; manual"
-    tag = tag_value.strip()
-    if tag.endswith(MANUAL_SHELF_SUFFIX):
-        return tag[: -len(MANUAL_SHELF_SUFFIX)].strip()
-    return tag
 
 
 def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
@@ -255,10 +233,8 @@ def squeeze_the_parser(parser: ScriptParser) -> tuple[str, str]:
     context_shelf: str = ""
     if hasattr(parser.file, "metadata"):
         metadata_shelf = parser.file.metadata.get(TagKey.SHELF)
-        metadata_shelf = get_shelf_name_from_tag(metadata_shelf)
     if hasattr(parser, "context"):
         context_shelf = parser.context.get(TagKey.SHELF)
-        context_shelf = get_shelf_name_from_tag(context_shelf)
     return context_shelf, metadata_shelf
 
 
@@ -269,19 +245,19 @@ class ShelfNotDeterminableException(Exception):
         self,
         message: Optional[str] = None,
         *,
-        filepath: Optional[str | Path],
-        details: Optional[str] = None,
+        filepath: Optional[Union[str, Path]] = None,
+        details: Optional[str] = "",
         cause: Optional[BaseException] = None,
     ) -> None:
         self.message = message
-        self.filepath = filepath
+        self.filepath = filepath or ""
         self.cause = cause
-        self.details = details
+        self.details = details or ""
 
         if self.message is None:
             self.message = _("No shelf name can be determined from the file path.")
 
-        super().__init__(self.message, f"{filepath=!r}, {details=}")
+        super().__init__(self.message, f"{self.filepath=!r}, {self.details=}")
 
     def __str__(self) -> str:
         base = super().__str__()

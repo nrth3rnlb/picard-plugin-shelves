@@ -11,7 +11,7 @@ from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import Qt
 
 from .. import manager as manager_module
-from .. import utils
+from .. import runtime, utils
 
 LABEL_VALIDATION_NAME = "label_validation"
 COMBO_SHELF_NAME = "combo_shelves"
@@ -51,7 +51,7 @@ class SetShelfDialog(QtWidgets.QDialog):
 
     def ask_for_shelf_name(self) -> Optional[str]:
         """Ask for a name."""
-        shelf_manager = manager_module.instance()
+        shelf_manager = runtime.manager_instance()
 
         if self.shelf_combo is not None:
             self.shelf_combo.clear()
@@ -60,6 +60,9 @@ class SetShelfDialog(QtWidgets.QDialog):
             self.shelf_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
 
         if self.exec_() != QtWidgets.QDialog.Accepted:
+            return None
+
+        if self.shelf_combo is None:
             return None
 
         value = self.shelf_combo.currentText().strip()

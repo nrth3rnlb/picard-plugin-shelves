@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from picard import log
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 from ..ui.widgets import QShelvesWidget
 from .constants import (
@@ -29,10 +29,10 @@ class WorkflowOptionsMixin:
     workflow_enabled: QtWidgets.QCheckBox
     button_stage_2_to_all: QtWidgets.QPushButton
     button_stage_2_to_stage_1: QtWidgets.QPushButton
-    go_down_icon: QtWidgets.QIcon
-    go_previous_icon: QtWidgets.QIcon
-    go_up_icon: QtWidgets.QIcon
-    go_next_icon: QtWidgets.QIcon
+    go_down_icon: QtGui.QIcon
+    go_previous_icon: QtGui.QIcon
+    go_up_icon: QtGui.QIcon
+    go_next_icon: QtGui.QIcon
 
     def _workflow_action_move_item_all_to_stage_1(self):
         """Move selected item from all shelves to stage 1."""
@@ -77,55 +77,28 @@ class WorkflowOptionsMixin:
     def _workflow_setup_connections(self) -> None:
         """Setup workflow configuration UI components and connect signals."""
 
+        # Helper to setup common list widget connections
+        def setup_list_widget(widget: QShelvesWidget) -> None:
+            """Setup common connections for a list widget."""
+            widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+            widget.itemSelectionChanged.connect(self._workflow_on_lists_changed)
+            if (model := widget.model()) is not None:
+                model.rowsInserted.connect(self._workflow_on_lists_changed)
+                model.rowsRemoved.connect(self._workflow_on_lists_changed)
+
         # Shelves for stages connections
-        self.shelves_for_stages.setSelectionMode(
-            QtWidgets.QAbstractItemView.ExtendedSelection,
-        )
-        self.shelves_for_stages.itemSelectionChanged.connect(
-            self._workflow_on_lists_changed,
-        )
-        if (model := self.shelves_for_stages.model()) is not None:
-            model.rowsInserted.connect(
-                self._workflow_on_lists_changed,
-            )
-            model.rowsRemoved.connect(
-                self._workflow_on_lists_changed,
-            )
+        setup_list_widget(self.shelves_for_stages)
 
         # Stage 1 connections
         self.label_workflow_stage_1.setAlignment(
-            QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter,
+            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter,
         )
-        self.workflow_stage_1.setSelectionMode(
-            QtWidgets.QAbstractItemView.ExtendedSelection,
-        )
-        self.workflow_stage_1.itemSelectionChanged.connect(
-            self._workflow_on_lists_changed,
-        )
-        if (model := self.workflow_stage_1.model()) is not None:
-            model.rowsInserted.connect(
-                self._workflow_on_lists_changed,
-            )
-            model.rowsRemoved.connect(
-                self._workflow_on_lists_changed,
-            )
+        setup_list_widget(self.workflow_stage_1)
 
         # Stage 2 connections
         self.workflow_stage_2.max_item_count = 1
         log.debug(f"Max item count: {self.workflow_stage_2.max_item_count}")
-        self.workflow_stage_2.setSelectionMode(
-            QtWidgets.QAbstractItemView.ExtendedSelection,
-        )
-        self.workflow_stage_2.itemSelectionChanged.connect(
-            self._workflow_on_lists_changed,
-        )
-        if (model := self.workflow_stage_2.model()) is not None:
-            model.rowsInserted.connect(
-                self._workflow_on_lists_changed,
-            )
-            model.rowsRemoved.connect(
-                self._workflow_on_lists_changed,
-            )
+        setup_list_widget(self.workflow_stage_2)
 
         # Button connections
         self.button_all_to_stage_1.clicked.connect(

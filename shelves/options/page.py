@@ -13,7 +13,7 @@ from picard.config import BoolOption, IntOption, ListOption, Option
 from picard.ui.options import OptionsPage as PicardOptions
 from PyQt5 import QtGui, QtWidgets, uic
 
-from .. import manager as manager_module
+from .. import runtime
 from ..typings import ConfigKey
 from ..ui.widgets import QShelvesWidget
 from . import constants
@@ -25,11 +25,12 @@ from .workflow import WorkflowOptionsMixin
 def _shelf_names_from_widget(
     widget: QShelvesWidget, allowed_names: set[str]
 ) -> list[str]:
-    return [
-        item.text()
-        for i in range(widget.count())
-        if (item := widget.item(i)) is not None and item.text() in allowed_names
-    ]
+    result = []
+    for i in range(widget.count()):
+        item = widget.item(i)
+        if item is not None and item.text() in allowed_names:
+            result.append(item.text())
+    return result
 
 
 class ManagementOptionsPageProtocol(Protocol):
@@ -152,7 +153,7 @@ class OptionsPage(
     # noinspection PyTypeHints
     def save(self) -> None:
         """Save configuration."""
-        shelf_manager = manager_module.instance()
+        shelf_manager = runtime.manager_instance()
         registered = shelf_manager.registered_shelf_names
 
         config.setting[ConfigKey.KNOWN_SHELVES] = _shelf_names_from_widget(

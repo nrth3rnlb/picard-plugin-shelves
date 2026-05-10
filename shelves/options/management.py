@@ -5,8 +5,8 @@ from gettext import gettext as _
 from picard import config
 from PyQt5 import QtWidgets
 
-from .. import manager as manager_module
-from .. import utils
+from .. import runtime, utils
+from ..manager import ALBUM_INDICATORS, INVALID_SHELF_NAME_CHARS, INVALID_SHELF_NAMES
 from ..typings import ConfigKey
 from ..ui.widgets import QShelvesWidget
 from .constants import (
@@ -18,7 +18,7 @@ from .constants import (
 )
 
 
-class ManagementOptionsMixin:
+class ManagementOptionsMixin(QtWidgets.QWidget):
     add_shelf_button: QtWidgets.QPushButton
     on_workflow_enabled: bool
     remove_shelves_button: QtWidgets.QPushButton
@@ -53,7 +53,6 @@ class ManagementOptionsMixin:
 
     def _management_action_add(self) -> None:
         """Add a new shelf name and update the UI."""
-        shelf_manager = manager_module.instance()
         shelf_name, ok = QtWidgets.QInputDialog.getText(
             self,
             _(TITLE_ADD_SHELF_NAME),
@@ -64,9 +63,9 @@ class ManagementOptionsMixin:
 
         is_valid, message = utils.validate_shelf_name(
             shelf_name,
-            manager_module.ALBUM_INDICATORS,
-            manager_module.INVALID_SHELF_NAMES,
-            manager_module.INVALID_SHELF_NAME_CHARS,
+            ALBUM_INDICATORS,
+            INVALID_SHELF_NAMES,
+            INVALID_SHELF_NAME_CHARS,
         )
         if not is_valid:
             QtWidgets.QMessageBox.warning(
@@ -76,13 +75,13 @@ class ManagementOptionsMixin:
             )
             return
 
-        shelf_manager.add_shelf_names(shelf_name)
+        manager = runtime.manager_instance()
+        manager.add_shelf_names(shelf_name)
         self._management_build_list()
 
     def _management_action_remove(self) -> None:
         """Remove the selected shelf names and update the UI."""
         selected_items = self.shelf_management_shelves.selectedItems()
-        shelf_manager = manager_module.instance()
         if not selected_items:
             return
         selected_names: set[str] = set(item.text() for item in selected_items)
@@ -114,30 +113,31 @@ class ManagementOptionsMixin:
             if reply == QtWidgets.QMessageBox.No:
                 return
 
-        shelf_manager.remove_shelf_names(selected_names)
+        manager = runtime.manager_instance()
+        manager.remove_shelf_names(selected_names)
         self._management_build_list()
 
     def _management_action_scan(self) -> None:
         """Scan Picard's target directory for shelf names and update the UI."""
-        shelf_manager = manager_module.instance()
-        shelf_names: set[str] = utils.get_shelf_dirs(base_path=shelf_manager.base_path)
+        manager = runtime.manager_instance()
 
-        shelf_manager.add_shelf_names(shelf_names)
+        shelf_names: set[str] = utils.get_shelf_dirs(base_path=manager.base_path)
+        manager.add_shelf_names(shelf_names)
         self._management_build_list()
 
     def _management_action_intersect(self) -> None:
         """Remove shelf_names that no longer exist in the music directory."""
-        shelf_manager = manager_module.instance()
-        shelf_names: set[str] = utils.get_shelf_dirs(base_path=shelf_manager.base_path)
+        manager = runtime.manager_instance()
+        shelf_names: set[str] = utils.get_shelf_dirs(base_path=manager.base_path)
 
-        shelf_manager.intersect_shelf_names(shelf_names)
+        manager.intersect_shelf_names(shelf_names)
         self._management_build_list()
 
     def _management_build_list(self):
         """Refresh the shelves widget with the current shelf names."""
-        shelf_manager = manager_module.instance()
+        manager = runtime.manager_instance()
         self.shelf_management_shelves.clear()
-        self.shelf_management_shelves.addItems(shelf_manager.registered_shelf_names)
+        self.shelf_management_shelves.addItems(manager.registered_shelf_names)
 
     # ============================================================================
     # Event handlers
@@ -158,11 +158,11 @@ class ManagementOptionsMixin:
     # noinspection PyTypeHints
     def _management_build_shelves_for_stages(self) -> None:
         # Build shelves for stages and trigger an initial state change
-        shelf_manager = manager_module.instance()
+        manager = runtime.manager_instance()
 
         self.shelves_for_stages.clear()
         self.shelves_for_stages.addItems(
-            shelf_manager.registered_shelf_names.difference(
+            manager.registered_shelf_names.difference(
                 config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
             ).difference(
                 config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES],
@@ -170,13 +170,13 @@ class ManagementOptionsMixin:
         )
         self.workflow_stage_1.clear()
         self.workflow_stage_1.addItems(
-            shelf_manager.registered_shelf_names.intersection(
+            manager.registered_shelf_names.intersection(
                 config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
             )
         )
         self.workflow_stage_2.clear()
         self.workflow_stage_2.addItems(
-            shelf_manager.registered_shelf_names.intersection(
+            manager.registered_shelf_names.intersection(
                 config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
             )
         )

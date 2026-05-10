@@ -21,7 +21,7 @@ from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
-from . import processors
+from . import runtime
 from .actions import (
     ShelfActionSet as _ShelfActionSet,
 )
@@ -87,7 +87,7 @@ def _track_metadata_processor(
     release: Any,
 ) -> None:
     """Wrapper for track_metadata_processor."""
-    processors.instance().track_metadata_processor(
+    runtime.processor_instance().track_metadata_processor(
         _album=album, metadata=metadata, _track=track, _release=release
     )
 
@@ -95,25 +95,29 @@ def _track_metadata_processor(
 # Wrapper functions that pass shelf_manager to processors
 def _file_post_save_processor(file: Any) -> None:
     """Wrapper for file_post_save_processor."""
-    processors.instance().file_post_save_processor(file=file)
+    runtime.processor_instance().file_post_save_processor(file=file)
 
 
 # Wrapper functions that pass shelf_manager to processors
 def _file_post_load_processor(file: Any) -> None:
     """Wrapper for file_post_load_processor."""
     log.debug("_file_post_load_processor")
-    processors.instance().file_post_load_processor(file=file)
+    runtime.processor_instance().file_post_load_processor(file=file)
 
 
 def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
     log.debug("_file_post_addition_to_track_processor")
-    processors.instance().file_post_addition_to_track_processor(track=track, file=file)
+    runtime.processor_instance().file_post_addition_to_track_processor(
+        track=track, file=file
+    )
 
 
 def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
-    processors.instance().file_post_removal_from_track_processor(track=track, file=file)
+    runtime.processor_instance().file_post_removal_from_track_processor(
+        track=track, file=file
+    )
 
 
 # Register metadata processors

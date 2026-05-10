@@ -14,16 +14,17 @@ The ShelfManager supports dependency injection for testing purposes.
 from __future__ import annotations
 
 import threading
-from collections import Counter, defaultdict
+from collections import Counter
+from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Dict, Set, Tuple, Optional, Union
 
-from picard import config, log
+from picard import log
 
 from . import utils
 from .contexts import ProcessingContext
-from .typings import ConfigKey, VotingType
+from .typings import VotingType
 
 SHELF_NAME = "shelf_name"
 SHELF_LOCKED = "shelf_locked"
@@ -44,16 +45,16 @@ class ShelfRegistry:
 
     def __init__(self):
         """Initialize the shelf registry with empty names and default base path."""
-        self._shelf_names: Set[str] = set()
+        self._shelf_names: set[str] = set()
         self._base_path: Path = Path(".")
 
     @property
-    def shelf_names(self) -> Set[str]:
+    def shelf_names(self) -> set[str]:
         """Get the set of known shelf names."""
         return self._shelf_names
 
     @shelf_names.setter
-    def shelf_names(self, names: Set[str]):
+    def shelf_names(self, names: set[str]):
         """
         Set the list of shelf names, filtering out invalid names.
 
@@ -77,7 +78,7 @@ class ShelfRegistry:
         return self._base_path
 
     @base_path.setter
-    def base_path(self, value: str | Path):
+    def base_path(self, value: Union[str, Path]):
         """
         Set the base path for shelf directories.
 
@@ -88,7 +89,7 @@ class ShelfRegistry:
         else:
             self._base_path = value.resolve()
 
-    def add_shelf_names(self, names: Set[str] | str) -> None:
+    def add_shelf_names(self, names: Union[Set[str], str]) -> None:
         """
         Add shelf names to the registry.
 
@@ -100,7 +101,7 @@ class ShelfRegistry:
         log.debug("Added shelf names: %s", names)
         log.debug("Current shelf names: %s", self.shelf_names)
 
-    def remove_shelf_names(self, names: Set[str] | str) -> None:
+    def remove_shelf_names(self, names: Union[Set[str], str]) -> None:
         """Remove shelf names from the registry."""
         if isinstance(names, str):
             names = {names}
@@ -108,7 +109,7 @@ class ShelfRegistry:
         log.debug("Removed shelf names: %s", names)
         log.debug("Current shelf names: %s", self.shelf_names)
 
-    def intersect_shelf_names(self, names: Set[str] | str) -> None:
+    def intersect_shelf_names(self, names: Union[Set[str], str]) -> None:
         """Intersect shelf names with the provided set."""
         if isinstance(names, str):
             names = {names}
@@ -143,16 +144,6 @@ class ShelfAssignmentEngine:
         """
         Executes a specific voting operation (upvote, downvote, or initial vote) for a given album on a specified shelf.
         The operation is determined based on the `voting_type` parameter.
-
-        :param album_id: The unique identifier of the album to vote on.
-        :type album_id: str
-        :param shelf_name: The name of the shelf where the album is located.
-        :type shelf_name: str
-        :param voting_type: The type of voting operation to perform (e.g., upvote, downvote, or initialize voting).
-        :type voting_type: VotingType
-        :param shelf_locked: Indicates if the shelf is locked and cannot be modified. Defaults to False.
-        :type shelf_locked: bool
-        :return: None
         """
         if shelf_locked:
             log.debug(
@@ -181,14 +172,6 @@ class ShelfAssignmentEngine:
         }
         dispatch[voting_type]()
 
-        log.debug(
-            "%s, %s, %s, %s",
-            album_id,
-            shelf_name,
-            voting_type.name,
-            self._shelf_votes[album_id],
-        )
-
     def _init_voting(self, album_id, shelf_name) -> None:
         """
         Initializes the voting system for a specific album and shelf. If the album
@@ -215,13 +198,6 @@ class ShelfAssignmentEngine:
         the specified album and shelf name. The vote is then registered within the internal
         data structure that tracks shelf votes. Designed to work with internal components
         only.
-
-        :param album_id: The unique identifier of the album to upvote.
-        :type album_id: str
-        :param shelf_name: The name of the shelf where the album is being voted on.
-        :type shelf_name: str
-        :return: This method does not return any value.
-        :rtype: None
         """
         self._init_voting(album_id=album_id, shelf_name=shelf_name)
         log.debug("Incrementing vote count for %s", shelf_name)
@@ -239,15 +215,6 @@ class ShelfAssignmentEngine:
         This function assumes that votes are managed through a data structure
         in which each album is linked to its associated shelves and their respective
         vote counts.
-
-        :param album_id: Unique identifier of the album whose shelf vote is to be
-            decremented.
-        :type album_id: Any
-        :param shelf_name: Name of the shelf for which the vote count should be
-            reduced.
-        :type shelf_name: str
-        :return: This method does not return any value.
-        :rtype: None
         """
         self._init_voting(album_id=album_id, shelf_name=shelf_name)
         if shelf_name in self._shelf_votes[album_id].elements():
@@ -262,12 +229,6 @@ class ShelfAssignmentEngine:
         provided album ID. If no votes are present for the album, the method returns None.
         It also logs the album ID, the selected shelf name, and the current vote counts
         for the album for debugging purposes.
-
-        :param album_id: The unique identifier of the album to find the most commonly
-            voted shelf name for.
-        :type album_id: Any
-        :return: The name of the most commonly voted shelf, or None if no votes exist.
-        :rtype: Optional[str]
         """
         if album_id not in self._shelf_votes:
             return None
@@ -292,14 +253,6 @@ class ShelfAssignmentEngine:
         Retrieves the shelf name corresponding to a given album ID. The method first tries to
         fetch the shelf name based on votes associated with the given album. If no shelf name
         can be determined, it raises a ShelfNotFoundException.
-
-        :param album_id: The ID of the album for which the shelf name is to be retrieved
-        :type album_id: str
-
-        :return: The name of the shelf associated with the given album ID
-        :rtype: str
-
-        :raises ShelfNotFoundException: If no shelf name is found for the provided album ID
         """
         with self._lock:
             if shelf_name := self.get_shelf_name_by_votes(album_id):
@@ -414,15 +367,17 @@ class ShelfValidator:
         return True, None
 
 
+@dataclass(frozen=True)
+class ShelfManagerSettings:
+    """Configuration required to initialize shelf management."""
+
+    base_path: Path
+    shelf_names: set[str]
+
+
 class ShelfManager:
     """
     Facade for shelf management, delegating to specialized components.
-
-    This class maintains backward compatibility while internally using:
-    - ShelfRegistry: Manages shelf names and base path
-    - ShelfAssignmentEngine: Handles voting and shelf determination
-    - ShelfLockManager: Manages manual overrides and locks
-    - ShelfValidator: Validates shelf names
     """
 
     def __init__(
@@ -431,18 +386,18 @@ class ShelfManager:
         assignment_engine: Optional[ShelfAssignmentEngine] = None,
         lock_manager: Optional[ShelfLockManager] = None,
         validator: Optional[ShelfValidator] = None,
+        settings: Optional[ShelfManagerSettings] = None,
     ):
         """
         Initialize ShelfManager with optional dependency injection.
-
-        :param registry: Optional ShelfRegistry instance (created if None)
-        :param assignment_engine: Optional ShelfAssignmentEngine instance (created if None)
-        :param lock_manager: Optional ShelfLockManager instance (created if None)
-        :param validator: Optional ShelfValidator instance (created if None)
         """
 
-        # Initialize component hierarchy (use injected or create new)
         self._registry = registry or ShelfRegistry()
+
+        if settings is not None:
+            self._registry.base_path = settings.base_path
+            self._registry.shelf_names = set(settings.shelf_names)
+
         self._assignment_engine = assignment_engine or ShelfAssignmentEngine(
             self._registry,
         )
@@ -450,19 +405,6 @@ class ShelfManager:
             self._assignment_engine,
         )
         self._validator = validator or ShelfValidator(self._registry)
-
-        # Initialize from config only if using default components
-        if registry is None:
-            # noinspection PyTypeHints
-            self._registry.base_path = Path(
-                config.setting[ConfigKey.MOVE_FILES_TO],
-            )
-            # noinspection PyTypeHints
-            self._registry.shelf_names = set(
-                config.setting[ConfigKey.KNOWN_SHELVES],
-            )
-
-    # ===== Properties (delegate to components) =====
 
     @property
     def registered_shelf_names(self) -> Set[str]:
@@ -473,8 +415,6 @@ class ShelfManager:
     def base_path(self) -> Path:
         """Get the base path."""
         return self._registry.base_path
-
-    # ===== Delegation Methods =====
 
     def vote(
         self,
@@ -524,11 +464,11 @@ class ShelfManager:
     #     """
     #     self._lock_manager.set_shelf_name(album_id, shelf_name)
 
-    def lock(self, album_id: str, shelf_name: str = None) -> None:
+    def lock(self, album_id: str, shelf_name: str = "") -> None:
         """Set the manual lock for an album's shelf assignment."""
         self._lock_manager.lock(album_id, shelf_name)
 
-    def unlock(self, album_id: str, shelf_name: str = None) -> None:
+    def unlock(self, album_id: str, shelf_name: str = "") -> None:
         """Clear the manual lock for an album's shelf assignment."""
         self._lock_manager.unlock(album_id, shelf_name)
 
@@ -541,37 +481,17 @@ class ShelfManager:
         # Note: known_shelves parameter kept for backward compatibility but not used
         return self._validator.is_likely_shelf_name(name)
 
-    def add_shelf_names(self, names: Set[str] | str) -> None:
+    def add_shelf_names(self, names: Union[Set[str], str]) -> None:
         """Add shelf names to the registry."""
         self._registry.add_shelf_names(names)
 
-    def remove_shelf_names(self, names: Set[str] | str) -> None:
+    def remove_shelf_names(self, names: Union[Set[str], str]) -> None:
         """Remove shelf names from the registry."""
         self._registry.remove_shelf_names(names)
 
-    def intersect_shelf_names(self, names: Set[str] | str) -> None:
+    def intersect_shelf_names(self, names: Union[Set[str], str]) -> None:
         """Intersect shelf names with the provided set."""
         self._registry.intersect_shelf_names(names)
-
-
-_manager_singleton: Optional[ShelfManager] = None
-
-
-def instance() -> ShelfManager:
-    """Get the default global ShelfManager instance."""
-    global _manager_singleton
-    if _manager_singleton is None:
-        _manager_singleton = ShelfManager()
-    return _manager_singleton
-
-
-def _reset_instance() -> None:
-    """Reset the default global ShelfManager instance.
-
-    Intended for tests only.
-    """
-    global _manager_singleton
-    _manager_singleton = None
 
 
 class ShelfNotFoundException(Exception):
@@ -581,19 +501,19 @@ class ShelfNotFoundException(Exception):
         self,
         message: Optional[str] = None,
         *,
-        album_id: Optional[str] = None,
-        details: Optional[str] = None,
+        album_id: Optional[str] = "",
+        details: Optional[str] = "",
         cause: Optional[BaseException] = None,
     ) -> None:
         self.message = message
-        self.album_id = album_id
-        self.details = details
+        self.album_id = album_id or ""
+        self.details = details or ""
         self.cause = cause
 
-        if message is None:
-            message = "Shelf for the album cannot be determined."
+        if self.message is None:
+            self.message = "Shelf for the album cannot be determined."
 
-        super().__init__(self.message, f"{album_id=!r}, {details=}")
+        super().__init__(self.message, f"{self.album_id=!r}, {self.details=!r}")
 
     def __str__(self) -> str:
         base = super().__str__()
