@@ -18,7 +18,7 @@ from collections import Counter
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Dict, Set, Tuple, Optional, Union
+from typing import Dict, Optional, Set, Tuple, Union
 
 from picard import log
 
@@ -246,17 +246,17 @@ class ShelfAssignmentEngine:
     def get_shelf_name(
         self,
         album_id: str,
-    ) -> str:
+    ) -> Optional[str]:
         """
         Retrieves the shelf name corresponding to a given album ID. The method first tries to
         fetch the shelf name based on votes associated with the given album. If no shelf name
-        can be determined, it raises a ShelfNotFoundException.
+        can be determined, it returns None.
         """
         with self._lock:
             if shelf_name := self.get_shelf_name_by_votes(album_id):
                 return shelf_name
 
-        raise ShelfNotFoundException(album_id=album_id)
+        return None
 
     def clear_album(self, album_id: str) -> None:
         """Clear all votes and assignments for an album."""
@@ -436,31 +436,13 @@ class ShelfManager:
 
     def get_shelf_name(self, album_id: str) -> Optional[str]:
         """Determine the shelf for an album."""
-        try:
-            return self._assignment_engine.get_shelf_name(album_id)
-        except ShelfNotFoundException:
-            log.error("Shelf not found for album %s", album_id)
-            return None
-
-    # def clear_album(self, album_id: str) -> None:
-    #     """Clear all votes and assignments for an album."""
-    #     self._assignment_engine.clear_album(album_id)
+        return self._assignment_engine.get_shelf_name(album_id)
 
     def get_processing_type(
         self, album_id
     ) -> Optional[ProcessingContext.ProcessingType]:
         """Determine the processor type based on vote counts."""
         return self._assignment_engine.get_processing_type(album_id)
-
-    # def set_shelf_name(
-    #         self,
-    #         album_id: str,
-    #         shelf_name: str,
-    # ) -> None:
-    #     """
-    #     Set the shelf for an album with optional locking.
-    #     """
-    #     self._lock_manager.set_shelf_name(album_id, shelf_name)
 
     def lock(self, album_id: str, shelf_name: str = "") -> None:
         """Set the manual lock for an album's shelf assignment."""
