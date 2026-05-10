@@ -8,6 +8,8 @@ from picard.script import ScriptParser
 
 from . import utils
 
+__all__ = ["shelf"]
+
 
 def shelf(parser: ScriptParser) -> str:
     """Picard script function: `$shelf()`"""

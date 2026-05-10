@@ -10,7 +10,8 @@ from typing import Optional
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import Qt
 
-from . import manager, utils
+from .. import manager as manager_module
+from .. import runtime, utils
 
 LABEL_VALIDATION_NAME = "label_validation"
 COMBO_SHELF_NAME = "combo_shelves"
@@ -27,7 +28,7 @@ class SetShelfDialog(QtWidgets.QDialog):
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
-        ui_dir: Path = Path(__file__).parent
+        ui_dir: Path = Path(__file__).parent.parent
         ui_file = ui_dir / "ui" / "actions.ui"
         uic.loadUi(ui_file, self)
 
@@ -50,7 +51,7 @@ class SetShelfDialog(QtWidgets.QDialog):
 
     def ask_for_shelf_name(self) -> Optional[str]:
         """Ask for a name."""
-        shelf_manager = manager.instance()
+        shelf_manager = runtime.manager_instance()
 
         if self.shelf_combo is not None:
             self.shelf_combo.clear()
@@ -61,8 +62,16 @@ class SetShelfDialog(QtWidgets.QDialog):
         if self.exec_() != QtWidgets.QDialog.Accepted:
             return None
 
+        if self.shelf_combo is None:
+            return None
+
         value = self.shelf_combo.currentText().strip()
-        valid, msg = utils.validate_shelf_name(value)
+        valid, msg = utils.validate_shelf_name(
+            value,
+            manager_module.ALBUM_INDICATORS,
+            manager_module.INVALID_SHELF_NAMES,
+            manager_module.INVALID_SHELF_NAME_CHARS,
+        )
         if not valid:
             return None
         return value
@@ -71,7 +80,12 @@ class SetShelfDialog(QtWidgets.QDialog):
         if not self.validation_label:
             return
 
-        valid, msg = utils.validate_shelf_name(text)
+        valid, msg = utils.validate_shelf_name(
+            text,
+            manager_module.ALBUM_INDICATORS,
+            manager_module.INVALID_SHELF_NAMES,
+            manager_module.INVALID_SHELF_NAME_CHARS,
+        )
         if valid:
             self.validation_label.setText("")
         else:

@@ -7,23 +7,23 @@ for determining the appropriate shelf transitions based on the context and
 applies a sequence of predefined transitions to handle different scenarios.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import Optional, Sequence
 
 from picard import config, log
 
-from . import manager as manager_module
+from . import runtime
 from .contexts import TransitionContext
-from .manager import ShelfManager
 from .typings import ConfigKey
 
 
 class Strategy(ABC):
     """Base class for shelf workflow transitions."""
 
-    def __init__(self, manager: ShelfManager):
-        """Initialize with ShelfManager."""
-        self.manager = manager
+    def __init__(self, manager: Optional[runtime.ShelfManager] = None):
+        self.manager = manager or runtime.manager_instance()
 
     @abstractmethod
     def is_applicable(self, context: TransitionContext) -> bool:
@@ -125,10 +125,9 @@ class Transitions:
         StrategyKnownNameToStage2,
     ]
 
-    def __init__(self, manager: Optional[ShelfManager] = None):
-        """Initialize workflow with optional ShelfManager injection."""
-        self.manager = manager or manager_module.instance()
-        self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
+    def __init__(self, _manager: Optional[runtime.ShelfManager] = None):
+        self.manager = _manager or runtime.manager_instance()
+        self.strategies = [cls() for cls in self.STRATEGY_ORDER]
 
     def transition_to(
         self, album_id: str, transition_type: TransitionContext.TransitionType
@@ -155,7 +154,7 @@ class ContextBuilder:
 
     @staticmethod
     def build_context(
-        manager: ShelfManager,
+        manager: runtime.ShelfManager,
         album_id: str,
         transition_type: TransitionContext.TransitionType,
     ) -> TransitionContext:
@@ -164,19 +163,7 @@ class ContextBuilder:
 
         return TransitionContext(
             album_id=album_id,
-            shelf_name=shelf_name,
+            shelf_name=shelf_name or "",
             transition_type=transition_type,
             strategy=None,
         )
-
-
-# Global instance for lazy, shared access (avoids import-time config access).
-_workflow_singleton = None
-
-
-def instance() -> Transitions:
-    """Get the default global Transitions instance."""
-    global _workflow_singleton
-    if _workflow_singleton is None:
-        _workflow_singleton = Transitions()
-    return _workflow_singleton
