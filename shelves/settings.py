@@ -5,6 +5,8 @@ from picard import config
 from .manager import ShelfManagerSettings
 from .typings import ConfigKey
 
+__all__ = ("shelf_manager_settings_from_picard_config",)
+
 
 def shelf_manager_settings_from_picard_config() -> ShelfManagerSettings:
     """Create ShelfManagerSettings from Picard's global plugin configuration."""

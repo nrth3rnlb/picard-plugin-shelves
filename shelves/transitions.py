@@ -10,7 +10,7 @@ applies a sequence of predefined transitions to handle different scenarios.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
 from picard import config, log
 

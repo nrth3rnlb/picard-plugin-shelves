@@ -26,8 +26,6 @@ from . import utils
 from .contexts import ProcessingContext
 from .typings import VotingType
 
-SHELF_NAME = "shelf_name"
-SHELF_LOCKED = "shelf_locked"
 MAX_SHELF_NAME_LENGTH: int = 30
 MAX_WORD_COUNT: int = 3
 ALBUM_INDICATORS: frozenset[str] = frozenset(["Vol.", "Volume", "Disc", "CD", "Part"])

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import IntEnum, StrEnum
+from enum import Enum, IntEnum
 
 
 class VotingType(IntEnum):
@@ -15,7 +15,7 @@ class VotingType(IntEnum):
     UNLOCK = 8
 
 
-class ConfigKey(StrEnum):
+class ConfigKey(str, Enum):
     """Configuration keys for the Shelves plugin."""
 
     MOVE_FILES_TO = "move_files_to"
@@ -28,7 +28,7 @@ class ConfigKey(StrEnum):
     WORKFLOW_STAGE_2_SHELVES = "shelves_workflow_stage_2_shelves"
 
 
-class TagKey(StrEnum):
+class TagKey(str, Enum):
     """Tag keys for the Shelves plugin."""
 
     MUSICBRAINZ_ALBUMID = "musicbrainz_albumid"

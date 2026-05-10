@@ -7,12 +7,19 @@ from __future__ import annotations
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, FrozenSet, Set, Tuple, Optional, Union
+from typing import Any, FrozenSet, Optional, Set, Tuple, Union
 
 from picard import log
 from picard.script import ScriptParser
 
 from .typings import TagKey
+
+__all__ = (
+    "get_shelf_name_from_path",
+    "validate_shelf_name",
+    "get_shelf_dirs",
+    "squeeze_the_parser",
+)
 
 
 def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
@@ -130,7 +137,7 @@ def get_shelf_dirs(base_path: Path) -> Set[str]:
     return shelf_sub_dirs
 
 
-def debug_track(track: Any):
+def _debug_track(track: Any):
     """Debug track object for logging."""
     if log.get_effective_level() > logging.DEBUG:
         return
@@ -156,7 +163,7 @@ def debug_track(track: Any):
     log.debug("=" * 60)
 
 
-def debug_file(file: Any):
+def _debug_file(file: Any):
     """Debug file object for logging."""
     if log.get_effective_level() > logging.DEBUG:
         return
@@ -179,7 +186,7 @@ def debug_file(file: Any):
     log.debug("=" * 60)
 
 
-def debug_parser(parser: ScriptParser):
+def _debug_parser(parser: ScriptParser):
     """Debugs the internal state of a `ScriptParser` object."""
     if log.get_effective_level() > logging.DEBUG:
         return

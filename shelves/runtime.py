@@ -8,6 +8,8 @@ from .transitions import Transitions
 
 _manager_singleton: Optional[ShelfManager] = None
 
+__all__ = ["manager_instance", "processor_instance", "transition_instance"]
+
 
 def manager_instance() -> ShelfManager:
     """Get the default global ShelfManager instance."""
