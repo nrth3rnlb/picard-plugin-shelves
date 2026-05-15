@@ -21,14 +21,3 @@ dev = [
     "black>=25.11.0",
     "pre-commit>=4.3.0",
 ]
-
-[tool.commitizen]
-name = "cz_conventional_commits"
-tag_format = "v$version"
-version_scheme = "semver2"
-version_provider = "uv"
-update_changelog_on_bump = true
-version_files = [
-    "shelves/__init__.py:PLUGIN_VERSION",
-    "project:version"
-]
