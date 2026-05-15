@@ -19,9 +19,7 @@ from typings import ConfigKey, TagKey, VotingType
 
 import tests
 from shelves.manager import ShelfManager
-from shelves.processors import (
-    Processors,
-)
+from shelves.processors import Processors
 
 # def get_strategy(processors, cls):
 #     return next(s for s in processors.strategies if isinstance(s, cls))

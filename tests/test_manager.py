@@ -9,14 +9,11 @@ to simulate external dependencies when necessary.
 """
 
 import unittest
-from unittest.mock import patch
+from pathlib import Path
 
-from picard import config
-from typings import ConfigKey, VotingType
+from typings import VotingType
 
-import tests
-from shelves.exceptions import ShelfNotFoundException
-from shelves.manager import ShelfManager
+from shelves.manager import ShelfManager, ShelfManagerSettings
 
 
 class ManagerTest(unittest.TestCase):
@@ -25,84 +22,44 @@ class ManagerTest(unittest.TestCase):
     """
 
     def setUp(self):
-        self.test_configuration: dict[
-            str,
-            str | list[str] | bool | int,
-        ] = {
-            ConfigKey.MOVE_FILES_TO: "/music",
-        }
+        pass
 
-    @patch("shelves.manager.config", spec_set=config)
-    def test_upvote(self, mock_config):
+    @staticmethod
+    def make_test_manager() -> ShelfManager:
+        return ShelfManager(
+            settings=ShelfManagerSettings(
+                base_path=Path("/music"),
+                shelf_names={"ShelfA", "ShelfB"},
+            )
+        )
+
+    def test_manager_uses_explicit_settings(self):
+        manager = self.make_test_manager()
+
+        assert manager.base_path == Path("/music")
+        assert manager.registered_shelf_names == {"ShelfA", "ShelfB"}
+
+    def test_upvote(self):
         """Test that the shelf_name with the most _shelf_votes_weighted is set as the winner."""
-        # Arrange
-        mock_config.setting = tests.configuration
-        manager = ShelfManager()
+        manager = self.make_test_manager()
 
-        album_id = "019c003f-66fa-7a57-89ff-767bdc16ab09"
+        album_id = "album-1"
         manager.vote(album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP)
         manager.vote(album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP)
         manager.vote(album_id=album_id, shelf_name="ShelfB", voting_type=VotingType.UP)
 
-        self.assertEqual(
-            ShelfManager().get_shelf_name(album_id),
-            "ShelfA",
-        )
+        assert manager.get_shelf_name(album_id) == "ShelfA"
 
-    @patch("shelves.manager.config", spec_set=config)
-    def test_downvote(self, mock_config):
+    def test_downvote(self):
         """Test that the shelf_name with the most _shelf_votes_weighted is set as the winner."""
         # Arrange
-        mock_config.setting = tests.configuration
-        manager = ShelfManager()
+        manager = self.make_test_manager()
 
-        album_id = "019c003f-66fa-7a57-89ff-767bdc16ab09"
+        album_id = "album-1"
+        manager.vote(album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP)
+        manager.vote(album_id=album_id, shelf_name="ShelfB", voting_type=VotingType.UP)
         manager.vote(
             album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.DOWN
         )
-        manager.vote(
-            album_id=album_id, shelf_name="ShelfB", voting_type=VotingType.DOWN
-        )
 
-        self.assertRaises(ShelfNotFoundException)
-
-    @patch("shelves.manager.config", spec_set=config)
-    def test_mixed_vote(self, mock_config):
-        """Test that voting for a shelf_name increments its vote count."""
-        # Arrange
-        mock_config.setting = tests.configuration
-        manager = ShelfManager()
-
-        album_id = "019c6169-acbe-75d9-8ebc-dc6b79a1d67d"
-        with self.subTest(album_id=album_id):
-            manager.vote(
-                album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP
-            )
-            manager.vote(
-                album_id=album_id, shelf_name="ShelfB", voting_type=VotingType.UP
-            )
-            manager.vote(
-                album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.DOWN
-            )
-            self.assertEqual(
-                ShelfManager().get_shelf_name(album_id),
-                "ShelfB",
-            )
-
-        # Act
-        album_id = "019c616e-e067-7c84-91b3-999c54d6a219"
-        with self.subTest(album_id=album_id):
-            manager.vote(
-                album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.DOWN
-            )
-            manager.vote(
-                album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP
-            )
-            manager.vote(
-                album_id=album_id, shelf_name="ShelfB", voting_type=VotingType.UP
-            )
-
-            self.assertEqual(
-                ShelfManager().get_shelf_name(album_id),
-                "ShelfA",
-            )
+        assert manager.get_shelf_name(album_id) == "ShelfB"

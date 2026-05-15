@@ -25,8 +25,14 @@ from unittest.mock import MagicMock, patch
 
 from typings import ConfigKey
 
-from shelves import constants, utils
-from shelves.manager import ShelfManager
+from shelves import utils
+from shelves.manager import (
+    ShelfManager,
+    INVALID_SHELF_NAME_CHARS,
+    INVALID_SHELF_NAMES,
+    ALBUM_INDICATORS,
+    MAX_SHELF_NAME_LENGTH,
+)
 
 
 class UtilsTest(unittest.TestCase):
@@ -97,7 +103,7 @@ class UtilsValidationTest(unittest.TestCase):
         self.assertEqual(message, "Shelf name cannot be empty")
 
     def test_validate_shelf_name_invalid_chars(self):
-        invalidations = constants.INVALID_SHELF_NAME_CHARS
+        invalidations = INVALID_SHELF_NAME_CHARS
         hr_invalidations = f"{', '.join(repr(c) for c in invalidations)}"
         for invalidation in invalidations:
             invalid_shelf_name = (
@@ -130,7 +136,7 @@ class UtilsValidationTest(unittest.TestCase):
                 )
 
     def test_validate_shelf_name_invalid_names(self):
-        invalidations = constants.INVALID_SHELF_NAMES
+        invalidations = INVALID_SHELF_NAMES
         hr_invalidations = f"{', '.join(repr(c) for c in invalidations)}"
         for invalidation in invalidations:
             invalid_shelf_name = f"{invalidation}"
@@ -156,7 +162,7 @@ class UtilsValidationTest(unittest.TestCase):
                 )
 
     def test_validate_shelf_name_tokens(self):
-        invalidations = constants.ALBUM_INDICATORS
+        invalidations = ALBUM_INDICATORS
         hr_invalidations = f"{', '.join(repr(c) for c in invalidations)}"
         for invalidation in invalidations:
             invalid_shelf_name = f"{invalidation}{chr(0x20)}{random.choice(list(self.test_known_shelf_names))}"
@@ -191,11 +197,11 @@ class UtilsValidationTest(unittest.TestCase):
     )
     def test_validate_shelf_name_too_long(self):
         """Test that a name exceeding the max length is invalid."""
-        invalidations = constants.MAX_SHELF_NAME_LENGTH
+        invalidations = MAX_SHELF_NAME_LENGTH
         hr_invalidations = f"{invalidations}"
         #
         factor = 1 + math.ceil(
-            constants.MAX_SHELF_NAME_LENGTH
+            MAX_SHELF_NAME_LENGTH
             / len(random.choice(list(self.test_known_shelf_names)))
         )
         invalid_shelf_name = (

@@ -1,7 +1,5 @@
 """ """
 
-from typing import Set
-
 from typings import ConfigKey, TagKey
 
 known_names = [

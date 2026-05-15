@@ -21,15 +21,14 @@ from picard.script import register_script_function
 from picard.ui.itemviews import register_album_action
 from picard.ui.options import register_options_page
 
-from . import processors
-
+from . import runtime
 from .actions import (
     ShelfActionSet as _ShelfActionSet,
 )
 from .actions import (
-    ShelfActionToggleLock as _ShelfActionToggleLock,
+    ShelfActionLock as _ShelfActionToggleLock,
 )
-from .options import OptionsPage as _ShelvesOptionsPageBase
+from .options.page import OptionsPage as _ShelvesOptionsPageBase
 from .script_functions import shelf as _func_shelf_base
 
 # Plugin metadata
@@ -54,7 +53,7 @@ collection, one for incoming/unprocessed music, one for Christmas music, etc.
 - **Script function `$shelf()`** for file naming integration
 """
 # noinspection PyUnusedName
-PLUGIN_VERSION = "2.0.0"
+PLUGIN_VERSION = "2.1.0"
 # noinspection PyUnusedName
 PLUGIN_API_VERSIONS = ["2.0"]
 # noinspection PyUnusedName
@@ -71,7 +70,7 @@ class ShelfActionSet(_ShelfActionSet):
     """Wrapper class for ShelfActionSet to ensure proper plugin registration."""
 
 
-class ShelfActionToggleLock(_ShelfActionToggleLock):
+class ShelfActionLock(_ShelfActionToggleLock):
     """Wrapper class for ShelfActionToggleLock to ensure proper plugin registration."""
 
 
@@ -88,7 +87,7 @@ def _track_metadata_processor(
     release: Any,
 ) -> None:
     """Wrapper for track_metadata_processor."""
-    processors.instance().track_metadata_processor(
+    runtime.processor_instance().track_metadata_processor(
         _album=album, metadata=metadata, _track=track, _release=release
     )
 
@@ -96,25 +95,29 @@ def _track_metadata_processor(
 # Wrapper functions that pass shelf_manager to processors
 def _file_post_save_processor(file: Any) -> None:
     """Wrapper for file_post_save_processor."""
-    processors.instance().file_post_save_processor(file=file)
+    runtime.processor_instance().file_post_save_processor(file=file)
 
 
 # Wrapper functions that pass shelf_manager to processors
 def _file_post_load_processor(file: Any) -> None:
     """Wrapper for file_post_load_processor."""
     log.debug("_file_post_load_processor")
-    processors.instance().file_post_load_processor(file=file)
+    runtime.processor_instance().file_post_load_processor(file=file)
 
 
 def _file_post_addition_to_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_addition_to_track_processor."""
     log.debug("_file_post_addition_to_track_processor")
-    processors.instance().file_post_addition_to_track_processor(track=track, file=file)
+    runtime.processor_instance().file_post_addition_to_track_processor(
+        track=track, file=file
+    )
 
 
 def _file_post_removal_from_track_processor(track: Any, file: Any) -> None:
     """Wrapper for file_post_removal_from_track_processor."""
-    processors.instance().file_post_removal_from_track_processor(track=track, file=file)
+    runtime.processor_instance().file_post_removal_from_track_processor(
+        track=track, file=file
+    )
 
 
 # Register metadata processors
@@ -128,7 +131,7 @@ register_file_post_removal_from_track_processor(_file_post_removal_from_track_pr
 
 # Register context menu actions
 register_album_action(ShelfActionSet())
-register_album_action(ShelfActionToggleLock())
+register_album_action(ShelfActionLock())
 
 # Register options page
 register_options_page(ShelvesOptionsPage)

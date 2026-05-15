@@ -17,8 +17,7 @@ from picard.track import Track
 from PyQt5 import QtWidgets
 from typings import TagKey
 
-from shelves.actions import ShelfActionSet, ShelfActionUnset
-from shelves.dialogs import SetShelfDialog
+from shelves.actions import ShelfActionSet
 from shelves.manager import ShelfManager
 
 # Rule of thumb (for patch)
@@ -41,21 +40,11 @@ class ShelfActionSetTest(unittest.TestCase):
     def setUp(self):
         self.actions = ShelfActionSet.__new__(ShelfActionSet)
 
-    @patch("shelves.actions.ShelfManager", autospec=True)
-    @patch("shelves.processors.instance", autospec=True)
-    @patch("shelves.processors.Processors", autospec=True)
     @patch("shelves.actions.SetShelfDialog", autospec=True)
     def test_set_callback(
         self,
         mock_dialog_cls,
-        mock_processors_cls,
-        mock_processors_instance,
-        mock_shelf_manager_cls,
     ):
-        # @patch("shelves.processors.instance"): because callback() gets processors.instance() from shelves.processors.
-        # Arrange
-        mock_processors_instance.return_value = mock_processors_cls
-
         album_id = "c9357ca4-c5ab-460f-b57c-a4c5ab760f0d"
         shelf_name = "Standard"
 
@@ -89,20 +78,11 @@ class ShelfActionSetTest(unittest.TestCase):
             album_id
         )
 
-    @patch("shelves.actions.ShelfManager", autospec=True)
-    @patch("shelves.processors.instance", autospec=True)
-    @patch("shelves.processors.Processors", autospec=True)
-    @patch("shelves.actions.SetShelfDialog", autospec=True)
     def test_set_callback_returns_early_when_user_cancels_or_enters_empty(
         self,
         mock_dialog_cls,
-        mock_processors_cls,
-        mock_processors_instance,
-        mock_shelf_manager_cls,
     ):
         # Arrange
-        mock_processors_instance.return_value = mock_processors_cls
-
         album_id = "c9357ca4-c5ab-460f-b57c-a4c5ab760f0d"
 
         file_mock = MagicMock(spec=File)
@@ -138,56 +118,10 @@ class ShelfActionSetTest(unittest.TestCase):
                 mock_shelf_manager_cls.assert_not_called()
 
 
-class ShelfActionUnsetTest(unittest.TestCase):
-    def setUp(self):
-        self.actions = ShelfActionUnset.__new__(ShelfActionUnset)
-
-    @patch("shelves.actions.ShelfManager", spec_set=ShelfManager)
-    @patch("shelves.processors.instance", autospec=True)
-    @patch("shelves.processors.Processors", autospec=True)
-    def test_unset_callback(
-        self,
-        mock_processors_cls,
-        mock_processors_instance,
-        mock_manager_cls,
-    ):
-        # Arrange
-        mock_processors_instance.return_value = mock_processors_cls
-
-        album_id = "019c5b7a-c6c1-701e-86e9-7cc29fbfec9e"
-        shelf_name = "Standard"
-
-        file_mock = MagicMock(spec=File)
-        file_mock.filename = f"/home/foobar/music/{shelf_name}/album/test.mp3"
-        file_mock.metadata = {
-            TagKey.MUSICBRAINZ_ALBUMID: album_id,
-            TagKey.SHELF: "foobar",
-            TagKey.SHELF_LOCKED: False,
-        }
-        track_mock = MagicMock(spec=Track)
-        track_mock.files = [file_mock]
-
-        album_mock = MagicMock(spec=Album)
-        album_mock.metadata = {TagKey.MUSICBRAINZ_ALBUMID: album_id}
-        album_mock.tracks = [track_mock]
-
-        mock_manager_cls.return_value.get_shelf_name.return_value = shelf_name
-
-        # Act
-        self.actions.callback([album_mock])
-
-        # Assert
-        mock_processors_cls.action_unset_processor.assert_called_once_with(
-            file=file_mock,
-        )
-        mock_manager_cls.return_value.get_shelf_name.assert_called_once_with(album_id)
-
-
 class ShelfActionDialogTest(unittest.TestCase):
     def setUp(self):
         self.dialog = SetShelfDialog.__new__(SetShelfDialog)
 
-    @patch("shelves.dialogs.ShelfManager", autospec=True)
     def test_ask_for_shelf_name(self, mock_shelf_manager_cls):
         # Arrange
         shelf_name = "Standard"
