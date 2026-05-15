@@ -1,6 +1,6 @@
 [project]
 name = "picard-plugin-shelves"
-version = "2.0.0"
+version = "2.1.0"
 readme = "README.md"
 description = "A MusicBrainz Picard plugin to organize your music into shelves."
 keywords = ["musicbrainz", "picard", "plugin", "shelves", "music", "organization"]
@@ -9,26 +9,16 @@ authors = [
     { name = "nrth3rnlb" }
 ]
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+]
 
 [dependency-groups]
 dev = [
+    "black>=24.10.0,<25",
     "picard>=2.13",
     "pytest-cov>=7.1",
     "pytest-mock>=3.15",
-    "ruff>=0.15",
+    "ruff>=0.15.13",
     "pyqt5>=5.15",
-    "black>=25.11.0",
     "pre-commit>=4.3.0",
-]
-
-[tool.commitizen]
-name = "cz_conventional_commits"
-tag_format = "v$version"
-version_scheme = "semver2"
-version_provider = "uv"
-update_changelog_on_bump = true
-version_files = [
-    "shelves/__init__.py:PLUGIN_VERSION",
-    "project:version"
 ]
