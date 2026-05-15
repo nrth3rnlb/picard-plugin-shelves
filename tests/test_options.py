@@ -15,10 +15,10 @@ from unittest.mock import MagicMock, patch
 
 from picard.config import BoolOption, IntOption, ListOption
 from PyQt5.QtWidgets import QApplication
-from typings import ConfigKey, TagKey
 
-from shelves import constants
-from options.__init__ import OptionsPage
+from shelves.manager import INVALID_SHELF_NAME_CHARS
+from shelves.options import OptionsPage
+from shelves.typings import ConfigKey, TagKey
 
 
 class OptionsPageTest(unittest.TestCase):
@@ -153,12 +153,9 @@ class OptionsPageTest(unittest.TestCase):
     # Load/Save tests
     # ============================================================================
     @patch("shelves.options.config")
-    @patch("shelves.options.ShelfManager")
-    def test_save_writes_to_config_empty_shelves(self, mock_shelf_manager, mock_config):
+    def test_save_writes_to_config_empty_shelves(self, mock_config):
         """Test if the save method correctly writes UI state to config with empty shelves."""
-        # Arrange
-        mock_manager_instance = MagicMock()
-        mock_shelf_manager.return_value = mock_manager_instance
+
         _test_configuration = deepcopy(self.test_configuration)
         _test_configuration[ConfigKey.KNOWN_SHELVES] = []
         _test_configuration[ConfigKey.WORKFLOW_STAGE_1_SHELVES] = []
@@ -293,7 +290,7 @@ class OptionsPageTest(unittest.TestCase):
         "shelves.options.QtWidgets.QMessageBox.warning",
     )
     @unittest.skipUnless(
-        constants.INVALID_SHELF_NAME_CHARS,
+        INVALID_SHELF_NAME_CHARS,
         "No INVALID_SHELF_NAME_CHARS defined",
     )
     def test_add_invalid_shelf(
@@ -304,7 +301,7 @@ class OptionsPageTest(unittest.TestCase):
         _test_known_shelves = deepcopy(self.test_known_shelves)
         popped = _test_known_shelves.pop()
         mock_get_text.return_value = (
-            f"{popped}{constants.INVALID_SHELF_NAME_CHARS.pop()}",
+            f"{popped}{INVALID_SHELF_NAME_CHARS.pop()}",
             True,
         )
 

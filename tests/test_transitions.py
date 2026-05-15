@@ -16,15 +16,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from contexts import TransitionContext
-from typings import ConfigKey
-
+from shelves.contexts import TransitionContext
 from shelves.transitions import (
     StrategyEmptyNameToStage2,
     StrategyKnownNameToStage2,
     StrategyUnknownNameToStage2,
     Transitions,
 )
+from shelves.typings import ConfigKey
 
 
 def get_strategy(workflow, cls):
@@ -56,8 +55,6 @@ class TransitionsTest(unittest.TestCase):
             ConfigKey.KNOWN_SHELVES
         ]
 
-    @patch("shelves.transitions.ContextBuilder")
-    @patch("shelves.transitions.config")
     def test_known_name_to_stage_2_strategy(self, mock_config, mock_context_builder):
         mock_config.setting = self.test_configuration
         mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = True
@@ -82,7 +79,7 @@ class TransitionsTest(unittest.TestCase):
                 mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = includes
 
                 # Create fresh processor for each case
-                transition = Transitions(manager=self.mock_manager_instance)
+                transition = Transitions(_manager=self.mock_manager_instance)
 
                 # Ensure previous call history doesn't interfere
                 self.mock_manager_instance.set_shelf_name.reset_mock()
@@ -103,8 +100,6 @@ class TransitionsTest(unittest.TestCase):
                         context.strategy, StrategyKnownNameToStage2.__name__
                     )
 
-    @patch("shelves.transitions.ContextBuilder")
-    @patch("shelves.transitions.config")
     def test_unknown_name_to_stage_2_strategy(self, mock_config, mock_context_builder):
         mock_config.setting = self.test_configuration
         mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = True
@@ -129,7 +124,7 @@ class TransitionsTest(unittest.TestCase):
                 mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = includes
 
                 # Create fresh processor for each case
-                transition = Transitions(manager=self.mock_manager_instance)
+                transition = Transitions(_manager=self.mock_manager_instance)
 
                 # Ensure previous call history doesn't interfere
                 self.mock_manager_instance.set_shelf_name.reset_mock()
@@ -150,9 +145,7 @@ class TransitionsTest(unittest.TestCase):
                         context.strategy, StrategyUnknownNameToStage2.__name__
                     )
 
-    @patch("shelves.transitions.ContextBuilder")
-    @patch("shelves.transitions.config")
-    def test_empty_name_to_stage_2_strategy(self, mock_config, mock_context_builder):
+    def test_empty_name_to_stage_2_strategy(self):
         # Prepare
         mock_config.setting = self.test_configuration
         mock_config.setting[ConfigKey.WORKFLOW_ENABLED] = True
@@ -177,7 +170,7 @@ class TransitionsTest(unittest.TestCase):
                 mock_config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = includes
 
                 # Create fresh processor for each case
-                transition = Transitions(manager=self.mock_manager_instance)
+                transition = Transitions(_manager=self.mock_manager_instance)
 
                 # Ensure previous call history doesn't interfere
                 self.mock_manager_instance.set_shelf_name.reset_mock()
