@@ -16,7 +16,7 @@ from collections import Counter
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import Optional, Union
 
 from picard import log
 
@@ -85,7 +85,7 @@ class ShelfRegistry:
         else:
             self._base_path = value.resolve()
 
-    def add_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def add_shelf_names(self, names: Union[set[str], str]) -> None:
         """
         Add shelf names to the registry.
 
@@ -97,7 +97,7 @@ class ShelfRegistry:
         log.debug("Added shelf names: %s", names)
         log.debug("Current shelf names: %s", self.shelf_names)
 
-    def remove_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def remove_shelf_names(self, names: Union[set[str], str]) -> None:
         """Remove shelf names from the registry."""
         if isinstance(names, str):
             names = {names}
@@ -105,7 +105,7 @@ class ShelfRegistry:
         log.debug("Removed shelf names: %s", names)
         log.debug("Current shelf names: %s", self.shelf_names)
 
-    def intersect_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def intersect_shelf_names(self, names: Union[set[str], str]) -> None:
         """Intersect shelf names with the provided set."""
         if isinstance(names, str):
             names = {names}
@@ -126,8 +126,8 @@ class ShelfAssignmentEngine:
     def __init__(self, registry: ShelfRegistry):
         """Initialize the assignment engine."""
         self.registry = registry
-        self._shelf_votes: Dict[str, Counter] = {}
-        self._shelf_processor: Dict[str, ProcessingContext.ProcessingType] = {}
+        self._shelf_votes: dict[str, Counter] = {}
+        self._shelf_processor: dict[str, ProcessingContext.ProcessingType] = {}
         self._lock = threading.Lock()
 
     def vote(
@@ -322,7 +322,7 @@ class ShelfValidator:
         """
         self.registry = registry
 
-    def is_likely_shelf_name(self, name: str) -> Tuple[bool, Optional[str]]:
+    def is_likely_shelf_name(self, name: str) -> tuple[bool, Optional[str]]:
         """
         Check if a name is likely to be a valid shelf name using heuristics.
 
@@ -403,7 +403,7 @@ class ShelfManager:
         self._validator = validator or ShelfValidator(self._registry)
 
     @property
-    def registered_shelf_names(self) -> Set[str]:
+    def registered_shelf_names(self) -> set[str]:
         """Get the list of shelf names."""
         return self._registry.shelf_names
 
@@ -454,20 +454,20 @@ class ShelfManager:
         """Check if an album's shelf assignment is locked."""
         return self._lock_manager.is_locked(album_id)
 
-    def is_likely_shelf_name(self, name: str) -> Tuple[bool, Optional[str]]:
+    def is_likely_shelf_name(self, name: str) -> tuple[bool, Optional[str]]:
         """Check if a name is likely a valid shelf name."""
         # Note: known_shelves parameter kept for backward compatibility but not used
         return self._validator.is_likely_shelf_name(name)
 
-    def add_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def add_shelf_names(self, names: Union[set[str], str]) -> None:
         """Add shelf names to the registry."""
         self._registry.add_shelf_names(names)
 
-    def remove_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def remove_shelf_names(self, names: Union[set[str], str]) -> None:
         """Remove shelf names from the registry."""
         self._registry.remove_shelf_names(names)
 
-    def intersect_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def intersect_shelf_names(self, names: Union[set[str], str]) -> None:
         """Intersect shelf names with the provided set."""
         self._registry.intersect_shelf_names(names)
 
