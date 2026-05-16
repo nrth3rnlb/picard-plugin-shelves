@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 
 MESSAGE_INVALID_SHELF_NAME: str = _("Shelf name is not valid.")

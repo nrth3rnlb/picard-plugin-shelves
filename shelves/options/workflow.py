@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 from typing import Optional
 
 from picard import log
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 from ..ui.widgets import QShelvesWidget
 from .constants import (
@@ -49,7 +47,7 @@ class WorkflowOptionsMixin:
         )
 
     def _workflow_action_move_item_stage_1_to_all(self):
-        """Move selected item from stage 1 to all shelves."""
+        """Move the selected item from stage 1 to all shelves."""
         self._workflow_move_selected_items(
             self.workflow_stage_1,
             self.shelves_for_stages,
@@ -185,10 +183,8 @@ class WorkflowOptionsMixin:
 
         # Check for full lists
         is_full_shelves_for_stages = (
-            (max_count := self.shelves_for_stages.max_item_count)
-            != QShelvesWidget.UNLIMITED
-            and max_count <= self.shelves_for_stages.count()
-        )
+            max_count := self.shelves_for_stages.max_item_count
+        ) != QShelvesWidget.UNLIMITED and max_count <= self.shelves_for_stages.count()
         is_full_stage_1 = (
             max_count := self.workflow_stage_1.max_item_count
         ) != QShelvesWidget.UNLIMITED and max_count <= self.workflow_stage_1.count()

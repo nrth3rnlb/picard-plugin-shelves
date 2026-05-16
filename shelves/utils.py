@@ -2,8 +2,6 @@
 Utility functions
 """
 
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from pathlib import Path

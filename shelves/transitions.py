@@ -7,8 +7,6 @@ for determining the appropriate shelf transitions based on the context and
 applies a sequence of predefined transitions to handle different scenarios.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from typing import Optional, Sequence
 
@@ -38,7 +36,9 @@ class Strategy(ABC):
     # noinspection PyTypeHints
     def process(self, context: TransitionContext) -> bool:
         """Process the shelf transition."""
-        if not config.setting[ConfigKey.WORKFLOW_ENABLED]:
+        if not config.setting[
+            ConfigKey.WORKFLOW_ENABLED
+        ]:  # ty:ignore[not-subscriptable]
             return False
 
         if not self.is_applicable(context):
@@ -46,7 +46,9 @@ class Strategy(ABC):
 
         log.debug("Strategy: %s, Context: %s", self.__class__.__name__, context)
         if self.apply_transition(context):
-            context.shelf_name = config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES][0]
+            context.shelf_name = config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES][
+                0
+            ]  # ty:ignore[not-subscriptable]
         return True
 
 
@@ -57,7 +59,9 @@ class StrategyEmptyNameToStage2(Strategy):
         # noinspection PyTypeHints
         decision = (
             context.transition_type == TransitionContext.TransitionType.TO_STAGE_2
-            and config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
+            and config.setting[
+                ConfigKey.WORKFLOW_STAGE_2_SHELVES
+            ]  # ty:ignore[not-subscriptable]
             and context.shelf_name == ""
         )
         return decision
@@ -74,8 +78,12 @@ class StrategyUnknownNameToStage2(Strategy):
         # noinspection PyTypeHints
         decision = (
             context.transition_type == TransitionContext.TransitionType.TO_STAGE_2
-            and config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
-            and config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES]
+            and config.setting[
+                ConfigKey.WORKFLOW_STAGE_2_SHELVES
+            ]  # ty:ignore[not-subscriptable]
+            and config.setting[
+                ConfigKey.STAGE_1_INCLUDES_NON_SHELVES
+            ]  # ty:ignore[not-subscriptable]
             and context.shelf_name not in self.manager.registered_shelf_names
         )
         return decision
@@ -83,7 +91,9 @@ class StrategyUnknownNameToStage2(Strategy):
     def apply_transition(self, context: TransitionContext) -> bool:
         # noinspection PyTypeHints
         decision = (
-            config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES]
+            config.setting[
+                ConfigKey.STAGE_1_INCLUDES_NON_SHELVES
+            ]  # ty:ignore[not-subscriptable]
             and context.shelf_name not in self.manager.registered_shelf_names
         )
         return decision
@@ -97,9 +107,14 @@ class StrategyKnownNameToStage2(Strategy):
 
         decision = (
             context.transition_type == TransitionContext.TransitionType.TO_STAGE_2
-            and config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
+            and config.setting[
+                ConfigKey.WORKFLOW_STAGE_2_SHELVES
+            ]  # ty:ignore[not-subscriptable]
             and context.shelf_name in self.manager.registered_shelf_names
-            and context.shelf_name in config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
+            and context.shelf_name
+            in config.setting[
+                ConfigKey.WORKFLOW_STAGE_1_SHELVES
+            ]  # ty:ignore[not-subscriptable]
         )
         return decision
 

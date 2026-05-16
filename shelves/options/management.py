@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 
 from picard import config
@@ -163,20 +161,28 @@ class ManagementOptionsMixin(QtWidgets.QWidget):
         self.shelves_for_stages.clear()
         self.shelves_for_stages.addItems(
             manager.registered_shelf_names.difference(
-                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
+                config.setting[
+                    ConfigKey.WORKFLOW_STAGE_1_SHELVES
+                ]  # ty:ignore[not-subscriptable]
             ).difference(
-                config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES],
+                config.setting[
+                    ConfigKey.WORKFLOW_STAGE_2_SHELVES
+                ],  # ty:ignore[not-subscriptable]
             )
         )
         self.workflow_stage_1.clear()
         self.workflow_stage_1.addItems(
             manager.registered_shelf_names.intersection(
-                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
+                config.setting[
+                    ConfigKey.WORKFLOW_STAGE_1_SHELVES
+                ]  # ty:ignore[not-subscriptable]
             )
         )
         self.workflow_stage_2.clear()
         self.workflow_stage_2.addItems(
             manager.registered_shelf_names.intersection(
-                config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]
+                config.setting[
+                    ConfigKey.WORKFLOW_STAGE_2_SHELVES
+                ]  # ty:ignore[not-subscriptable]
             )
         )

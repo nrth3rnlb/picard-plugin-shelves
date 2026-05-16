@@ -2,8 +2,6 @@
 Context menu actions for the Shelves plugin.
 """
 
-from __future__ import annotations
-
 from typing import Any, List, Optional
 
 from picard import log

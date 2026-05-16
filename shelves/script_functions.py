@@ -2,8 +2,6 @@
 Script functions for the Shelves plugin.
 """
 
-from __future__ import annotations
-
 from picard.script import ScriptParser
 
 from . import utils

@@ -11,8 +11,6 @@ This module provides a component-based architecture for managing shelf assignmen
 The ShelfManager supports dependency injection for testing purposes.
 """
 
-from __future__ import annotations
-
 import threading
 from collections import Counter
 from dataclasses import dataclass
