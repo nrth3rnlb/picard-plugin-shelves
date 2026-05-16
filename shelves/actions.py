@@ -1,10 +1,7 @@
 """
 Context menu actions for the Shelves plugin.
 """
-
-from __future__ import annotations
-
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from picard import log
 from picard.album import Album, File, Track
@@ -62,7 +59,7 @@ class ShelfActionLock(BaseAction):
             return value.strip().lower() in {"1", "true", "yes", "on"}
         return bool(value)
 
-    def callback(self, objs: List[Any]) -> None:
+    def callback(self, objs: list[Any]) -> None:
         """Toggle lock state of albums."""
 
         processors = runtime.processor_instance()
@@ -85,7 +82,7 @@ class ShelfActionLock(BaseAction):
             _set_album_metadata(albums)
 
 
-def _set_album_metadata(albums: List[Album]):
+def _set_album_metadata(albums: list[Album]):
     manager = runtime.manager_instance()
 
     for album in albums:

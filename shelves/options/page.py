@@ -2,8 +2,6 @@
 Options page for the Shelves plugin.
 """
 
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 from typing import Optional, Protocol
@@ -133,21 +131,21 @@ class OptionsPage(
         # populated by filling the widget "shelf_management_shelves." Therefore, we first add the shelf names to that
         # widget.
         self.shelf_management_shelves.addItems(
-            config.setting[ConfigKey.KNOWN_SHELVES],
+            config.setting[ConfigKey.KNOWN_SHELVES],  # ty:ignore[not-subscriptable]
         )
 
         self.stage_1_includes_non_shelves.setChecked(
-            config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES],
+            config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES],  # ty:ignore[not-subscriptable]
         )
 
         self.workflow_enabled.setChecked(
-            config.setting[ConfigKey.WORKFLOW_ENABLED],
+            config.setting[ConfigKey.WORKFLOW_ENABLED],  # ty:ignore[not-subscriptable]
         )
 
         self.naming_script_code.setPlainText(constants.RENAME_SNIPPET)
 
         self.plugin_configuration.setCurrentIndex(
-            config.setting[ConfigKey.ACTIVE_TAB],
+            config.setting[ConfigKey.ACTIVE_TAB],  # ty:ignore[not-subscriptable]
         )
 
     # noinspection PyTypeHints
@@ -156,22 +154,28 @@ class OptionsPage(
         shelf_manager = runtime.manager_instance()
         registered = shelf_manager.registered_shelf_names
 
-        config.setting[ConfigKey.KNOWN_SHELVES] = _shelf_names_from_widget(
-            self.shelf_management_shelves,
-            registered,
+        config.setting[ConfigKey.KNOWN_SHELVES] = (  # ty:ignore[invalid-assignment]
+            _shelf_names_from_widget(
+                self.shelf_management_shelves,
+                registered,
+            )
         )
-        config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES] = _shelf_names_from_widget(
+        config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES] = _shelf_names_from_widget(  # ty:ignore[invalid-assignment]
             self.workflow_stage_1,
             registered,
         )
-        config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES] = _shelf_names_from_widget(
+        config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES] = _shelf_names_from_widget(  # ty:ignore[invalid-assignment]
             self.workflow_stage_2,
             registered,
         )
 
-        config.setting[ConfigKey.ACTIVE_TAB] = self.plugin_configuration.currentIndex()
+        config.setting[ConfigKey.ACTIVE_TAB] = (  # ty:ignore[invalid-assignment]
+            self.plugin_configuration.currentIndex()
+        )
 
-        config.setting[ConfigKey.WORKFLOW_ENABLED] = self.workflow_enabled.isChecked()
-        config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = (
+        config.setting[ConfigKey.WORKFLOW_ENABLED] = (  # ty:ignore[invalid-assignment]
+            self.workflow_enabled.isChecked()
+        )
+        config.setting[ConfigKey.STAGE_1_INCLUDES_NON_SHELVES] = (  # ty:ignore[invalid-assignment]
             self.stage_1_includes_non_shelves.isChecked()
         )

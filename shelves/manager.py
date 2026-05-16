@@ -11,19 +11,16 @@ This module provides a component-based architecture for managing shelf assignmen
 The ShelfManager supports dependency injection for testing purposes.
 """
 
-from __future__ import annotations
-
 import threading
 from collections import Counter
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import Optional, Union
 
 from picard import log
 
 from . import utils
-from .contexts import ProcessingContext
 from .typings import VotingType
 
 MAX_SHELF_NAME_LENGTH: int = 30
@@ -41,7 +38,7 @@ class ShelfRegistry:
     Provides validation when setting shelf names.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the shelf registry with empty names and default base path."""
         self._shelf_names: set[str] = set()
         self._base_path: Path = Path(".")
@@ -52,11 +49,9 @@ class ShelfRegistry:
         return self._shelf_names
 
     @shelf_names.setter
-    def shelf_names(self, names: set[str]):
+    def shelf_names(self, names: set[str]) -> None:
         """
         Set the list of shelf names, filtering out invalid names.
-
-        :param names: Set of shelf names to register.
         """
         self._shelf_names = set(
             filter(
@@ -76,22 +71,18 @@ class ShelfRegistry:
         return self._base_path
 
     @base_path.setter
-    def base_path(self, value: Union[str, Path]):
+    def base_path(self, value: Union[str, Path]) -> None:
         """
         Set the base path for shelf directories.
-
-        :param value: Path as string or Path object.
         """
         if isinstance(value, str):
             self._base_path = Path(value).resolve()
         else:
             self._base_path = value.resolve()
 
-    def add_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def add_shelf_names(self, names: Union[set[str], str]) -> None:
         """
         Add shelf names to the registry.
-
-        :param names: Single shelf name or set of shelf names to add.
         """
         if isinstance(names, str):
             names = {names}
@@ -99,7 +90,7 @@ class ShelfRegistry:
         log.debug("Added shelf names: %s", names)
         log.debug("Current shelf names: %s", self.shelf_names)
 
-    def remove_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def remove_shelf_names(self, names: Union[set[str], str]) -> None:
         """Remove shelf names from the registry."""
         if isinstance(names, str):
             names = {names}
@@ -107,7 +98,7 @@ class ShelfRegistry:
         log.debug("Removed shelf names: %s", names)
         log.debug("Current shelf names: %s", self.shelf_names)
 
-    def intersect_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def intersect_shelf_names(self, names: Union[set[str], str]) -> None:
         """Intersect shelf names with the provided set."""
         if isinstance(names, str):
             names = {names}
@@ -128,8 +119,7 @@ class ShelfAssignmentEngine:
     def __init__(self, registry: ShelfRegistry):
         """Initialize the assignment engine."""
         self.registry = registry
-        self._shelf_votes: Dict[str, Counter] = {}
-        self._shelf_processor: Dict[str, ProcessingContext.ProcessingType] = {}
+        self._shelf_votes: dict[str, Counter] = {}
         self._lock = threading.Lock()
 
     def vote(
@@ -138,11 +128,12 @@ class ShelfAssignmentEngine:
         shelf_name: str,
         voting_type: VotingType = VotingType.INITIAL,
         shelf_locked: bool = False,
-    ):
+    ) -> None:
         """
         Executes a specific voting operation (upvote, downvote, or initial vote) for a given album on a specified shelf.
         The operation is determined based on the `voting_type` parameter.
         """
+
         if shelf_locked:
             log.debug(
                 "Shelf %s is locked, fallback to initial voting: %s",
@@ -176,17 +167,14 @@ class ShelfAssignmentEngine:
         ID does not exist in the voting structure, or if the shelf name has
         not been registered under that album, it initializes the corresponding
         entry to track votes.
-
-        :param album_id: The unique identifier for the album.
-        :param shelf_name: The name of the shelf associated with the album.
-        :return: This method does not return a value.
         """
-        if album_id not in self._shelf_votes:
-            log.debug("Initializing voting data for album %s", album_id)
-            self._shelf_votes[album_id] = Counter()
-        if shelf_name not in self._shelf_votes[album_id]:
-            log.debug("Initializing vote count for shelf %s", shelf_name)
-            self._shelf_votes[album_id][shelf_name] = 0
+        with self._lock:
+            if album_id not in self._shelf_votes:
+                log.debug("Initializing voting data for album %s", album_id)
+                self._shelf_votes[album_id] = Counter()
+            if shelf_name not in self._shelf_votes[album_id]:
+                log.debug("Initializing vote count for shelf %s", shelf_name)
+                self._shelf_votes[album_id][shelf_name] = 0
 
     def _upvote(self, album_id, shelf_name) -> None:
         """
@@ -197,9 +185,10 @@ class ShelfAssignmentEngine:
         data structure that tracks shelf votes. Designed to work with internal components
         only.
         """
-        self._init_voting(album_id=album_id, shelf_name=shelf_name)
-        log.debug("Incrementing vote count for %s", shelf_name)
-        self._shelf_votes[album_id].update({shelf_name})
+        with self._lock:
+            self._init_voting(album_id=album_id, shelf_name=shelf_name)
+            log.debug("Incrementing vote count for %s", shelf_name)
+            self._shelf_votes[album_id].update({shelf_name})
 
     def _downvote(self, album_id, shelf_name) -> None:
         """
@@ -214,34 +203,11 @@ class ShelfAssignmentEngine:
         in which each album is linked to its associated shelves and their respective
         vote counts.
         """
-        self._init_voting(album_id=album_id, shelf_name=shelf_name)
-        if shelf_name in self._shelf_votes[album_id].elements():
-            log.debug("Decrementing vote count for %s", shelf_name)
-            self._shelf_votes[album_id].subtract({shelf_name})
-
-    def get_shelf_name_by_votes(self, album_id) -> Optional[str]:
-        """
-        Get the most commonly voted shelf name for a given album.
-
-        This method retrieves the most frequently voted shelf name associated with the
-        provided album ID. If no votes are present for the album, the method returns None.
-        It also logs the album ID, the selected shelf name, and the current vote counts
-        for the album for debugging purposes.
-        """
-        if album_id not in self._shelf_votes:
-            return None
-        most_common = self._shelf_votes[album_id].most_common(1)
-        if not most_common:
-            return None
-        shelf_name, count = most_common[0]
-        log.debug("%s, %s, %s", album_id, shelf_name, self._shelf_votes[album_id])
-        return shelf_name
-
-    def get_processing_type(
-        self, album_id
-    ) -> Optional[ProcessingContext.ProcessingType]:
-        """Determine the processor type based on vote counts."""
-        return self._shelf_processor.get(album_id, None)
+        with self._lock:
+            self._init_voting(album_id=album_id, shelf_name=shelf_name)
+            if shelf_name in self._shelf_votes[album_id].elements():
+                log.debug("Decrementing vote count for %s", shelf_name)
+                self._shelf_votes[album_id].subtract({shelf_name})
 
     def get_shelf_name(
         self,
@@ -253,10 +219,15 @@ class ShelfAssignmentEngine:
         can be determined, it returns None.
         """
         with self._lock:
-            if shelf_name := self.get_shelf_name_by_votes(album_id):
-                return shelf_name
+            if album_id not in self._shelf_votes:
+                return None
+            most_common = self._shelf_votes[album_id].most_common(1)
+            if not most_common:
+                return None
+            shelf_name, count = most_common[0]
+            log.debug("%s, %s, %s", album_id, shelf_name, self._shelf_votes[album_id])
 
-        return None
+        return shelf_name
 
     def clear_album(self, album_id: str) -> None:
         """Clear all votes and assignments for an album."""
@@ -278,33 +249,43 @@ class ShelfLockManager:
 
         :param assignment_engine: ShelfAssignmentEngine instance for vote clearing.
         """
+        self._lock = threading.Lock()
         self.assignment_engine = assignment_engine
-        self._shelf_locked: Dict[str, bool] = {}
+        self._shelf_locks: dict[str, str] = {}
 
     def lock(self, album_id: str, shelf_name: str) -> None:
         """Set the manual override/lock for an album's shelf assignment."""
-        self._shelf_locked[album_id] = True
-        log.debug("Locking album %s to shelf %s", album_id, shelf_name)
-        self.assignment_engine.vote(
-            album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.LOCK
-        )
+        with self._lock:
+            self._shelf_locks[album_id] = shelf_name
+            log.debug("Locking album %s to shelf %s", album_id, shelf_name)
+            self.assignment_engine.vote(
+                album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.LOCK
+            )
 
     def unlock(self, album_id: str, shelf_name: str) -> None:
         """Clear the manual override/lock for an album's shelf assignment."""
-        self._shelf_locked[album_id] = False
-        log.debug("Unlocking album %s from shelf %s", album_id, shelf_name)
-        self.assignment_engine.vote(
-            album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.UNLOCK
-        )
+        with self._lock:
+            self._shelf_locks.pop(album_id, None)
+            log.debug("Unlocking album %s from shelf %s", album_id, shelf_name)
+            self.assignment_engine.vote(
+                album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.UNLOCK
+            )
 
     def is_locked(self, album_id: str) -> bool:
         """Check if an album's shelf assignment is locked."""
         log.debug(
             "Lock status for album %s: %s",
             album_id,
-            self._shelf_locked.get(album_id, False),
+            self._shelf_locks.get(album_id, None) is not None,
         )
-        return self._shelf_locked.get(album_id, False)
+        return self._shelf_locks.get(album_id, None) is not None
+
+    def get_shelf_name(self, album_id: str) -> Optional[str]:
+        """Retrieve the shelf name for a locked album, or None if not locked."""
+        with self._lock:
+            if self.is_locked(album_id):
+                return self._shelf_locks.get(album_id, None)
+        return None
 
 
 class ShelfValidator:
@@ -324,7 +305,7 @@ class ShelfValidator:
         """
         self.registry = registry
 
-    def is_likely_shelf_name(self, name: str) -> Tuple[bool, Optional[str]]:
+    def is_likely_shelf_name(self, name: str) -> tuple[bool, Optional[str]]:
         """
         Check if a name is likely to be a valid shelf name using heuristics.
 
@@ -405,7 +386,7 @@ class ShelfManager:
         self._validator = validator or ShelfValidator(self._registry)
 
     @property
-    def registered_shelf_names(self) -> Set[str]:
+    def registered_shelf_names(self) -> set[str]:
         """Get the list of shelf names."""
         return self._registry.shelf_names
 
@@ -436,13 +417,10 @@ class ShelfManager:
 
     def get_shelf_name(self, album_id: str) -> Optional[str]:
         """Determine the shelf for an album."""
-        return self._assignment_engine.get_shelf_name(album_id)
-
-    def get_processing_type(
-        self, album_id
-    ) -> Optional[ProcessingContext.ProcessingType]:
-        """Determine the processor type based on vote counts."""
-        return self._assignment_engine.get_processing_type(album_id)
+        shelf_name = self._lock_manager.get_shelf_name(album_id)
+        if shelf_name is None:
+            shelf_name = self._assignment_engine.get_shelf_name(album_id)
+        return shelf_name
 
     def lock(self, album_id: str, shelf_name: str = "") -> None:
         """Set the manual lock for an album's shelf assignment."""
@@ -456,20 +434,20 @@ class ShelfManager:
         """Check if an album's shelf assignment is locked."""
         return self._lock_manager.is_locked(album_id)
 
-    def is_likely_shelf_name(self, name: str) -> Tuple[bool, Optional[str]]:
+    def is_likely_shelf_name(self, name: str) -> tuple[bool, Optional[str]]:
         """Check if a name is likely a valid shelf name."""
         # Note: known_shelves parameter kept for backward compatibility but not used
         return self._validator.is_likely_shelf_name(name)
 
-    def add_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def add_shelf_names(self, names: Union[set[str], str]) -> None:
         """Add shelf names to the registry."""
         self._registry.add_shelf_names(names)
 
-    def remove_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def remove_shelf_names(self, names: Union[set[str], str]) -> None:
         """Remove shelf names from the registry."""
         self._registry.remove_shelf_names(names)
 
-    def intersect_shelf_names(self, names: Union[Set[str], str]) -> None:
+    def intersect_shelf_names(self, names: Union[set[str], str]) -> None:
         """Intersect shelf names with the provided set."""
         self._registry.intersect_shelf_names(names)
 

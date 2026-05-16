@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Optional
 
 from .manager import ShelfManager
@@ -7,6 +5,8 @@ from .processors import Processors
 from .transitions import Transitions
 
 _manager_singleton: Optional[ShelfManager] = None
+_processors_singleton: Optional[Processors] = None
+_transition_singleton: Optional[Transitions] = None
 
 __all__ = ["manager_instance", "processor_instance", "transition_instance"]
 
@@ -25,9 +25,6 @@ def manager_instance() -> ShelfManager:
     return _manager_singleton
 
 
-_processors_singleton: Optional[Processors] = None
-
-
 def processor_instance() -> Processors:
     """Get the default global Processors instance."""
     global _processors_singleton
@@ -36,9 +33,6 @@ def processor_instance() -> Processors:
     if _processors_singleton is None:
         raise RuntimeError("Processors instance could not be initialized")
     return _processors_singleton
-
-
-_transition_singleton: Optional[Transitions] = None
 
 
 def transition_instance() -> Transitions:

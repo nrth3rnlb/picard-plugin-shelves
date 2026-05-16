@@ -5,9 +5,7 @@ This plugin adds virtual shelf_name management to MusicBrainz Picard,
 allowing music files to be organized by top-level folders.
 """
 
-from __future__ import annotations
-
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from picard import log
 from picard.file import (
@@ -23,10 +21,10 @@ from picard.ui.options import register_options_page
 
 from . import runtime
 from .actions import (
-    ShelfActionSet as _ShelfActionSet,
+    ShelfActionLock as _ShelfActionToggleLock,
 )
 from .actions import (
-    ShelfActionLock as _ShelfActionToggleLock,
+    ShelfActionSet as _ShelfActionSet,
 )
 from .options.page import OptionsPage as _ShelvesOptionsPageBase
 from .script_functions import shelf as _func_shelf_base
@@ -53,7 +51,7 @@ collection, one for incoming/unprocessed music, one for Christmas music, etc.
 - **Script function `$shelf()`** for file naming integration
 """
 # noinspection PyUnusedName
-PLUGIN_VERSION = "2.1.0"
+PLUGIN_VERSION = "2.1.1b1"
 # noinspection PyUnusedName
 PLUGIN_API_VERSIONS = ["2.0"]
 # noinspection PyUnusedName
@@ -82,7 +80,7 @@ def func_shelf(parser: Any) -> Optional[str]:
 
 def _track_metadata_processor(
     album: Any,
-    metadata: Dict[str, Any],
+    metadata: dict[str, Any],
     track: Any,
     release: Any,
 ) -> None:

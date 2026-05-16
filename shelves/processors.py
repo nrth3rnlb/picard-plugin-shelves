@@ -8,11 +8,9 @@ Architecture:
 - Processors: Main processor facade with dependency injection support
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 from picard import config, log
 from picard.file import File
@@ -45,7 +43,7 @@ class Strategy(ABC):
         """Get the shelf name to assign."""
         raise NotImplementedError
 
-    def upvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+    def upvote_shelf_names(self, context: ProcessingContext) -> list[str]:
         if (
             context.processing_type == ProcessingContext.ProcessingType.ADD
             or context.processing_type == ProcessingContext.ProcessingType.SET
@@ -58,7 +56,7 @@ class Strategy(ABC):
             return []
         return []
 
-    def downvote_shelf_names(self, context: ProcessingContext) -> List[str]:
+    def downvote_shelf_names(self, context: ProcessingContext) -> list[str]:
         if (
             context.processing_type == ProcessingContext.ProcessingType.ADD
             or context.processing_type == ProcessingContext.ProcessingType.SET
@@ -74,14 +72,14 @@ class Strategy(ABC):
 
         return []
 
-    def unlock_shelf_names(self, album_id: str, shelf_names: Union[str, List[str]]):
+    def unlock_shelf_names(self, album_id: str, shelf_names: Union[str, list[str]]):
         """Apply manual unlock state to the shelf assignment."""
         if isinstance(shelf_names, str):
             shelf_names = [shelf_names]
         for shelf_name in shelf_names:
             self.manager.unlock(album_id=album_id, shelf_name=shelf_name)
 
-    def lock_shelf_names(self, album_id: str, shelf_names: Union[str, List[str]]):
+    def lock_shelf_names(self, album_id: str, shelf_names: Union[str, list[str]]):
         """Apply manual lock state to the shelf assignment."""
         if isinstance(shelf_names, str):
             shelf_names = [shelf_names]
@@ -90,8 +88,11 @@ class Strategy(ABC):
             self.manager.lock(album_id=album_id, shelf_name=shelf_name)
 
     def apply_votes(
-        self, voting_type: VotingType, album_id: str, shelf_names: Union[str, List[str]]
-    ):
+        self,
+        voting_type: VotingType,
+        album_id: str,
+        shelf_names: Union[str, list[str]],
+    ) -> None:
         """Initialize voting, apply upvote/downvote to the shelf assignment."""
         if isinstance(shelf_names, str):
             shelf_names = [shelf_names]
@@ -151,7 +152,7 @@ class StrategyManualUnset(Strategy):
     def is_applicable(self, context: ProcessingContext) -> bool:
         return context.processing_type == ProcessingContext.ProcessingType.UNSET
 
-    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def shelf_name(self, context: ProcessingContext) -> str:
         return context.name_from_path
 
     def upvote_shelf_names(self, context: ProcessingContext) -> list[str]:
@@ -164,7 +165,7 @@ class StrategyManualUnset(Strategy):
 
 
 class StrategyManualSet(Strategy):
-    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def shelf_name(self, context: ProcessingContext) -> str:
         return context.processing_name
 
     def is_applicable(self, context: ProcessingContext) -> bool:
@@ -205,7 +206,7 @@ class StrategyKnownIdenticalNames(Strategy):
 
         return name_from_path in self.manager.registered_shelf_names
 
-    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def shelf_name(self, context: ProcessingContext) -> str:
         return context.name_from_path
 
 
@@ -242,9 +243,15 @@ class StrategyKnownNameFromPathDiffersFromTag(Strategy):
 
         # Final check: exclude workflow stage 1 shelves
         # noinspection PyTypeHints
-        return name_from_path not in config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]
 
-    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+        return (
+            name_from_path
+            not in config.setting[
+                ConfigKey.WORKFLOW_STAGE_1_SHELVES
+            ]  # ty:ignore[not-subscriptable]
+        )
+
+    def shelf_name(self, context: ProcessingContext) -> str:
         return context.name_from_path
 
 
@@ -267,7 +274,7 @@ class StrategyUnknownNameFromPath(Strategy):
         # Check if it's NOT a registered shelf name (single membership test)
         return name_from_path not in self.manager.registered_shelf_names
 
-    def shelf_name(self, context: ProcessingContext) -> Optional[str]:
+    def shelf_name(self, context: ProcessingContext) -> str:
         return context.name_from_path
 
 
@@ -295,7 +302,7 @@ class Processors:
 
     def __init__(self, manager: Optional[ShelfManager] = None):
         self.manager = manager or runtime.manager_instance()
-        self.strategies = [cls() for cls in self.STRATEGY_ORDER]
+        self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
     def action_unset_processor(self, file: File) -> None:
 
@@ -401,20 +408,19 @@ class Processors:
     def track_metadata_processor(
         self,
         _album: Optional[Any],
-        metadata: Dict[str, Any],
+        metadata: dict[str, Any],
         _track: Optional[Any],
         _release: Optional[Any],
     ) -> None:
         """Set a shelf name in track metadata from album's shelf assignment."""
         album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID, "")
         transition = runtime.transition_instance()
-        if not transition:
-            return
 
         context: TransitionContext = transition.transition_to(
             album_id=album_id,
             transition_type=TransitionContext.TransitionType.TO_STAGE_2,
         )
+
         metadata[TagKey.SHELF] = context.shelf_name
         metadata[TagKey.SHELF_LOCKED] = self.manager.get_shelf_locked(album_id=album_id)
 
@@ -438,7 +444,7 @@ def build_processing_context(
     # utils.debug_track(file)
     # Extract shelf name from path
     name_from_path = utils.get_shelf_name_from_path(
-        file_path=Path(file.filename),
+        file_path=Path(str(file.filename)),
         base_path=manager.base_path,
     )
 

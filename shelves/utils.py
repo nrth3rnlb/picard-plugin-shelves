@@ -2,12 +2,10 @@
 Utility functions
 """
 
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, FrozenSet, Optional, Set, Tuple, Union
+from typing import Any, Optional, Union
 
 from picard import log
 from picard.script import ScriptParser
@@ -45,10 +43,10 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
 
 def validate_shelf_name(
     name: str,
-    album_indicators: FrozenSet[str],
+    album_indicators: frozenset[str],
     invalid_shelf_names,
     invalid_shelf_name_chars,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """Validate a shelf name."""
     if not isinstance(name, str) or not name.strip():
         return False, _("Shelf name cannot be empty")
@@ -124,9 +122,9 @@ def validate_shelf_name(
     return True, "Valid shelf name"
 
 
-def get_shelf_dirs(base_path: Path) -> Set[str]:
+def get_shelf_dirs(base_path: Path) -> set[str]:
     """Get a set of subdirectories in the given base path."""
-    shelf_sub_dirs: Set[str] = set()
+    shelf_sub_dirs: set[str] = set()
     try:
         shelf_sub_dirs = set(
             entry.name for entry in base_path.iterdir() if entry.is_dir()
