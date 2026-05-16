@@ -127,7 +127,6 @@ class ShelfAssignmentEngine:
         """Initialize the assignment engine."""
         self.registry = registry
         self._shelf_votes: dict[str, Counter] = {}
-        self._shelf_processor: dict[str, ProcessingContext.ProcessingType] = {}
         self._lock = threading.Lock()
 
     def vote(
@@ -234,12 +233,6 @@ class ShelfAssignmentEngine:
         shelf_name, count = most_common[0]
         log.debug("%s, %s, %s", album_id, shelf_name, self._shelf_votes[album_id])
         return shelf_name
-
-    def get_processing_type(
-        self, album_id
-    ) -> Optional[ProcessingContext.ProcessingType]:
-        """Determine the processor type based on vote counts."""
-        return self._shelf_processor.get(album_id, None)
 
     def get_shelf_name(
         self,
@@ -443,12 +436,6 @@ class ShelfManager:
         if shelf_name is None:
             shelf_name = self._assignment_engine.get_shelf_name(album_id)
         return shelf_name
-
-    def get_processing_type(
-        self, album_id
-    ) -> Optional[ProcessingContext.ProcessingType]:
-        """Determine the processor type based on vote counts."""
-        return self._assignment_engine.get_processing_type(album_id)
 
     def lock(self, album_id: str, shelf_name: str = "") -> None:
         """Set the manual lock for an album's shelf assignment."""
