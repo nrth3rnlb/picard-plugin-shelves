@@ -277,11 +277,11 @@ class ShelfLockManager:
         :param assignment_engine: ShelfAssignmentEngine instance for vote clearing.
         """
         self.assignment_engine = assignment_engine
-        self._shelf_locked: Dict[str, bool] = {}
+        self._shelf_locks: dict[str, str] = {}
 
     def lock(self, album_id: str, shelf_name: str) -> None:
         """Set the manual override/lock for an album's shelf assignment."""
-        self._shelf_locked[album_id] = True
+        self._shelf_locks[album_id] = shelf_name
         log.debug("Locking album %s to shelf %s", album_id, shelf_name)
         self.assignment_engine.vote(
             album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.LOCK
@@ -289,7 +289,7 @@ class ShelfLockManager:
 
     def unlock(self, album_id: str, shelf_name: str) -> None:
         """Clear the manual override/lock for an album's shelf assignment."""
-        self._shelf_locked[album_id] = False
+        self._shelf_locks.pop(album_id, None)
         log.debug("Unlocking album %s from shelf %s", album_id, shelf_name)
         self.assignment_engine.vote(
             album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.UNLOCK
@@ -300,10 +300,15 @@ class ShelfLockManager:
         log.debug(
             "Lock status for album %s: %s",
             album_id,
-            self._shelf_locked.get(album_id, False),
+            self._shelf_locks.get(album_id, None) is not None,
         )
-        return self._shelf_locked.get(album_id, False)
+        return self._shelf_locks.get(album_id, None) is not None
 
+    def get_shelf_name(self, album_id: str) -> Optional[str]:
+        """Retrieve the shelf name for a locked album, or None if not locked."""
+        if self.is_locked(album_id):
+            return self._shelf_locks.get(album_id, None)
+        return None
 
 class ShelfValidator:
     """
@@ -434,7 +439,10 @@ class ShelfManager:
 
     def get_shelf_name(self, album_id: str) -> Optional[str]:
         """Determine the shelf for an album."""
-        return self._assignment_engine.get_shelf_name(album_id)
+        shelf_name = self._lock_manager.get_shelf_name(album_id)
+        if shelf_name is None:
+            shelf_name = self._assignment_engine.get_shelf_name(album_id)
+        return shelf_name
 
     def get_processing_type(
         self, album_id

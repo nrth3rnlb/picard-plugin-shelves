@@ -127,11 +127,11 @@ class Transitions:
 
     def __init__(self, _manager: Optional[runtime.ShelfManager] = None):
         self.manager = _manager or runtime.manager_instance()
-        self.strategies = [cls() for cls in self.STRATEGY_ORDER]
+        self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
     def transition_to(
         self, album_id: str, transition_type: TransitionContext.TransitionType
-    ) -> TransitionContext:
+    ) -> Optional[TransitionContext]:
         """
         Handles the transition process for given album IDs based on the context and
         available transitions. Each transition is evaluated in sequence until a
@@ -142,6 +142,8 @@ class Transitions:
             album_id=album_id,
             transition_type=transition_type,
         )
+        if context is None:
+            return None
         for strategy in self.strategies:
             if strategy.process(context):
                 context.strategy = strategy.__class__.__name__
@@ -157,10 +159,11 @@ class ContextBuilder:
         manager: runtime.ShelfManager,
         album_id: str,
         transition_type: TransitionContext.TransitionType,
-    ) -> TransitionContext:
+    ) -> Optional[TransitionContext]:
         """Build transition context from album_id."""
         shelf_name = manager.get_shelf_name(album_id=album_id)
-
+        if shelf_name is None:
+            return None
         return TransitionContext(
             album_id=album_id,
             shelf_name=shelf_name or "",

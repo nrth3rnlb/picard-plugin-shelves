@@ -302,7 +302,7 @@ class Processors:
 
     def __init__(self, manager: Optional[ShelfManager] = None):
         self.manager = manager or runtime.manager_instance()
-        self.strategies = [cls() for cls in self.STRATEGY_ORDER]
+        self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
     def action_unset_processor(self, file: File) -> None:
 
@@ -415,14 +415,14 @@ class Processors:
         """Set a shelf name in track metadata from album's shelf assignment."""
         album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID, "")
         transition = runtime.transition_instance()
-        if not transition:
-            return
 
-        context: TransitionContext = transition.transition_to(
+        context: Optional[TransitionContext] = transition.transition_to(
             album_id=album_id,
             transition_type=TransitionContext.TransitionType.TO_STAGE_2,
         )
-        metadata[TagKey.SHELF] = context.shelf_name
+        log.debug("shelf_name: %s", metadata[TagKey.SHELF])
+        if context is not None:
+            metadata[TagKey.SHELF] = context.shelf_name
         metadata[TagKey.SHELF_LOCKED] = self.manager.get_shelf_locked(album_id=album_id)
 
         log.debug(
