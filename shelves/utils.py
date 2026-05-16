@@ -5,7 +5,7 @@ Utility functions
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, FrozenSet, Optional, Union
+from typing import Any, Optional, Union
 
 from picard import log
 from picard.script import ScriptParser
@@ -43,7 +43,7 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
 
 def validate_shelf_name(
     name: str,
-    album_indicators: FrozenSet[str],
+    album_indicators: frozenset[str],
     invalid_shelf_names,
     invalid_shelf_name_chars,
 ) -> tuple[bool, str]:
