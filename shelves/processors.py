@@ -416,13 +416,12 @@ class Processors:
         album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID, "")
         transition = runtime.transition_instance()
 
-        context: Optional[TransitionContext] = transition.transition_to(
+        context: TransitionContext = transition.transition_to(
             album_id=album_id,
             transition_type=TransitionContext.TransitionType.TO_STAGE_2,
         )
-        log.debug("shelf_name: %s", metadata[TagKey.SHELF])
-        if context is not None:
-            metadata[TagKey.SHELF] = context.shelf_name
+
+        metadata[TagKey.SHELF] = context.shelf_name
         metadata[TagKey.SHELF_LOCKED] = self.manager.get_shelf_locked(album_id=album_id)
 
         log.debug(
