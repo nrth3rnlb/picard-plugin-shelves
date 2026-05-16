@@ -39,7 +39,7 @@ class ShelfRegistry:
     Provides validation when setting shelf names.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the shelf registry with empty names and default base path."""
         self._shelf_names: set[str] = set()
         self._base_path: Path = Path(".")
@@ -50,11 +50,9 @@ class ShelfRegistry:
         return self._shelf_names
 
     @shelf_names.setter
-    def shelf_names(self, names: set[str]):
+    def shelf_names(self, names: set[str]) -> None:
         """
         Set the list of shelf names, filtering out invalid names.
-
-        :param names: Set of shelf names to register.
         """
         self._shelf_names = set(
             filter(
@@ -74,11 +72,9 @@ class ShelfRegistry:
         return self._base_path
 
     @base_path.setter
-    def base_path(self, value: Union[str, Path]):
+    def base_path(self, value: Union[str, Path]) -> None:
         """
         Set the base path for shelf directories.
-
-        :param value: Path as string or Path object.
         """
         if isinstance(value, str):
             self._base_path = Path(value).resolve()
@@ -88,8 +84,6 @@ class ShelfRegistry:
     def add_shelf_names(self, names: Union[set[str], str]) -> None:
         """
         Add shelf names to the registry.
-
-        :param names: Single shelf name or set of shelf names to add.
         """
         if isinstance(names, str):
             names = {names}
@@ -135,7 +129,7 @@ class ShelfAssignmentEngine:
         shelf_name: str,
         voting_type: VotingType = VotingType.INITIAL,
         shelf_locked: bool = False,
-    ):
+    ) -> None:
         """
         Executes a specific voting operation (upvote, downvote, or initial vote) for a given album on a specified shelf.
         The operation is determined based on the `voting_type` parameter.
@@ -173,10 +167,6 @@ class ShelfAssignmentEngine:
         ID does not exist in the voting structure, or if the shelf name has
         not been registered under that album, it initializes the corresponding
         entry to track votes.
-
-        :param album_id: The unique identifier for the album.
-        :param shelf_name: The name of the shelf associated with the album.
-        :return: This method does not return a value.
         """
         if album_id not in self._shelf_votes:
             log.debug("Initializing voting data for album %s", album_id)
@@ -302,6 +292,7 @@ class ShelfLockManager:
         if self.is_locked(album_id):
             return self._shelf_locks.get(album_id, None)
         return None
+
 
 class ShelfValidator:
     """
