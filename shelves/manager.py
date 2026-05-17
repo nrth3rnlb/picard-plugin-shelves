@@ -120,7 +120,7 @@ class ShelfAssignmentEngine:
         """Initialize the assignment engine."""
         self.registry = registry
         self._shelf_votes: dict[str, Counter] = {}
-        self._lock = threading.Lock()
+        # self._lock = threading.Lock()
 
     def vote(
         self,
@@ -168,13 +168,13 @@ class ShelfAssignmentEngine:
         not been registered under that album, it initializes the corresponding
         entry to track votes.
         """
-        with self._lock:
-            if album_id not in self._shelf_votes:
-                log.debug("Initializing voting data for album %s", album_id)
-                self._shelf_votes[album_id] = Counter()
-            if shelf_name not in self._shelf_votes[album_id]:
-                log.debug("Initializing vote count for shelf %s", shelf_name)
-                self._shelf_votes[album_id][shelf_name] = 0
+        # with self._lock:
+        if album_id not in self._shelf_votes:
+            log.debug("Initializing voting data for album %s", album_id)
+            self._shelf_votes[album_id] = Counter()
+        if shelf_name not in self._shelf_votes[album_id]:
+            log.debug("Initializing vote count for shelf %s", shelf_name)
+            self._shelf_votes[album_id][shelf_name] = 0
 
     def _upvote(self, album_id, shelf_name) -> None:
         """
@@ -185,10 +185,10 @@ class ShelfAssignmentEngine:
         data structure that tracks shelf votes. Designed to work with internal components
         only.
         """
-        with self._lock:
-            self._init_voting(album_id=album_id, shelf_name=shelf_name)
-            log.debug("Incrementing vote count for %s", shelf_name)
-            self._shelf_votes[album_id].update({shelf_name})
+        # with self._lock:
+        self._init_voting(album_id=album_id, shelf_name=shelf_name)
+        log.debug("Incrementing vote count for %s", shelf_name)
+        self._shelf_votes[album_id].update({shelf_name})
 
     def _downvote(self, album_id, shelf_name) -> None:
         """
@@ -203,11 +203,11 @@ class ShelfAssignmentEngine:
         in which each album is linked to its associated shelves and their respective
         vote counts.
         """
-        with self._lock:
-            self._init_voting(album_id=album_id, shelf_name=shelf_name)
-            if shelf_name in self._shelf_votes[album_id].elements():
-                log.debug("Decrementing vote count for %s", shelf_name)
-                self._shelf_votes[album_id].subtract({shelf_name})
+        # with self._lock:
+        self._init_voting(album_id=album_id, shelf_name=shelf_name)
+        if shelf_name in self._shelf_votes[album_id].elements():
+            log.debug("Decrementing vote count for %s", shelf_name)
+            self._shelf_votes[album_id].subtract({shelf_name})
 
     def get_shelf_name(
         self,
@@ -218,14 +218,14 @@ class ShelfAssignmentEngine:
         fetch the shelf name based on votes associated with the given album. If no shelf name
         can be determined, it returns None.
         """
-        with self._lock:
-            if album_id not in self._shelf_votes:
-                return None
-            most_common = self._shelf_votes[album_id].most_common(1)
-            if not most_common:
-                return None
-            shelf_name, count = most_common[0]
-            log.debug("%s, %s, %s", album_id, shelf_name, self._shelf_votes[album_id])
+        # with self._lock:
+        if album_id not in self._shelf_votes:
+            return None
+        most_common = self._shelf_votes[album_id].most_common(1)
+        if not most_common:
+            return None
+        shelf_name, count = most_common[0]
+        log.debug("%s, %s, %s", album_id, shelf_name, self._shelf_votes[album_id])
 
         return shelf_name
 
@@ -249,27 +249,27 @@ class ShelfLockManager:
 
         :param assignment_engine: ShelfAssignmentEngine instance for vote clearing.
         """
-        self._lock = threading.Lock()
+        # self._lock = threading.Lock()
         self.assignment_engine = assignment_engine
         self._shelf_locks: dict[str, str] = {}
 
     def lock(self, album_id: str, shelf_name: str) -> None:
         """Set the manual override/lock for an album's shelf assignment."""
-        with self._lock:
-            self._shelf_locks[album_id] = shelf_name
-            log.debug("Locking album %s to shelf %s", album_id, shelf_name)
-            self.assignment_engine.vote(
-                album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.LOCK
-            )
+        # with self._lock:
+        self._shelf_locks[album_id] = shelf_name
+        log.debug("Locking album %s to shelf %s", album_id, shelf_name)
+        self.assignment_engine.vote(
+            album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.LOCK
+        )
 
     def unlock(self, album_id: str, shelf_name: str) -> None:
         """Clear the manual override/lock for an album's shelf assignment."""
-        with self._lock:
-            self._shelf_locks.pop(album_id, None)
-            log.debug("Unlocking album %s from shelf %s", album_id, shelf_name)
-            self.assignment_engine.vote(
-                album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.UNLOCK
-            )
+        # with self._lock:
+        self._shelf_locks.pop(album_id, None)
+        log.debug("Unlocking album %s from shelf %s", album_id, shelf_name)
+        self.assignment_engine.vote(
+            album_id=album_id, shelf_name=shelf_name, voting_type=VotingType.UNLOCK
+        )
 
     def is_locked(self, album_id: str) -> bool:
         """Check if an album's shelf assignment is locked."""
@@ -282,9 +282,9 @@ class ShelfLockManager:
 
     def get_shelf_name(self, album_id: str) -> Optional[str]:
         """Retrieve the shelf name for a locked album, or None if not locked."""
-        with self._lock:
-            if self.is_locked(album_id):
-                return self._shelf_locks.get(album_id, None)
+        # with self._lock:
+        if self.is_locked(album_id):
+            return self._shelf_locks.get(album_id, None)
         return None
 
 
