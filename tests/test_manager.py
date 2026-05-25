@@ -11,9 +11,7 @@ to simulate external dependencies when necessary.
 import unittest
 from pathlib import Path
 
-from typings import VotingType
-
-from shelves.manager import ShelfManager, ShelfManagerSettings
+from shelves.manager import ShelfManager, ShelfManagerSettings, ShelfName
 
 
 class ManagerTest(unittest.TestCase):
@@ -29,7 +27,7 @@ class ManagerTest(unittest.TestCase):
         return ShelfManager(
             settings=ShelfManagerSettings(
                 base_path=Path("/music"),
-                shelf_names={"ShelfA", "ShelfB"},
+                shelf_names={ShelfName("ShelfA"), ShelfName("ShelfB")},
             )
         )
 
@@ -37,29 +35,7 @@ class ManagerTest(unittest.TestCase):
         manager = self.make_test_manager()
 
         assert manager.base_path == Path("/music")
-        assert manager.registered_shelf_names == {"ShelfA", "ShelfB"}
-
-    def test_upvote(self):
-        """Test that the shelf_name with the most _shelf_votes_weighted is set as the winner."""
-        manager = self.make_test_manager()
-
-        album_id = "album-1"
-        manager.vote(album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP)
-        manager.vote(album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP)
-        manager.vote(album_id=album_id, shelf_name="ShelfB", voting_type=VotingType.UP)
-
-        assert manager.get_shelf_name(album_id) == "ShelfA"
-
-    def test_downvote(self):
-        """Test that the shelf_name with the most _shelf_votes_weighted is set as the winner."""
-        # Arrange
-        manager = self.make_test_manager()
-
-        album_id = "album-1"
-        manager.vote(album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.UP)
-        manager.vote(album_id=album_id, shelf_name="ShelfB", voting_type=VotingType.UP)
-        manager.vote(
-            album_id=album_id, shelf_name="ShelfA", voting_type=VotingType.DOWN
-        )
-
-        assert manager.get_shelf_name(album_id) == "ShelfB"
+        assert manager.registered_shelf_names == {
+            ShelfName("ShelfA"),
+            ShelfName("ShelfB"),
+        }

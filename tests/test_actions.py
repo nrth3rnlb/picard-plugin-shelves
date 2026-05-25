@@ -15,7 +15,7 @@ from picard.album import Album
 from picard.file import File
 from picard.track import Track
 from PyQt5 import QtWidgets
-from typings import TagKey
+from shelves.typings import TagKey
 
 from shelves.actions import ShelfActionSet
 from shelves.manager import ShelfManager
@@ -51,7 +51,7 @@ class ShelfActionSetTest(unittest.TestCase):
         file_mock = MagicMock(spec=File)
         file_mock.filename = "/home/foobar/music/album/test.mp3"
         file_mock.metadata = {
-            TagKey.MUSICBRAINZ_ALBUMID: album_id,
+            TagKey.MUSICBRAINZ_ALBUM_ID: album_id,
             TagKey.SHELF: "",
             TagKey.SHELF_LOCKED: False,
         }
@@ -59,12 +59,12 @@ class ShelfActionSetTest(unittest.TestCase):
         track_mock.files = [file_mock]
 
         album_mock = MagicMock(spec=Album)
-        album_mock.metadata = {TagKey.MUSICBRAINZ_ALBUMID: album_id}
+        album_mock.metadata = {TagKey.MUSICBRAINZ_ALBUM_ID: album_id}
         album_mock.tracks = [track_mock]
 
         mock_dialog_cls.return_value.ask_for_shelf_name.return_value = shelf_name
 
-        mock_shelf_manager_cls.return_value.get_shelf_name.return_value = shelf_name
+        mock_shelf_manager_cls.return_value.get_name.return_value = shelf_name
 
         # Act
         self.actions.callback([album_mock])
@@ -74,7 +74,7 @@ class ShelfActionSetTest(unittest.TestCase):
             file=file_mock,
             shelf_name=shelf_name,
         )
-        mock_shelf_manager_cls.return_value.get_shelf_name.assert_called_once_with(
+        mock_shelf_manager_cls.return_value.get_name.assert_called_once_with(
             album_id
         )
 
@@ -88,7 +88,7 @@ class ShelfActionSetTest(unittest.TestCase):
         file_mock = MagicMock(spec=File)
         file_mock.filename = "/home/foobar/music/album/test.mp3"
         file_mock.metadata = {
-            TagKey.MUSICBRAINZ_ALBUMID: album_id,
+            TagKey.MUSICBRAINZ_ALBUM_ID: album_id,
             TagKey.SHELF: "",
             TagKey.SHELF_LOCKED: False,
         }
@@ -96,7 +96,7 @@ class ShelfActionSetTest(unittest.TestCase):
         track_mock.files = [file_mock]
 
         album_mock = MagicMock(spec=Album)
-        album_mock.metadata = {TagKey.MUSICBRAINZ_ALBUMID: album_id}
+        album_mock.metadata = {TagKey.MUSICBRAINZ_ALBUM_ID: album_id}
         album_mock.tracks = [track_mock]
 
         for user_value in (None, ""):

@@ -1,6 +1,7 @@
 """
 Context menu actions for the Shelves plugin.
 """
+
 from typing import Any, Optional
 
 from picard import log
@@ -8,6 +9,7 @@ from picard.album import Album, File, Track
 from picard.ui.itemviews import BaseAction
 
 from . import runtime
+from .manager import ShelfName
 from .typings import TagKey
 from .ui.dialogs import SetShelfDialog
 
@@ -21,10 +23,10 @@ class ShelfActionSet(BaseAction):
     tagger: Any
 
     def callback(self, objs) -> None:
-        shelf_name = self._ask_for_shelf_name()
-        if not shelf_name:
+        name: Optional[str] = self._ask_for_name()
+        if name is None:
             return
-
+        shelf_name = ShelfName(name)
         processors = runtime.processor_instance()
         albums: list[Album] = list(filter(lambda o: isinstance(o, Album), objs))
         for album in albums:
@@ -37,7 +39,7 @@ class ShelfActionSet(BaseAction):
         _set_album_metadata(albums)
 
     @staticmethod
-    def _ask_for_shelf_name() -> Optional[str]:
+    def _ask_for_name() -> Optional[str]:
         dialog = SetShelfDialog()
         shelf_name = dialog.ask_for_shelf_name()
         return shelf_name

@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Optional
 
+from .manager import AlbumId, ShelfName
+
 
 @dataclass
 class ProcessingContext:
@@ -20,11 +22,10 @@ class ProcessingContext:
         UNLOCK = 128
 
     processing_type: ProcessingType
-    album_id: str
-    name_from_path: str
-    name_from_tag: str
-    processing_name: str
-    locked: bool
+    album_id: AlbumId
+    name_from_path: ShelfName
+    name_from_tag: ShelfName
+    name_to_set: ShelfName
 
 
 @dataclass
@@ -39,5 +40,5 @@ class TransitionContext:
 
     transition_type: TransitionType
     strategy: Optional[str]
-    album_id: str
-    shelf_name: str
+    album_id: AlbumId
+    shelf_name: ShelfName

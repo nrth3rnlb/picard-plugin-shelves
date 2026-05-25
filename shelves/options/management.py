@@ -4,7 +4,12 @@ from picard import config
 from PyQt5 import QtWidgets
 
 from .. import runtime, utils
-from ..manager import ALBUM_INDICATORS, INVALID_SHELF_NAME_CHARS, INVALID_SHELF_NAMES
+from ..manager import (
+    ALBUM_INDICATORS,
+    INVALID_SHELF_NAME_CHARS,
+    INVALID_SHELF_NAMES,
+    ShelfName,
+)
 from ..typings import ConfigKey
 from ..ui.widgets import QShelvesWidget
 from .constants import (
@@ -74,7 +79,7 @@ class ManagementOptionsMixin(QtWidgets.QWidget):
             return
 
         manager = runtime.manager_instance()
-        manager.add_shelf_names(shelf_name)
+        manager.add_shelf_names(ShelfName(shelf_name))
         self._management_build_list()
 
     def _management_action_remove(self) -> None:
@@ -82,7 +87,9 @@ class ManagementOptionsMixin(QtWidgets.QWidget):
         selected_items = self.shelf_management_shelves.selectedItems()
         if not selected_items:
             return
-        selected_names: set[str] = set(item.text() for item in selected_items)
+        selected_names: set[ShelfName] = set(
+            ShelfName(item.text()) for item in selected_items
+        )
 
         workflow_items_stage_1 = [
             self.workflow_stage_1.item(i) for i in range(self.workflow_stage_1.count())
@@ -90,11 +97,13 @@ class ManagementOptionsMixin(QtWidgets.QWidget):
         workflow_items_stage_2 = [
             self.workflow_stage_2.item(i) for i in range(self.workflow_stage_2.count())
         ]
-        workflow_shelves: set[str] = set(
-            item.text() for item in workflow_items_stage_1 if item
-        ).union(set(item.text() for item in workflow_items_stage_2 if item))
+        workflow_shelves: set[ShelfName] = set(
+            ShelfName(item.text()) for item in workflow_items_stage_1 if item
+        ).union(set(ShelfName(item.text()) for item in workflow_items_stage_2 if item))
 
-        conflicting_shelves: set[str] = selected_names.intersection(workflow_shelves)
+        conflicting_shelves: set[ShelfName] = selected_names.intersection(
+            workflow_shelves
+        )
 
         if conflicting_shelves:
             hr_conflicting_shelves = (
@@ -119,14 +128,20 @@ class ManagementOptionsMixin(QtWidgets.QWidget):
         """Scan Picard's target directory for shelf names and update the UI."""
         manager = runtime.manager_instance()
 
-        shelf_names: set[str] = utils.get_shelf_dirs(base_path=manager.base_path)
+        shelf_names: set[ShelfName] = {
+            ShelfName(name)
+            for name in utils.get_shelf_dirs(base_path=manager.base_path)
+        }
         manager.add_shelf_names(shelf_names)
         self._management_build_list()
 
     def _management_action_intersect(self) -> None:
         """Remove shelf_names that no longer exist in the music directory."""
         manager = runtime.manager_instance()
-        shelf_names: set[str] = utils.get_shelf_dirs(base_path=manager.base_path)
+        shelf_names: set[ShelfName] = {
+            ShelfName(name)
+            for name in utils.get_shelf_dirs(base_path=manager.base_path)
+        }
 
         manager.intersect_shelf_names(shelf_names)
         self._management_build_list()
@@ -161,28 +176,20 @@ class ManagementOptionsMixin(QtWidgets.QWidget):
         self.shelves_for_stages.clear()
         self.shelves_for_stages.addItems(
             manager.registered_shelf_names.difference(
-                config.setting[
-                    ConfigKey.WORKFLOW_STAGE_1_SHELVES
-                ]  # ty:ignore[not-subscriptable]
+                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]  # ty:ignore[not-subscriptable]
             ).difference(
-                config.setting[
-                    ConfigKey.WORKFLOW_STAGE_2_SHELVES
-                ],  # ty:ignore[not-subscriptable]
+                config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES],  # ty:ignore[not-subscriptable]
             )
         )
         self.workflow_stage_1.clear()
         self.workflow_stage_1.addItems(
             manager.registered_shelf_names.intersection(
-                config.setting[
-                    ConfigKey.WORKFLOW_STAGE_1_SHELVES
-                ]  # ty:ignore[not-subscriptable]
+                config.setting[ConfigKey.WORKFLOW_STAGE_1_SHELVES]  # ty:ignore[not-subscriptable]
             )
         )
         self.workflow_stage_2.clear()
         self.workflow_stage_2.addItems(
             manager.registered_shelf_names.intersection(
-                config.setting[
-                    ConfigKey.WORKFLOW_STAGE_2_SHELVES
-                ]  # ty:ignore[not-subscriptable]
+                config.setting[ConfigKey.WORKFLOW_STAGE_2_SHELVES]  # ty:ignore[not-subscriptable]
             )
         )

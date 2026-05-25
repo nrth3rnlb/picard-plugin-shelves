@@ -6,7 +6,6 @@ transitions within the workflow of a shelving system. It includes strategies
 for determining the appropriate shelf transitions based on the context and
 applies a sequence of predefined transitions to handle different scenarios.
 """
-
 from abc import ABC, abstractmethod
 from typing import Optional, Sequence
 
@@ -14,6 +13,7 @@ from picard import config, log
 
 from . import runtime
 from .contexts import TransitionContext
+from .manager import AlbumId, ShelfName
 from .typings import ConfigKey
 
 
@@ -130,7 +130,7 @@ class Transitions:
         self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
     def transition_to(
-        self, album_id: str, transition_type: TransitionContext.TransitionType
+        self, album_id: AlbumId, transition_type: TransitionContext.TransitionType
     ) -> TransitionContext:
         """
         Handles the transition process for given album IDs based on the context and
@@ -156,15 +156,14 @@ class ContextBuilder:
     @staticmethod
     def build_context(
         manager: runtime.ShelfManager,
-        album_id: str,
+        album_id: AlbumId,
         transition_type: TransitionContext.TransitionType,
     ) -> TransitionContext:
         """Build transition context from album_id."""
-        shelf_name = manager.get_shelf_name(album_id=album_id)
-
+        shelf_name: Optional[ShelfName] = manager.get_shelf_name(album_id=AlbumId(album_id))
         return TransitionContext(
             album_id=album_id,
-            shelf_name=shelf_name or "",
+            shelf_name=shelf_name or ShelfName(),
             transition_type=transition_type,
             strategy=None,
         )
