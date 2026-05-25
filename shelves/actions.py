@@ -91,10 +91,10 @@ def _set_album_metadata(albums: list[Album]):
             file: File
             for file in track.files:
                 file.metadata[TagKey.SHELF] = manager.get_shelf_name(
-                    album.metadata[TagKey.MUSICBRAINZ_ALBUMID]
+                    album.metadata[TagKey.MUSICBRAINZ_ALBUM_ID]
                 )
                 file.metadata[TagKey.SHELF_LOCKED] = manager.get_shelf_locked(
-                    album.metadata[TagKey.MUSICBRAINZ_ALBUMID]
+                    album.metadata[TagKey.MUSICBRAINZ_ALBUM_ID]
                 )
                 file.update()
             track.update()

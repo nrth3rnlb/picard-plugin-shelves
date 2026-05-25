@@ -413,7 +413,7 @@ class Processors:
         _release: Optional[Any],
     ) -> None:
         """Set a shelf name in track metadata from album's shelf assignment."""
-        album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID, "")
+        album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUM_ID, "")
         transition = runtime.transition_instance()
 
         context: TransitionContext = transition.transition_to(

@@ -29,6 +29,6 @@ class ConfigKey(str, Enum):
 class TagKey(str, Enum):
     """Tag keys for the Shelves plugin."""
 
-    MUSICBRAINZ_ALBUMID = "musicbrainz_albumid"
+    MUSICBRAINZ_ALBUM_ID = "musicbrainz_albumid"
     SHELF = "shelf"
     SHELF_LOCKED = "shelf_locked"
