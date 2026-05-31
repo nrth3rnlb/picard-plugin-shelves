@@ -61,7 +61,7 @@ Shelf assignment is album-scoped. Individual tracks/files do not own independent
 they only provide hints for detecting or updating the album-level shelf.
 """
 # noinspection PyUnusedName
-PLUGIN_VERSION = "2.1.1b1"
+PLUGIN_VERSION = "2.2.0b1"
 # noinspection PyUnusedName
 PLUGIN_API_VERSIONS = ["2.0"]
 # noinspection PyUnusedName
