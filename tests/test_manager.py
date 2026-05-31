@@ -152,9 +152,8 @@ def test_shelf_name_defaults_to_empty_string():
 def test_shelf_name_converts_none_to_empty_string():
     assert ShelfName(None) == ""
 
-def test_album_id_fails_on_none():
-    with pytest.raises(ValueError):
-        AlbumId(None)
+def test_album_id_converts_none_to_empty_string():
+    assert AlbumId(None) == ""
 
 
 def test_is_likely_shelf_name():

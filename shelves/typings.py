@@ -34,9 +34,7 @@ class AlbumId(str):
     """Album identifier (MusicBrainz albumid)."""
 
     def __new__(cls, value: object) -> "AlbumId":
-        if value is None:
-            raise ValueError("AlbumId value cannot be None")
-        return str.__new__(cls, str(value))
+        return str.__new__(cls, "" if value is None else str(value))
 
 
 class ShelfName(str):
