@@ -1,17 +1,6 @@
 """Typings for the Shelves plugin."""
 
-from enum import Enum, IntEnum
-
-
-class VotingType(IntEnum):
-    """Voting types for the Shelves plugin."""
-
-    UP = 1
-    DOWN = 2
-    INITIAL = UP | DOWN
-    LOCK = 4
-    UNLOCK = 8
-
+from enum import Enum
 
 class ConfigKey(str, Enum):
     """Configuration keys for the Shelves plugin."""
@@ -29,6 +18,27 @@ class ConfigKey(str, Enum):
 class TagKey(str, Enum):
     """Tag keys for the Shelves plugin."""
 
-    MUSICBRAINZ_ALBUMID = "musicbrainz_albumid"
+    MUSICBRAINZ_ALBUM_ID = "musicbrainz_albumid"
     SHELF = "shelf"
     SHELF_LOCKED = "shelf_locked"
+
+
+MAX_SHELF_NAME_LENGTH: int = 30
+MAX_WORD_COUNT: int = 3
+ALBUM_INDICATORS: frozenset[str] = frozenset(["Vol.", "Volume", "Disc", "CD", "Part"])
+INVALID_SHELF_NAME_CHARS: frozenset[str] = frozenset(["-"])
+INVALID_SHELF_NAMES: frozenset[str] = frozenset([".", ".."])
+
+
+class AlbumId(str):
+    """Album identifier (MusicBrainz albumid)."""
+
+    def __new__(cls, value: object) -> "AlbumId":
+        return str.__new__(cls, "" if value is None else str(value))
+
+
+class ShelfName(str):
+    """Name of a shelf."""
+
+    def __new__(cls, value: object = "") -> "ShelfName":
+        return str.__new__(cls, "" if value is None else str(value))

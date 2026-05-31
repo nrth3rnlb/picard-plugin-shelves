@@ -10,177 +10,50 @@ Architecture:
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence
 
-from picard import config, log
+from picard import log
 from picard.file import File
 from picard.track import Track
 
 from . import runtime
 from .contexts import ProcessingContext, TransitionContext
 from .manager import ShelfManager
-from .typings import ConfigKey, TagKey, VotingType
+from .typings import AlbumId, ShelfName
+from .typings import TagKey
 
 
 class Strategy(ABC):
-    """
-    Base class for shelf processing strategies.
+    """ """
 
-    Uses Template Method pattern: subclasses implement is_applicable() and shelf_name(),
-    while the base class handles common logic.
-    """
-
-    def __init__(self, _manager: Optional[ShelfManager] = None):
-        self.manager = _manager or runtime.manager_instance()
+    def __init__(self, manager: Optional[ShelfManager] = None):
+        self.manager = manager or runtime.manager_instance()
 
     @abstractmethod
     def is_applicable(self, context: ProcessingContext) -> bool:
-        """Check if this strategy should be applied."""
         raise NotImplementedError
 
     @abstractmethod
-    def shelf_name(self, context: ProcessingContext) -> str:
-        """Get the shelf name to assign."""
+    def shelf_name(self, context: ProcessingContext) -> ShelfName:
         raise NotImplementedError
-
-    def upvote_shelf_names(self, context: ProcessingContext) -> list[str]:
-        if (
-            context.processing_type == ProcessingContext.ProcessingType.ADD
-            or context.processing_type == ProcessingContext.ProcessingType.SET
-        ):
-            return [context.name_from_path]
-        if (
-            context.processing_type == ProcessingContext.ProcessingType.REMOVE
-            or context.processing_type == ProcessingContext.ProcessingType.UNSET
-        ):
-            return []
-        return []
-
-    def downvote_shelf_names(self, context: ProcessingContext) -> list[str]:
-        if (
-            context.processing_type == ProcessingContext.ProcessingType.ADD
-            or context.processing_type == ProcessingContext.ProcessingType.SET
-        ):
-            return list(
-                self.manager.registered_shelf_names.difference([context.name_from_path])
-            )
-        if (
-            context.processing_type == ProcessingContext.ProcessingType.REMOVE
-            or context.processing_type == ProcessingContext.ProcessingType.UNSET
-        ):
-            return [context.name_from_path]
-
-        return []
-
-    def unlock_shelf_names(self, album_id: str, shelf_names: Union[str, list[str]]):
-        """Apply manual unlock state to the shelf assignment."""
-        if isinstance(shelf_names, str):
-            shelf_names = [shelf_names]
-        for shelf_name in shelf_names:
-            self.manager.unlock(album_id=album_id, shelf_name=shelf_name)
-
-    def lock_shelf_names(self, album_id: str, shelf_names: Union[str, list[str]]):
-        """Apply manual lock state to the shelf assignment."""
-        if isinstance(shelf_names, str):
-            shelf_names = [shelf_names]
-
-        for shelf_name in shelf_names:
-            self.manager.lock(album_id=album_id, shelf_name=shelf_name)
-
-    def apply_votes(
-        self,
-        voting_type: VotingType,
-        album_id: str,
-        shelf_names: Union[str, list[str]],
-    ) -> None:
-        """Initialize voting, apply upvote/downvote to the shelf assignment."""
-        if isinstance(shelf_names, str):
-            shelf_names = [shelf_names]
-
-        for shelf_name in shelf_names:
-            self.manager.vote(
-                voting_type=voting_type, album_id=album_id, shelf_name=shelf_name
-            )
-
-    def process(self, context: ProcessingContext) -> bool:
-        """Process the shelf assignment based on the strategy."""
-
-        if not self.is_applicable(context):
-            return False
-
-        log.debug("Strategy: %s, Context: %s", self.__class__.__name__, context)
-
-        if context.processing_type == ProcessingContext.ProcessingType.LOCK:
-            log.debug("LOCK: %s", self.shelf_name(context))
-            self.lock_shelf_names(
-                album_id=context.album_id,
-                shelf_names=self.shelf_name(context),
-            )
-
-        if context.processing_type == ProcessingContext.ProcessingType.UNLOCK:
-            log.debug("UNLOCK: %s", self.shelf_name(context))
-            self.unlock_shelf_names(
-                album_id=context.album_id,
-                shelf_names=self.shelf_name(context),
-            )
-
-        if context.processing_type == ProcessingContext.ProcessingType.LOAD:
-            log.debug("INITIAL: %s", self.shelf_name(context))
-            self.apply_votes(
-                voting_type=VotingType.INITIAL,
-                album_id=context.album_id,
-                shelf_names=self.shelf_name(context),
-            )
-        else:
-            log.debug("UP: %s", self.upvote_shelf_names(context))
-            self.apply_votes(
-                voting_type=VotingType.UP,
-                album_id=context.album_id,
-                shelf_names=self.upvote_shelf_names(context),
-            )
-            log.debug("DOWN: %s", self.downvote_shelf_names(context))
-            self.apply_votes(
-                voting_type=VotingType.DOWN,
-                album_id=context.album_id,
-                shelf_names=self.downvote_shelf_names(context),
-            )
-
-        return True
 
 
 class StrategyManualUnset(Strategy):
     def is_applicable(self, context: ProcessingContext) -> bool:
         return context.processing_type == ProcessingContext.ProcessingType.UNSET
 
-    def shelf_name(self, context: ProcessingContext) -> str:
+    def shelf_name(self, context: ProcessingContext) -> ShelfName:
         return context.name_from_path
-
-    def upvote_shelf_names(self, context: ProcessingContext) -> list[str]:
-        return [context.name_from_path]
-
-    def downvote_shelf_names(self, context: ProcessingContext) -> list[str]:
-        return list(
-            self.manager.registered_shelf_names.difference([context.name_from_path])
-        )
 
 
 class StrategyManualSet(Strategy):
-    def shelf_name(self, context: ProcessingContext) -> str:
-        return context.processing_name
-
     def is_applicable(self, context: ProcessingContext) -> bool:
         if context.processing_type != ProcessingContext.ProcessingType.SET:
             return False
+        return context.name_to_set in self.manager.registered_shelf_names
 
-        return context.processing_name in self.manager.registered_shelf_names
-
-    def upvote_shelf_names(self, context: ProcessingContext) -> list[str]:
-        return [context.processing_name]
-
-    def downvote_shelf_names(self, context: ProcessingContext) -> list[str]:
-        return list(
-            self.manager.registered_shelf_names.difference([context.processing_name])
-        )
+    def shelf_name(self, context: ProcessingContext) -> ShelfName:
+        return context.name_to_set
 
 
 class StrategyKnownIdenticalNames(Strategy):
@@ -206,7 +79,7 @@ class StrategyKnownIdenticalNames(Strategy):
 
         return name_from_path in self.manager.registered_shelf_names
 
-    def shelf_name(self, context: ProcessingContext) -> str:
+    def shelf_name(self, context: ProcessingContext) -> ShelfName:
         return context.name_from_path
 
 
@@ -241,17 +114,9 @@ class StrategyKnownNameFromPathDiffersFromTag(Strategy):
         if name_from_path not in self.manager.registered_shelf_names:
             return False
 
-        # Final check: exclude workflow stage 1 shelves
-        # noinspection PyTypeHints
+        return True
 
-        return (
-            name_from_path
-            not in config.setting[
-                ConfigKey.WORKFLOW_STAGE_1_SHELVES
-            ]  # ty:ignore[not-subscriptable]
-        )
-
-    def shelf_name(self, context: ProcessingContext) -> str:
+    def shelf_name(self, context: ProcessingContext) -> ShelfName:
         return context.name_from_path
 
 
@@ -274,22 +139,24 @@ class StrategyUnknownNameFromPath(Strategy):
         # Check if it's NOT a registered shelf name (single membership test)
         return name_from_path not in self.manager.registered_shelf_names
 
-    def shelf_name(self, context: ProcessingContext) -> str:
+    def shelf_name(self, context: ProcessingContext) -> ShelfName:
         return context.name_from_path
 
 
 class Processors:
     """
-    Manages and orchestrates the processing strategies for shelf-related operations
-    on files and tracks. Provides mechanisms to handle file post-loading, addition,
-    removal, saving processes, as well as track metadata processing, applying
-    various shelf strategies for their resolution.
+    Handles the processing of file metadata and shelf assignments using various strategies.
 
-    The purpose of this class is to encapsulate the application of various shelf
-    strategies in a prioritized manner to manage shelf assignments and metadata
-    within a music processing context. Operations performed by this class include
-    post-loading, addition, and removal of files from tracks, as well as processing
-    of metadata. Strategies are applied sequentially according to the defined order.
+    This class encapsulates the logic for updating, locking, unlocking, and applying shelf
+    assignments to files and tracks based on metadata and predefined strategies. It facilitates
+    managing metadata consistency between file paths, tags, and application's shelf naming rules.
+
+    :ivar STRATEGY_ORDER: The ordered list of strategies used for processing files.
+    :type STRATEGY_ORDER: Sequence[type[Strategy]]
+    :ivar manager: Instance of ShelfManager used for managing shelf assignments.
+    :type manager: ShelfManager
+    :ivar strategies: List of strategy instances initialized using STRATEGY_ORDER and the ShelfManager.
+    :type strategies: list[Strategy]
     """
 
     STRATEGY_ORDER: Sequence[type[Strategy]] = [
@@ -305,75 +172,128 @@ class Processors:
         self.strategies = [cls(self.manager) for cls in self.STRATEGY_ORDER]
 
     def action_unset_processor(self, file: File) -> None:
-
-        context = build_processing_context(
-            self.manager,
+        context = self.build_processing_context(
             file=file,
             processing_type=ProcessingContext.ProcessingType.UNSET,
         )
+        log.debug("action_unset_processor: %s", context)
         for strategy in self.strategies:
-            if strategy.process(context):
+            if strategy.is_applicable(context):
+                self.manager.unset_name(album_id=context.album_id)
                 break
 
-    def action_set_processor(self, file: File, shelf_name: str) -> None:
+    def action_set_processor(self, file: File, shelf_name: ShelfName) -> None:
 
-        context = build_processing_context(
-            self.manager,
+        context = self.build_processing_context(
             file=file,
+            name_to_set=shelf_name,
             processing_type=ProcessingContext.ProcessingType.SET,
-            processing_name=shelf_name,
         )
+        log.debug("action_set_processor: %s", context)
         for strategy in self.strategies:
-            if strategy.process(context):
+            if strategy.is_applicable(context):
+                self.manager.set_name(
+                    album_id=context.album_id,
+                    shelf_name=strategy.shelf_name(context),
+                )
                 break
 
     def action_lock_processor(self, file: File) -> None:
 
-        context = build_processing_context(
-            self.manager,
+        context = self.build_processing_context(
             file=file,
             processing_type=ProcessingContext.ProcessingType.LOCK,
         )
         log.debug("action_lock_processor: %s", context)
         for strategy in self.strategies:
-            if strategy.process(context):
+            if strategy.is_applicable(context):
+                self.manager.lock(
+                    album_id=context.album_id,
+                )
                 break
 
     def action_unlock_processor(self, file: File) -> None:
 
-        context = build_processing_context(
-            self.manager,
+        context = self.build_processing_context(
             file=file,
             processing_type=ProcessingContext.ProcessingType.UNLOCK,
         )
         log.debug("action_unlock_processor: %s", context)
         for strategy in self.strategies:
-            if strategy.process(context):
+            if strategy.is_applicable(context):
+                self.manager.unlock(
+                    album_id=context.album_id,
+                )
                 break
 
     def file_post_load_processor(self, file: File) -> None:
-        """Process a file after it has been loaded."""
+        """
+        A file has been loaded. From this, the following can be determined:
 
-        context = build_processing_context(
-            self.manager,
+        Album ID
+        Shelf from path
+        Shelf from tag
+
+        Then a decision should be made:
+        If the album does not yet have a shelf name: set one.
+        If the tag and path are consistent: set/confirm.
+        If the path and tag are different: use a clear priority rule.
+        If the assignment is locked: do not automatically overwrite.
+        """
+
+        context = self.build_processing_context(
             file=file,
             processing_type=ProcessingContext.ProcessingType.LOAD,
         )
-        for strategy in self.strategies:
-            if strategy.process(context):
-                break
+        log.debug("file_post_load_processor: %s", context)
+        self.process_context(context)
 
     def file_post_save_processor(self, file: File) -> None:
         """Process a file after it has been saved."""
 
-        context = build_processing_context(
-            self.manager,
+        context = self.build_processing_context(
             file=file,
             processing_type=ProcessingContext.ProcessingType.SAVE,
         )
-        for strategy in self.strategies:
-            if strategy.process(context):
-                break
+        log.debug("file_post_save_processor: %s", context)
+        self.process_context(context)
+
+    def apply_strategy(self, context: ProcessingContext, strategy: Strategy) -> None:
+        shelf_name = strategy.shelf_name(context)
+
+        if context.processing_type == ProcessingContext.ProcessingType.SET:
+            self.manager.set_name(
+                album_id=context.album_id,
+                shelf_name=shelf_name,
+            )
+            return
+
+        if context.processing_type == ProcessingContext.ProcessingType.UNSET:
+            self.manager.unset_name(album_id=context.album_id)
+            return
+
+        if context.processing_type == ProcessingContext.ProcessingType.LOCK:
+            self.manager.lock(album_id=context.album_id)
+            return
+
+        if context.processing_type == ProcessingContext.ProcessingType.UNLOCK:
+            self.manager.unlock(album_id=context.album_id)
+            return
+
+        if context.processing_type in {
+            ProcessingContext.ProcessingType.LOAD,
+            ProcessingContext.ProcessingType.ADD,
+            ProcessingContext.ProcessingType.SAVE,
+        }:
+            self.manager.set_name(
+                album_id=context.album_id,
+                shelf_name=shelf_name,
+            )
+            return
+
+        if context.processing_type == ProcessingContext.ProcessingType.REMOVE:
+            self.manager.unset_name(album_id=context.album_id)
+            return
 
     # noinspection PyUnusedLocal
     def file_post_addition_to_track_processor(
@@ -383,26 +303,28 @@ class Processors:
     ) -> None:
         """Process a file after it has been added to a track."""
 
-        context = build_processing_context(
-            self.manager,
+        context = self.build_processing_context(
             file=file,
             processing_type=ProcessingContext.ProcessingType.ADD,
         )
-        for strategy in self.strategies:
-            if strategy.process(context):
-                break
+        log.debug("file_post_addition_to_track_processor: %s", context)
+        self.process_context(context)
 
     # noinspection PyUnusedLocal
     def file_post_removal_from_track_processor(self, track: Track, file: File) -> None:
         """Process a file after it has been removed from a track."""
 
-        context = build_processing_context(
-            self.manager,
+        context = self.build_processing_context(
             file=file,
             processing_type=ProcessingContext.ProcessingType.REMOVE,
         )
+        log.debug("file_post_removal_from_track_processor: %s", context)
+        self.process_context(context)
+
+    def process_context(self, context: ProcessingContext) -> None:
         for strategy in self.strategies:
-            if strategy.process(context):
+            if strategy.is_applicable(context):
+                self.apply_strategy(context=context, strategy=strategy)
                 break
 
     def track_metadata_processor(
@@ -413,7 +335,7 @@ class Processors:
         _release: Optional[Any],
     ) -> None:
         """Set a shelf name in track metadata from album's shelf assignment."""
-        album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUMID, "")
+        album_id = metadata.get(TagKey.MUSICBRAINZ_ALBUM_ID, "")
         transition = runtime.transition_instance()
 
         context: TransitionContext = transition.transition_to(
@@ -422,7 +344,7 @@ class Processors:
         )
 
         metadata[TagKey.SHELF] = context.shelf_name
-        metadata[TagKey.SHELF_LOCKED] = self.manager.get_shelf_locked(album_id=album_id)
+        metadata[TagKey.SHELF_LOCKED] = self.manager.is_locked(album_id=album_id)
 
         log.debug(
             "shelf name: %s, locked: %s",
@@ -430,29 +352,30 @@ class Processors:
             metadata[TagKey.SHELF_LOCKED],
         )
 
+    def build_processing_context(
+        self,
+        file: File,
+        processing_type: ProcessingContext.ProcessingType,
+        name_to_set: Optional[ShelfName] = ShelfName(),
+    ) -> ProcessingContext:
 
-def build_processing_context(
-    manager: ShelfManager,
-    file: File,
-    processing_type: ProcessingContext.ProcessingType,
-    processing_name: Optional[str] = "",
-) -> ProcessingContext:
-    """Build processing context from file"""
+        from . import utils
 
-    from . import utils
+        # utils.debug_track(file)
+        # Extract shelf name from path
+        name_from_path: ShelfName = ShelfName(
+            utils.get_name_from_path(
+                file_path=Path(str(file.filename)),
+                base_path=self.manager.base_path,
+            )
+        )
+        album_id = AlbumId(file.metadata.get(TagKey.MUSICBRAINZ_ALBUM_ID))
+        name_from_tag = ShelfName(file.metadata.get(TagKey.SHELF))
 
-    # utils.debug_track(file)
-    # Extract shelf name from path
-    name_from_path = utils.get_shelf_name_from_path(
-        file_path=Path(str(file.filename)),
-        base_path=manager.base_path,
-    )
-
-    return ProcessingContext(
-        processing_type=processing_type,
-        album_id=file.metadata.get(TagKey.MUSICBRAINZ_ALBUMID, ""),
-        name_from_path=name_from_path,
-        name_from_tag=file.metadata.get(TagKey.SHELF, ""),
-        processing_name=processing_name or "",
-        locked=file.metadata.get(TagKey.SHELF_LOCKED, False),
-    )
+        return ProcessingContext(
+            processing_type=processing_type,
+            album_id=album_id,
+            name_from_path=name_from_path,
+            name_from_tag=name_from_tag,
+            name_to_set=name_to_set or ShelfName(),
+        )

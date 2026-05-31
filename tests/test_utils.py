@@ -23,16 +23,15 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from typings import ConfigKey
-
 from shelves import utils
 from shelves.manager import (
-    ShelfManager,
+    ALBUM_INDICATORS,
     INVALID_SHELF_NAME_CHARS,
     INVALID_SHELF_NAMES,
-    ALBUM_INDICATORS,
     MAX_SHELF_NAME_LENGTH,
+    ShelfManager,
 )
+from shelves.typings import ConfigKey
 
 
 class UtilsTest(unittest.TestCase):
@@ -77,7 +76,7 @@ class UtilsTest(unittest.TestCase):
         shelf_sub_dir = self.test_known_shelves[0]
 
         # Act
-        shelf_name = utils.get_shelf_name_from_path(
+        shelf_name = utils.get_name_from_path(
             Path(f"/music/{shelf_sub_dir}/artist/album/track.mp3"), Path("/music")
         )
 

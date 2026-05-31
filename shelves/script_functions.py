@@ -2,17 +2,20 @@
 Script functions for the Shelves plugin.
 """
 
-from picard.script import ScriptParser
+from gettext import gettext as _
 
-from . import utils
+from picard.script import script_function
 
-__all__ = ["shelf"]
+from .typings import TagKey
 
 
-def shelf(parser: ScriptParser) -> str:
-    """Picard script function: `$shelf()`"""
-    context_shelf, metadata_shelf = utils.squeeze_the_parser(parser)
-    if not metadata_shelf and not context_shelf:
-        return ""
+@script_function(
+    documentation=_(
+        """`$shelf()`
 
-    return metadata_shelf or context_shelf
+Returns the album-level shelf name."""
+    ),
+)
+def func_shelf(parser) -> str:
+    # utils._debug_parser(parser)
+    return parser.context.get(TagKey.SHELF, "")

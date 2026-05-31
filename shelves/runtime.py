@@ -1,5 +1,6 @@
 from typing import Optional
 
+from .commands import ShelfCommands
 from .manager import ShelfManager
 from .processors import Processors
 from .transitions import Transitions
@@ -7,8 +8,14 @@ from .transitions import Transitions
 _manager_singleton: Optional[ShelfManager] = None
 _processors_singleton: Optional[Processors] = None
 _transition_singleton: Optional[Transitions] = None
+_commands_singleton: Optional[ShelfCommands] = None
 
-__all__ = ["manager_instance", "processor_instance", "transition_instance"]
+__all__ = [
+    "manager_instance",
+    "processor_instance",
+    "transition_instance",
+    "command_instance",
+]
 
 
 def manager_instance() -> ShelfManager:
@@ -45,11 +52,26 @@ def transition_instance() -> Transitions:
     return _transition_singleton
 
 
+def command_instance() -> ShelfCommands:
+    """Get the default global ShelfCommands instance."""
+    global _commands_singleton
+    if _commands_singleton is None:
+        _commands_singleton = ShelfCommands()
+    if _commands_singleton is None:
+        raise RuntimeError("ShelfCommands instance could not be initialized")
+    return _commands_singleton
+
+
 def _reset_all_instances():
     """Reset all global singleton instances to None.
     Intended for tests only.
     """
-    global _manager_singleton, _processors_singleton, _transition_singleton
+    global \
+        _manager_singleton, \
+        _processors_singleton, \
+        _transition_singleton, \
+        _commands_singleton
     _manager_singleton = None
     _processors_singleton = None
     _transition_singleton = None
+    _commands_singleton = None

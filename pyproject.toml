@@ -1,6 +1,6 @@
 [project]
 name = "picard-plugin-shelves"
-version = "2.1.1b1"
+version = "2.2.0b1"
 readme = "README.md"
 description = "A MusicBrainz Picard plugin to organize your music into shelves."
 keywords = ["musicbrainz", "picard", "plugin", "shelves", "music", "organization"]
@@ -9,12 +9,10 @@ authors = [
     { name = "nrth3rnlb" }
 ]
 requires-python = ">=3.9"
-dependencies = [
-]
 
 [dependency-groups]
 dev = [
-    "black>=24.10.0,<25",
+    "black>=24.10.0",
     "picard>=2.13",
     "pytest-cov>=7.1",
     "pytest-mock>=3.15",
@@ -22,4 +20,5 @@ dev = [
     "pyqt5>=5.15",
     "pre-commit>=4.3.0",
     "ty>=0.0.37",
+    "pytest>=8.4.2",
 ]

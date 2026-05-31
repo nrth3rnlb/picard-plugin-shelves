@@ -13,14 +13,13 @@ from picard.script import ScriptParser
 from .typings import TagKey
 
 __all__ = (
-    "get_shelf_name_from_path",
-    "validate_shelf_name",
+    "get_name_from_path",
     "get_shelf_dirs",
     "squeeze_the_parser",
 )
 
 
-def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
+def get_name_from_path(file_path: Path, base_path: Path) -> str:
     """Extract the shelf name from a file_path."""
     try:
         if not file_path.is_relative_to(base_path):
@@ -39,87 +38,6 @@ def get_shelf_name_from_path(file_path: Path, base_path: Path) -> str:
             details=repr(e),
             cause=e,
         )
-
-
-def validate_shelf_name(
-    name: str,
-    album_indicators: frozenset[str],
-    invalid_shelf_names,
-    invalid_shelf_name_chars,
-) -> tuple[bool, str]:
-    """Validate a shelf name."""
-    if not isinstance(name, str) or not name.strip():
-        return False, _("Shelf name cannot be empty")
-
-    shelf_name = name.strip()
-
-    invalid_names_used = [
-        name_used
-        for name_used in shelf_name.split()
-        if name_used in invalid_shelf_names
-    ]
-    if invalid_names_used:
-        hr_invalid_names_used = f"{', '.join(repr(c) for c in set(invalid_names_used))}"
-        hr_invalid_names = f"{', '.join(repr(c) for c in invalid_shelf_names)}"
-        return (
-            False,
-            f"Cannot use '{shelf_name}' as shelf name."
-            f" The name is an invalid name: {hr_invalid_names_used}."
-            f" Not allowed are: {hr_invalid_names}.",
-        )
-
-    invalid_chars_used = [
-        char_used for char_used in shelf_name if char_used in invalid_shelf_name_chars
-    ]
-    if invalid_chars_used:
-        hr_invalid_chars_used = f"{', '.join(repr(c) for c in set(invalid_chars_used))}"
-        hr_invalid_name_chars = (
-            f"{', '.join(repr(c) for c in invalid_shelf_name_chars)}"
-        )
-        return (
-            False,
-            f"Cannot use '{shelf_name}' as shelf name."
-            f" The name contains invalid character(s): {hr_invalid_chars_used}."
-            f" Not allowed are: {hr_invalid_name_chars}.",
-        )
-
-    invalid_tokens_used = [
-        token_used
-        for token_used in shelf_name.split()
-        if token_used.lower() in [token.lower() for token in album_indicators]
-    ]
-
-    if invalid_tokens_used:
-        hr_invalid_tokens_used = (
-            f"{', '.join(repr(c) for c in set(invalid_tokens_used))}"
-        )
-        hr_invalid_name_tokens = f"{', '.join(repr(c) for c in album_indicators)}"
-        return (
-            False,
-            f"Cannot use '{shelf_name}' as shelf name."
-            f" The name contains album indicator(s): {hr_invalid_tokens_used}."
-            f" Not allowed are: {hr_invalid_name_tokens}.",
-        )
-
-    # TODO(#15): Decide if max length validation should be enforced
-    # if len(shelf_name) > MAX_SHELF_NAME_LENGTH:
-    #     return (
-    #         False,
-    #         f"Cannot use '{shelf_name}' as shelf name."
-    #         f" The name is too long with {len(shelf_name)} characters."
-    #         f" Maximum allowed is {MAX_SHELF_NAME_LENGTH}.",
-    #     )
-
-    # TODO(#16): Decide if max word count validation should be enforced
-    # if len(shelf_name.split()) > MAX_WORD_COUNT:
-    #     return (
-    #         False,
-    #         f"Cannot use '{shelf_name}' as shelf name."
-    #         f" Shelf name is too long with {len(shelf_name.split())} words."
-    #         f" Maximum allowed is {MAX_WORD_COUNT}.",
-    #     )
-
-    return True, "Valid shelf name"
 
 
 def get_shelf_dirs(base_path: Path) -> set[str]:
