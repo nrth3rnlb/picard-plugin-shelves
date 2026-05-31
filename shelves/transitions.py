@@ -13,14 +13,15 @@ from picard import config, log
 
 from . import runtime
 from .contexts import TransitionContext
-from .manager import AlbumId, ShelfName
+from .manager import ShelfManager
+from .typings import AlbumId, ShelfName
 from .typings import ConfigKey
 
 
 class Strategy(ABC):
     """Base class for shelf workflow transitions."""
 
-    def __init__(self, manager: Optional[runtime.ShelfManager] = None):
+    def __init__(self, manager: Optional[ShelfManager] = None):
         self.manager = manager or runtime.manager_instance()
 
     @abstractmethod

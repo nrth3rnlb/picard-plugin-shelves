@@ -8,8 +8,8 @@ from typing import Optional
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import Qt
 
-from .. import manager as manager_module
-from .. import runtime, utils
+from .. typings import ShelfName
+from .. import runtime
 
 LABEL_VALIDATION_NAME = "label_validation"
 COMBO_SHELF_NAME = "combo_shelves"
@@ -63,27 +63,19 @@ class SetShelfDialog(QtWidgets.QDialog):
         if self.shelf_combo is None:
             return None
 
-        value = self.shelf_combo.currentText().strip()
-        valid, msg = utils.validate_shelf_name(
-            value,
-            manager_module.ALBUM_INDICATORS,
-            manager_module.INVALID_SHELF_NAMES,
-            manager_module.INVALID_SHELF_NAME_CHARS,
-        )
+        shelf_name = ShelfName(self.shelf_combo.currentText().strip())
+        valid, msg = shelf_manager.validate_likely_shelf_name(shelf_name)
         if not valid:
             return None
-        return value
+        return shelf_name
 
     def _on_text_changed(self, text: str) -> None:
         if not self.validation_label:
             return
 
-        valid, msg = utils.validate_shelf_name(
-            text,
-            manager_module.ALBUM_INDICATORS,
-            manager_module.INVALID_SHELF_NAMES,
-            manager_module.INVALID_SHELF_NAME_CHARS,
-        )
+        shelf_manager = runtime.manager_instance()
+        shelf_name = ShelfName(text)
+        valid, msg = shelf_manager.validate_likely_shelf_name(shelf_name)
         if valid:
             self.validation_label.setText("")
         else:

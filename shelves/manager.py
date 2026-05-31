@@ -1,63 +1,45 @@
 """
 Shelf manager for tracking album shelf name assignments.
 
-This module provides a component-based architecture for managing shelf assignments:
-- ShelfRegistry: Manages shelf names and base path configuration
-- ShelfAssignmentEngine: Handles voting logic and shelf determination
-- ShelfLockManager: Manages manual overrides and locks
-- ShelfValidator: Validates shelf names using heuristics
-- ShelfManager: Facade pattern providing a unified interface (singleton)
-
 The ShelfManager supports dependency injection for testing purposes.
 """
 
-import threading
 from dataclasses import dataclass
+from gettext import gettext as _
 from pathlib import Path
 from typing import Optional, Union
 
 from picard import log
 
-from . import utils
+from .typings import (
+    ALBUM_INDICATORS,
+    INVALID_SHELF_NAME_CHARS,
+    INVALID_SHELF_NAMES,
+    MAX_SHELF_NAME_LENGTH,
+    AlbumId,
+    ShelfName,
+)
 
-MAX_SHELF_NAME_LENGTH: int = 30
-MAX_WORD_COUNT: int = 3
-ALBUM_INDICATORS: frozenset[str] = frozenset(["Vol.", "Volume", "Disc", "CD", "Part"])
-INVALID_SHELF_NAME_CHARS: set[str] = set()
-INVALID_SHELF_NAMES: frozenset[str] = frozenset([".", ".."])
-
-
-@dataclass(frozen=True)
-class AlbumId(str):
-    """ """
-
-    # ToDo: Validator integrieren
-    id: str = ""
-
-
-@dataclass(frozen=True)
-class ShelfName(str):
-    """ """
-
-    # ToDo: Validator integrieren
-    name: str = ""
+__all__ = [
+    "ShelfManager",
+    "ShelfNotFoundException",
+    "ShelfManagerSettings",
+]
 
 
-class Shelf:
+@dataclass
+class _ShelfAssignment:
+    """Shelf assignment state for one album."""
+
     name: ShelfName = ShelfName()
     locked: bool = False
 
 
-class ShelfRegistry:
-    """
-    Registry for shelf names and base path configuration.
-
-    Manages the set of known shelf names and the base path for shelf directories.
-    Provides validation when setting shelf names.
-    """
+class _ShelfRegistry:
+    """Registry for shelf names and base path configuration."""
 
     def __init__(self) -> None:
-        """Initialize the shelf registry with empty names and default base path."""
+        """Initialize the shelf registry with empty names and the default base path."""
         self._shelf_names: set[ShelfName] = set()
         self._base_path: Path = Path(".")
 
@@ -68,20 +50,8 @@ class ShelfRegistry:
 
     @shelf_names.setter
     def shelf_names(self, names: set[ShelfName]) -> None:
-        """
-        Set the list of shelf names, filtering out invalid names.
-        """
-        self._shelf_names = set(
-            filter(
-                lambda name: utils.validate_shelf_name(
-                    name,
-                    ALBUM_INDICATORS,
-                    INVALID_SHELF_NAMES,
-                    INVALID_SHELF_NAME_CHARS,
-                )[0],
-                names,
-            ),
-        )
+        """Set the list of shelf names, filtering out invalid names."""
+        self._shelf_names = names
 
     @property
     def base_path(self) -> Path:
@@ -90,18 +60,14 @@ class ShelfRegistry:
 
     @base_path.setter
     def base_path(self, value: Union[str, Path]) -> None:
-        """
-        Set the base path for shelf directories.
-        """
+        """Set the base path for shelf directories."""
         if isinstance(value, str):
             self._base_path = Path(value).resolve()
         else:
             self._base_path = value.resolve()
 
     def add_shelf_names(self, names: Union[set[ShelfName], ShelfName]) -> None:
-        """
-        Add shelf names to the registry.
-        """
+        """Add shelf names to the registry."""
         if isinstance(names, ShelfName):
             names = {names}
         self.shelf_names = self.shelf_names.union(names)
@@ -125,13 +91,27 @@ class ShelfRegistry:
         log.debug("Current shelf names: %s", self.shelf_names)
 
 
-class ShelfNameManager:
-    """ """
+class _ShelfNameManager:
+    """Manage shelf assignments and lock state for albums."""
 
-    def __init__(self):
-        """ """
-        self._shelf_names: dict[AlbumId, Shelf] = {}
+    DEFAULT_SHELF_NAME = ShelfName()
+
+    def __init__(self) -> None:
+        """Initialize an empty album-to-shelf assignment map."""
+        self._assignments_by_album_id: dict[AlbumId, _ShelfAssignment] = {}
         # self._lock = threading.Lock()
+
+    def _get_or_create_shelf(self, album_id: AlbumId) -> _ShelfAssignment:
+        """Return the shelf assignment for an album, creating it if needed."""
+        if album_id not in self._assignments_by_album_id:
+            self._assignments_by_album_id[album_id] = _ShelfAssignment()
+        return self._assignments_by_album_id[album_id]
+
+    def _set_locked(self, album_id: AlbumId, locked: bool) -> None:
+        """Set the manual override/lock state for an album's shelf assignment."""
+        # with self._lock:
+        shelf = self._get_or_create_shelf(album_id)
+        shelf.locked = locked
 
     def set_name(
         self,
@@ -139,106 +119,160 @@ class ShelfNameManager:
         shelf_name: ShelfName,
         locked: Optional[bool] = None,
     ) -> None:
-        """ """
-        shelf = self._shelf_names.get(album_id, Shelf())
-        shelf.name = shelf_name
-        if locked is not None:
-            shelf.locked = locked
-        self._shelf_names[album_id] = shelf
+        """Set the shelf name for an album, optionally updating its lock state."""
+        shelf = self._get_or_create_shelf(album_id)
+        if not self.is_locked(album_id):
+            shelf.name = shelf_name
+            if locked is not None:
+                shelf.locked = locked
 
     def unset_name(self, album_id: AlbumId) -> None:
-        """ """
-        shelf = self._shelf_names.get(album_id, Shelf())
-        shelf.name = ShelfName()
-        self._shelf_names[album_id] = shelf
+        """Reset the shelf name for an album while preserving its lock state."""
+        shelf = self._get_or_create_shelf(album_id)
+        if not self.is_locked(album_id):
+            shelf.name = _ShelfNameManager.DEFAULT_SHELF_NAME
 
-    def get_name(
-        self,
-        album_id: AlbumId,
-    ) -> Optional[ShelfName]:
-        """ """
-        shelf = self._shelf_names.get(album_id, Shelf())
+    def get_name(self, album_id: AlbumId) -> Optional[ShelfName]:
+        """Return the shelf name assigned to an album."""
+        shelf = self._get_or_create_shelf(album_id)
         return shelf.name
 
     def lock(self, album_id: AlbumId) -> None:
         """Set the manual override/lock for an album's shelf assignment."""
-        # with self._lock:
-        shelf = self._shelf_names.get(album_id, Shelf())
-        shelf.locked = True
-        self._shelf_names[album_id] = shelf
-        log.debug("Locking album %s to shelf %s", album_id, shelf.name)
+        self._set_locked(album_id, True)
 
     def unlock(self, album_id: AlbumId) -> None:
         """Clear the manual override/lock for an album's shelf assignment."""
-        # with self._lock:
-        shelf = self._shelf_names.get(album_id, Shelf())
-        shelf.locked = False
-        self._shelf_names[album_id] = shelf
+        self._set_locked(album_id, False)
 
     def is_locked(self, album_id: AlbumId) -> bool:
         """Check if an album's shelf assignment is locked."""
-        shelf = self._shelf_names.get(album_id, Shelf())
-        log.debug(
-            "Lock status for album %s: %s",
-            album_id,
-            shelf.locked,
-        )
+        shelf = self._get_or_create_shelf(album_id)
         return shelf.locked
 
 
-class ShelfValidator:
-    """
-    Validator for shelf names using heuristics.
+class _ShelfValidator:
+    """Validator for shelf names using heuristics."""
 
-    Applies heuristics to detect whether a string is likely a valid shelf name
-    or an accidental album/artist name. Checks against known shelf names,
-    length limits, word counts, and suspicious patterns.
-    """
-
-    def __init__(self, registry: "ShelfRegistry"):
-        """
-        Initialize the validator.
-
-        :param registry: ShelfRegistry instance for checking known shelf names.
-        """
+    def __init__(self, registry: "_ShelfRegistry") -> None:
+        """Initialize the validator."""
         self.registry = registry
 
-    def is_likely_shelf_name(self, name: str) -> tuple[bool, Optional[str]]:
-        """
-        Check if a name is likely to be a valid shelf name using heuristics.
-        """
-        if not name:
-            return False, "Empty name"
+    @staticmethod
+    def is_likely_shelf_name(name: ShelfName) -> bool:
+        """Return whether a name is likely to be a shelf name."""
+        is_likely, _reason = _ShelfValidator.validate_likely_shelf_name(name)
+        return is_likely
 
-        if name in self.registry.shelf_names:
-            return True, None
+    @staticmethod
+    def filter_valid_shelf_names(names: set[ShelfName]) -> set[ShelfName]:
+        """Filter out invalid shelf names from the provided set."""
+        return set(
+            filter(
+                lambda name: _ShelfValidator.validate_likely_shelf_name(
+                    name,
+                )[0],
+                names,
+            ),
+        )
 
-        # Heuristics for suspicious names
-        suspicious_reasons = []
+    @staticmethod
+    def validate_likely_shelf_name(name: ShelfName) -> tuple[bool, Optional[str]]:
+        """Validate a shelf name."""
+        if not isinstance(name, str) or not name.strip():
+            return False, _("Shelf name cannot be empty")
 
-        # Contains ` - ` (typical for "Artist - Album")
-        if " - " in name:
-            suspicious_reasons.append(
-                "contains ' - ' (typical for 'Artist - Album' format)",
+        shelf_name: ShelfName = ShelfName(name.strip())
+
+        invalid_names_used = [
+            name_used
+            for name_used in shelf_name.split()
+            if name_used in INVALID_SHELF_NAMES
+        ]
+        if invalid_names_used:
+            hr_invalid_names_used = (
+                f"{', '.join(repr(c) for c in set(invalid_names_used))}"
+            )
+            hr_invalid_names = f"{', '.join(repr(c) for c in INVALID_SHELF_NAMES)}"
+            return (
+                False,
+                f"Cannot use '{shelf_name}' as shelf name."
+                f" The name is an invalid name: {hr_invalid_names_used}."
+                f" Not allowed are: {hr_invalid_names}.",
             )
 
-        # Too long
-        if len(name) > MAX_SHELF_NAME_LENGTH:
-            suspicious_reasons.append(f"too long ({len(name)} chars)")
+        invalid_chars_used = [
+            char_used
+            for char_used in shelf_name
+            if char_used in INVALID_SHELF_NAME_CHARS
+        ]
+        if invalid_chars_used:
+            hr_invalid_chars_used = (
+                f"{', '.join(repr(c) for c in set(invalid_chars_used))}"
+            )
+            hr_invalid_name_chars = (
+                f"{', '.join(repr(c) for c in INVALID_SHELF_NAME_CHARS)}"
+            )
+            return (
+                False,
+                f"Cannot use '{shelf_name}' as shelf name."
+                f" The name contains invalid character(s): {hr_invalid_chars_used}."
+                f" Not allowed are: {hr_invalid_name_chars}.",
+            )
 
-        # Too many words
-        word_count = len(name.split())
-        if word_count > MAX_WORD_COUNT:
-            suspicious_reasons.append(f"too many words ({word_count})")
+        invalid_tokens_used = [
+            token_used
+            for token_used in shelf_name.split()
+            if token_used.lower() in [token.lower() for token in ALBUM_INDICATORS]
+        ]
 
-        # Contains album indicators
-        if any(indicator in name for indicator in ALBUM_INDICATORS):
-            suspicious_reasons.append("contains album indicator (Vol., Disc, etc.)")
+        if invalid_tokens_used:
+            hr_invalid_tokens_used = (
+                f"{', '.join(repr(c) for c in set(invalid_tokens_used))}"
+            )
+            hr_invalid_name_tokens = f"{', '.join(repr(c) for c in ALBUM_INDICATORS)}"
+            return (
+                False,
+                f"Cannot use '{shelf_name}' as shelf name."
+                f" The name contains album indicator(s): {hr_invalid_tokens_used}."
+                f" Not allowed are: {hr_invalid_name_tokens}.",
+            )
 
-        if suspicious_reasons:
-            return False, "; ".join(suspicious_reasons)
+        # TODO(#15): Decide if max length validation should be enforced
+        # if len(shelf_name) > MAX_SHELF_NAME_LENGTH:
+        #     return (
+        #         False,
+        #         f"Cannot use '{shelf_name}' as shelf name."
+        #         f" The name is too long with {len(shelf_name)} characters."
+        #         f" Maximum allowed is {MAX_SHELF_NAME_LENGTH}.",
+        #     )
 
-        return True, None
+        # TODO(#16): Decide if max word count validation should be enforced
+        # if len(shelf_name.split()) > MAX_WORD_COUNT:
+        #     return (
+        #         False,
+        #         f"Cannot use '{shelf_name}' as shelf name."
+        #         f" Shelf name is too long with {len(shelf_name.split())} words."
+        #         f" Maximum allowed is {MAX_WORD_COUNT}.",
+        #     )
+
+        return True, "Valid shelf name"
+
+    def _looks_like_artist_album_name(self, name: str) -> bool:
+        """Return whether the name looks like an 'Artist - Album' title."""
+        return " - " in name
+
+    def _is_too_long(self, name: str) -> bool:
+        """Return whether the name exceeds the recommended shelf name length."""
+        return len(name) > MAX_SHELF_NAME_LENGTH
+
+    def _word_count(self, name: str) -> int:
+        """Return the number of words in the name."""
+        return len(name.split())
+
+    def _contains_album_indicator(self, name: str) -> bool:
+        """Return whether the name contains typical album part indicators."""
+        return any(indicator in name for indicator in ALBUM_INDICATORS)
 
 
 @dataclass(frozen=True)
@@ -250,29 +284,25 @@ class ShelfManagerSettings:
 
 
 class ShelfManager:
-    """
-    Facade for shelf management, delegating to specialized components.
-    """
+    """Facade for shelf management, delegating to specialized components."""
 
     def __init__(
         self,
-        registry: Optional[ShelfRegistry] = None,
-        name_manager: Optional[ShelfNameManager] = None,
-        validator: Optional[ShelfValidator] = None,
+        registry: Optional[_ShelfRegistry] = None,
+        name_manager: Optional[_ShelfNameManager] = None,
+        validator: Optional[_ShelfValidator] = None,
         settings: Optional[ShelfManagerSettings] = None,
     ):
-        """
-        Initialize ShelfManager with optional dependency injection.
-        """
+        """Initialize ShelfManager with optional dependency injection."""
 
-        self._registry = registry or ShelfRegistry()
+        self._registry = registry or _ShelfRegistry()
 
         if settings is not None:
             self._registry.base_path = settings.base_path
             self._registry.shelf_names = set(settings.shelf_names)
 
-        self._name_manager = name_manager or ShelfNameManager()
-        self._validator = validator or ShelfValidator(self._registry)
+        self._name_manager = name_manager or _ShelfNameManager()
+        self._validator = validator or _ShelfValidator(self._registry)
 
     @property
     def registered_shelf_names(self) -> set[ShelfName]:
@@ -287,21 +317,18 @@ class ShelfManager:
     def set_name(
         self, album_id: AlbumId, shelf_name: ShelfName, locked: Optional[bool] = None
     ):
-        """ """
+        """Set the shelf name for an album."""
         self._name_manager.set_name(
             album_id=album_id, shelf_name=shelf_name, locked=locked
         )
 
     def unset_name(self, album_id: AlbumId):
-        """ """
+        """Clear the shelf name for an album."""
         self._name_manager.unset_name(album_id)
 
     def get_shelf_name(self, album_id: AlbumId) -> Optional[ShelfName]:
         """Determine the shelf for an album."""
-        shelf_name = self._name_manager.get_name(album_id)
-        if shelf_name is None:
-            return None
-        return shelf_name
+        return self._name_manager.get_name(album_id)
 
     def lock(self, album_id: AlbumId) -> None:
         """Set the manual lock for an album's shelf assignment."""
@@ -311,14 +338,9 @@ class ShelfManager:
         """Clear the manual lock for an album's shelf assignment."""
         self._name_manager.unlock(album_id)
 
-    def get_shelf_locked(self, album_id: AlbumId) -> bool:
+    def is_locked(self, album_id: AlbumId) -> bool:
         """Check if an album's shelf assignment is locked."""
         return self._name_manager.is_locked(album_id)
-
-    def is_likely_shelf_name(self, name: str) -> tuple[bool, Optional[str]]:
-        """Check if a name is likely a valid shelf name."""
-        # Note: known_shelves parameter kept for backward compatibility but not used
-        return self._validator.is_likely_shelf_name(name)
 
     def add_shelf_names(self, names: Union[set[ShelfName], ShelfName]) -> None:
         """Add shelf names to the registry."""
@@ -332,6 +354,14 @@ class ShelfManager:
         """Intersect shelf names with the provided set."""
         self._registry.intersect_shelf_names(names)
 
+    def is_likely_shelf_name(self, name: ShelfName) -> bool:
+        """Return whether a name is likely to be a valid shelf name."""
+        return self._validator.is_likely_shelf_name(name)
+
+    def validate_likely_shelf_name(self, name: ShelfName) -> tuple[bool, Optional[str]]:
+        """Check whether a name is likely valid and return an optional reason."""
+        return self._validator.validate_likely_shelf_name(name)
+
 
 class ShelfNotFoundException(Exception):
     """Represents an exception raised when a specific shelf name cannot be found in a given context."""
@@ -344,8 +374,6 @@ class ShelfNotFoundException(Exception):
         details: Optional[str] = "",
         cause: Optional[BaseException] = None,
     ) -> None:
-        if album_id is None:
-            album_id = AlbumId()
 
         self.message = message
         self.album_id = album_id

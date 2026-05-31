@@ -1,136 +1,221 @@
-"""
-Unit tests for the `ShelfActionSet` and `ShelfActionUnset` classes, which handle the setting
-and unsetting of shelves in the context of a file organization system.
+""" """
 
-These tests use mocked dependencies to isolate and validate the behavior of methods
-within the `ShelfActionSet` and `ShelfActionUnset` classes. Testing includes verifying
-callback scenarios for both setting and unsetting actions, mock integrations, and edge
-cases such as user cancellations or unsettable conditions.
-"""
+from picard.album import Album, File, Track
+from picard.metadata import Metadata
 
-import unittest
-from unittest.mock import MagicMock, patch
-
-from picard.album import Album
-from picard.file import File
-from picard.track import Track
-from PyQt5 import QtWidgets
-from shelves.typings import TagKey
-
-from shelves.actions import ShelfActionSet
+from shelves.actions import ShelfActionToggleLock, _set_album_metadata, ShelfActionSet, ShelfActionUnset
+from shelves.commands import ShelfCommands
 from shelves.manager import ShelfManager
-
-# Rule of thumb (for patch)
-# Patch where it is looked up, not where it "logically belongs."
-# For local imports in functions, you usually patch the original module (here shelves.processors.instance)
-# because there is no stable name in shelves.actions.
-
-# Note for spec_set
-# If the spec class has side effects when instantiated (like picard.file.File):
-# Spec is always transferred as a class/type, not as a real object.
-
-# Rule of thumb (so that it sticks)
-# spec_set=<class>: only if the class has its relevant attributes as properties/class attributes (or I really only
-# need the methods).
-# spec=<class>: if I need to set instance attributes that are only created at runtime (such as filename, metadata,
-# tracks, files).
+from shelves.typings import ShelfName, TagKey
 
 
-class ShelfActionSetTest(unittest.TestCase):
-    def setUp(self):
-        self.actions = ShelfActionSet.__new__(ShelfActionSet)
+def test_set_album_metadata_applies_same_shelf_to_all_files(mocker):
+    # Arrange
+    album_id = "019c60c2-2ee0-742e-bb7a-692060c8b192"
+    shelf_name = ShelfName("ShelfA")
+    shelf_locked = True
 
-    @patch("shelves.actions.SetShelfDialog", autospec=True)
-    def test_set_callback(
-        self,
-        mock_dialog_cls,
-    ):
-        album_id = "c9357ca4-c5ab-460f-b57c-a4c5ab760f0d"
-        shelf_name = "Standard"
+    manager = mocker.MagicMock(spec_set=ShelfManager)
+    manager.get_shelf_name.return_value = shelf_name
+    manager.is_locked.return_value = shelf_locked
+    mocker.patch(
+        "shelves.actions.runtime.manager_instance", return_value=manager, autospec=True
+    )
 
-        file_mock = MagicMock(spec=File)
-        file_mock.filename = "/home/foobar/music/album/test.mp3"
-        file_mock.metadata = {
-            TagKey.MUSICBRAINZ_ALBUM_ID: album_id,
-            TagKey.SHELF: "",
-            TagKey.SHELF_LOCKED: False,
-        }
-        track_mock = MagicMock(spec=Track)
-        track_mock.files = [file_mock]
+    file_1 = mocker.MagicMock(spec=File)
+    file_1.metadata = Metadata()
+    file_1.metadata[TagKey.SHELF] = "OldShelfA"
+    file_1.metadata[TagKey.SHELF_LOCKED] = False
 
-        album_mock = MagicMock(spec=Album)
-        album_mock.metadata = {TagKey.MUSICBRAINZ_ALBUM_ID: album_id}
-        album_mock.tracks = [track_mock]
+    file_2 = mocker.MagicMock(spec=File)
+    file_2.metadata = Metadata()
+    file_2.metadata[TagKey.SHELF] = "OldShelfB"
+    file_2.metadata[TagKey.SHELF_LOCKED] = False
 
-        mock_dialog_cls.return_value.ask_for_shelf_name.return_value = shelf_name
+    track_1 = mocker.MagicMock(spec=Track)
+    track_1.files = [file_1]
 
-        mock_shelf_manager_cls.return_value.get_name.return_value = shelf_name
+    track_2 = mocker.MagicMock(spec=Track)
+    track_2.files = [file_2]
 
-        # Act
-        self.actions.callback([album_mock])
+    album = mocker.MagicMock(spec=Album)
+    album.metadata = {
+        TagKey.MUSICBRAINZ_ALBUM_ID: album_id,
+    }
+    album.tracks = [track_1, track_2]
 
-        # Assert
-        mock_processors_cls.action_set_processor.assert_called_once_with(
-            file=file_mock,
-            shelf_name=shelf_name,
-        )
-        mock_shelf_manager_cls.return_value.get_name.assert_called_once_with(
-            album_id
-        )
+    # Act
+    _set_album_metadata([album])
 
-    def test_set_callback_returns_early_when_user_cancels_or_enters_empty(
-        self,
-        mock_dialog_cls,
-    ):
-        # Arrange
-        album_id = "c9357ca4-c5ab-460f-b57c-a4c5ab760f0d"
+    # Assert
+    assert file_1.metadata[TagKey.SHELF] == shelf_name
+    assert file_1.metadata[TagKey.SHELF_LOCKED]
 
-        file_mock = MagicMock(spec=File)
-        file_mock.filename = "/home/foobar/music/album/test.mp3"
-        file_mock.metadata = {
-            TagKey.MUSICBRAINZ_ALBUM_ID: album_id,
-            TagKey.SHELF: "",
-            TagKey.SHELF_LOCKED: False,
-        }
-        track_mock = MagicMock(spec=Track)
-        track_mock.files = [file_mock]
+    assert file_2.metadata[TagKey.SHELF] == shelf_name
+    assert file_2.metadata[TagKey.SHELF_LOCKED]
 
-        album_mock = MagicMock(spec=Album)
-        album_mock.metadata = {TagKey.MUSICBRAINZ_ALBUM_ID: album_id}
-        album_mock.tracks = [track_mock]
+    manager.get_shelf_name.assert_called_once_with(album_id)
+    manager.is_locked.assert_called_once_with(album_id)
 
-        for user_value in (None, ""):
-            with self.subTest(user_value=user_value):
-                mock_processors_cls.action_set_processor.reset_mock()
-                mock_processors_instance.reset_mock()
-                mock_shelf_manager_cls.reset_mock()
+    file_1.update.assert_called_once_with()
+    file_2.update.assert_called_once_with()
+    track_1.update.assert_called_once_with()
+    track_2.update.assert_called_once_with()
+    album.update.assert_called_once_with()
 
-                mock_dialog_cls.return_value.ask_for_shelf_name.return_value = (
-                    user_value
-                )
+def test_shelf_action_unset(mocker):
+    album_id = "019c60c2-2ee0-742e-bb7a-692060c8b192"
+    shelf_name = ShelfName("ShelfA")
+    shelf_locked = True
+    manager = mocker.MagicMock(spec_set=ShelfManager)
+    manager.get_shelf_name.return_value = shelf_name
+    manager.is_locked.return_value = shelf_locked
+    mocker.patch(
+        "shelves.actions.runtime.manager_instance", return_value=manager, autospec=True
+    )
+    commands = mocker.MagicMock(spec=ShelfCommands)
+    mocker.patch(
+        "shelves.actions.runtime.command_instance",
+        return_value=commands,
+    )
+    set_album_metadata = mocker.patch("shelves.actions._set_album_metadata")
 
-                # Act
-                self.actions.callback([album_mock])
+    file_1 = mocker.MagicMock(spec=File)
+    file_1.metadata = {
+        TagKey.SHELF_LOCKED: False,
+    }
 
-                # Assert
-                mock_processors_cls.action_set_processor.assert_not_called()
-                mock_processors_instance.assert_not_called()
-                mock_shelf_manager_cls.assert_not_called()
+    track_1 = mocker.MagicMock(spec=Track)
+    track_1.files = [file_1]
+
+    album = mocker.MagicMock(spec=Album)
+    album.metadata = {
+        TagKey.MUSICBRAINZ_ALBUM_ID: album_id,
+    }
+    album.tracks = [track_1]
+
+    # Act
+    ShelfActionUnset().callback([album])
+
+    # Assert
+    commands.unset_album_shelf.assert_called_once_with(album_id=album_id)
+    set_album_metadata.assert_called_once_with([album])
+
+def test_shelf_action_set(mocker):
+    album_id = "019c60c2-2ee0-742e-bb7a-692060c8b192"
+    shelf_name = ShelfName("ShelfA")
+    shelf_locked = True
+    manager = mocker.MagicMock(spec_set=ShelfManager)
+    manager.get_shelf_name.return_value = shelf_name
+    manager.is_locked.return_value = shelf_locked
+    mocker.patch(
+        "shelves.actions.runtime.manager_instance", return_value=manager, autospec=True
+    )
+    commands = mocker.MagicMock(spec=ShelfCommands)
+    mocker.patch(
+        "shelves.actions.runtime.command_instance",
+        return_value=commands,
+    )
+    set_album_metadata = mocker.patch("shelves.actions._set_album_metadata")
+    ask_for_name = mocker.patch("shelves.actions._ask_for_name", return_value=shelf_name)
+
+    file_1 = mocker.MagicMock(spec=File)
+    file_1.metadata = {
+        TagKey.SHELF_LOCKED: False,
+    }
+
+    track_1 = mocker.MagicMock(spec=Track)
+    track_1.files = [file_1]
+
+    album = mocker.MagicMock(spec=Album)
+    album.metadata = {
+        TagKey.MUSICBRAINZ_ALBUM_ID: album_id,
+    }
+    album.tracks = [track_1]
+
+    # Act
+    ShelfActionSet().callback([album])
+
+    # Assert
+    commands.set_album_shelf.assert_called_once_with(album_id=album_id, shelf_name=shelf_name)
+    set_album_metadata.assert_called_once_with([album])
+    ask_for_name.assert_called_once()
+
+def test_shelf_action_lock_locks_unlocked_file(mocker):
+    # Arrange
+    album_id = "019c60c2-2ee0-742e-bb7a-692060c8b192"
+    shelf_name = ShelfName("ShelfA")
+    shelf_locked = True
+    manager = mocker.MagicMock(spec_set=ShelfManager)
+    manager.get_shelf_name.return_value = shelf_name
+    manager.is_locked.return_value = shelf_locked
+    mocker.patch(
+        "shelves.actions.runtime.manager_instance", return_value=manager, autospec=True
+    )
+    commands = mocker.MagicMock(spec=ShelfCommands)
+    mocker.patch(
+        "shelves.actions.runtime.command_instance",
+        return_value=commands,
+    )
+    set_album_metadata = mocker.patch("shelves.actions._set_album_metadata")
+
+    file_1 = mocker.MagicMock(spec=File)
+    file_1.metadata = {
+        TagKey.SHELF_LOCKED: False,
+    }
+
+    track_1 = mocker.MagicMock(spec=Track)
+    track_1.files = [file_1]
+
+    album = mocker.MagicMock(spec=Album)
+    album.metadata = {
+        TagKey.MUSICBRAINZ_ALBUM_ID: album_id,
+    }
+    album.tracks = [track_1]
+
+    # Act
+    ShelfActionToggleLock().callback([album])
+
+    # Assert
+    commands.toggle_album_shelf_lock.assert_called_once_with(album_id=album_id)
+    set_album_metadata.assert_called_once_with([album])
 
 
-class ShelfActionDialogTest(unittest.TestCase):
-    def setUp(self):
-        self.dialog = SetShelfDialog.__new__(SetShelfDialog)
+def test_shelf_action_lock_unlocks_locked_file(mocker):
+    # Arrange
+    album_id = "019c60c2-2ee0-742e-bb7a-692060c8b192"
+    shelf_name = ShelfName("ShelfA")
+    shelf_locked = True
+    manager = mocker.MagicMock(spec_set=ShelfManager)
+    manager.get_shelf_name.return_value = shelf_name
+    manager.is_locked.return_value = shelf_locked
+    mocker.patch(
+        "shelves.actions.runtime.manager_instance", return_value=manager, autospec=True
+    )
+    commands = mocker.MagicMock(spec=ShelfCommands)
+    mocker.patch(
+        "shelves.actions.runtime.command_instance",
+        return_value=commands,
+    )
+    set_album_metadata = mocker.patch("shelves.actions._set_album_metadata")
 
-    def test_ask_for_shelf_name(self, mock_shelf_manager_cls):
-        # Arrange
-        shelf_name = "Standard"
-        self.dialog.exec_ = MagicMock(return_value=QtWidgets.QDialog.Accepted)
-        self.dialog.shelf_combo = MagicMock(spec_ref=QtWidgets.QComboBox)
-        self.dialog.shelf_combo.currentText.return_value = shelf_name
+    file_1 = mocker.MagicMock(spec=File)
+    file_1.metadata = {
+        TagKey.SHELF_LOCKED: True,
+    }
 
-        # Act
-        result = self.dialog.ask_for_shelf_name()
+    track_1 = mocker.MagicMock(spec=Track)
+    track_1.files = [file_1]
 
-        # Assert
-        self.assertEqual(result, shelf_name)
+    album = mocker.MagicMock(spec=Album)
+    album.metadata = {
+        TagKey.MUSICBRAINZ_ALBUM_ID: album_id,
+    }
+    album.tracks = [track_1]
+
+    # Act
+    ShelfActionToggleLock().callback([album])
+
+    # Assert
+    commands.toggle_album_shelf_lock.assert_called_once_with(album_id=album_id)
+    set_album_metadata.assert_called_once_with([album])

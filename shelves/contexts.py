@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Optional
 
-from .manager import AlbumId, ShelfName
+from .typings import AlbumId, ShelfName
 
 
 @dataclass

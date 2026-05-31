@@ -3,6 +3,10 @@ Shelves Plugin for MusicBrainz Picard.
 
 This plugin adds virtual shelf_name management to MusicBrainz Picard,
 allowing music files to be organized by top-level folders.
+
+Shelf assignment is album-scoped. Individual tracks/files do not own
+independent shelf assignments; they only provide hints for detecting
+or updating the album-level shelf.
 """
 
 from typing import Any, Optional
@@ -21,13 +25,16 @@ from picard.ui.options import register_options_page
 
 from . import runtime
 from .actions import (
-    ShelfActionLock as _ShelfActionToggleLock,
+    ShelfActionToggleLock as _ShelfActionToggleLock,
 )
 from .actions import (
     ShelfActionSet as _ShelfActionSet,
 )
+from .actions import (
+    ShelfActionUnset as _ShelfActionUnset,
+)
 from .options.page import OptionsPage as _ShelvesOptionsPageBase
-from .script_functions import shelf as _func_shelf_base
+from .script_functions import func_shelf as _shelf
 
 # Plugin metadata
 # noinspection PyUnusedName
@@ -36,7 +43,7 @@ PLUGIN_NAME = "Shelves"
 PLUGIN_AUTHOR = "nrthэrnlb"
 # noinspection PyUnusedName
 PLUGIN_DESCRIPTION = """
-The **Shelves** plugin adds virtual shelf_name management to MusicBrainz Picard, allowing you to
+The **Shelves** plugin adds virtual shelf management to MusicBrainz Picard, allowing you to
 organise your music files by top-level folders (shelves) in your music library.
 
 Think of your music library as a physical library with different shelves — one for your standard
@@ -49,6 +56,9 @@ collection, one for incoming/unprocessed music, one for Christmas music, etc.
 - **Manual shelf name assignment** via context menu
 - **Workflow automation** automatically moves files between shelves (e.g. "Incoming" > "Standard")
 - **Script function `$shelf()`** for file naming integration
+
+Shelf assignment is album-scoped. Individual tracks/files do not own independent shelf assignments;
+they only provide hints for detecting or updating the album-level shelf.
 """
 # noinspection PyUnusedName
 PLUGIN_VERSION = "2.1.1b1"
@@ -68,14 +78,18 @@ class ShelfActionSet(_ShelfActionSet):
     """Wrapper class for ShelfActionSet to ensure proper plugin registration."""
 
 
-class ShelfActionLock(_ShelfActionToggleLock):
+class ShelfActionUnset(_ShelfActionUnset):
+    """Wrapper class for ShelfActionUnset to ensure proper plugin registration."""
+
+
+class ShelfActionToggleLock(_ShelfActionToggleLock):
     """Wrapper class for ShelfActionToggleLock to ensure proper plugin registration."""
 
 
 # Wrapper for script function
-def func_shelf(parser: Any) -> Optional[str]:
+def script_function_shelf(parser: Any) -> Optional[str]:
     """Wrapper for shelf to ensure proper plugin registration."""
-    return _func_shelf_base(parser)
+    return _shelf(parser)
 
 
 def _track_metadata_processor(
@@ -129,10 +143,11 @@ register_file_post_removal_from_track_processor(_file_post_removal_from_track_pr
 
 # Register context menu actions
 register_album_action(ShelfActionSet())
-register_album_action(ShelfActionLock())
+register_album_action(ShelfActionUnset())
+register_album_action(ShelfActionToggleLock())
 
 # Register options page
 register_options_page(ShelvesOptionsPage)
 
 # Register script functions
-register_script_function(function=func_shelf, name="shelf")
+register_script_function(function=script_function_shelf, name="shelf")

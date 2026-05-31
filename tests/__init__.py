@@ -1,6 +1,6 @@
 """ """
 
-from typings import ConfigKey, TagKey
+from shelves.typings import ConfigKey, TagKey
 
 known_names = [
     "Incoming",
